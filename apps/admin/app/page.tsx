@@ -29,6 +29,14 @@ export default async function AdminDashboard() {
           </a>
         ))}
       </div>
+      <nav className="card flex flex-wrap gap-4 p-4 text-sm">
+        <a className="text-brand hover:underline" href="/users">利用者管理</a>
+        <a className="text-brand hover:underline" href="/reports">通報対応</a>
+        <a className="text-brand hover:underline" href="/facility-submissions">施設登録申請</a>
+        <a className="text-brand hover:underline" href="/sports">カテゴリ管理</a>
+        <a className="text-brand hover:underline" href="/facilities/import">施設CSV取り込み</a>
+      </nav>
+
       <p className="text-xs text-slate-400">
         管理操作（停止・通報対応・施設申請承認）はサービスロールで実行し、core.audit_logs に記録します。
         全スキーマ横断（account / core / facility / golf / running / outdoor）。
