@@ -3,7 +3,7 @@
 import { Suspense, useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { login, loginWithGoogle, type AuthState } from "../actions";
+import { login, loginWithGoogle, loginWithApple, type AuthState } from "../actions";
 
 const initial: AuthState = { error: null };
 
@@ -31,13 +31,20 @@ function LoginForm() {
         </button>
       </form>
 
-      <form action={loginWithGoogle} className="mt-3">
-        <button type="submit" className="btn-outline w-full">Googleでログイン</button>
-      </form>
-
-      <div className="mt-3 space-y-2 text-center text-xs text-slate-400">
-        <p>Apple / LINE / 電話番号認証は今後対応予定（共通アカウントに集約）。</p>
+      <div className="mt-3 space-y-2">
+        <form action={loginWithGoogle}>
+          <button type="submit" className="btn-outline w-full">Googleでログイン</button>
+        </form>
+        <form action={loginWithApple}>
+          <button type="submit" className="btn-outline w-full">Appleでログイン</button>
+        </form>
+        <a href="/auth/line" className="btn-outline block w-full text-center">LINEでログイン</a>
+        <Link href="/phone" className="btn-outline block w-full text-center">電話番号でログイン</Link>
       </div>
+
+      <p className="mt-3 text-center text-xs text-slate-400">
+        すべて共通アカウントに集約され、全種目で同じ user_id を利用します。
+      </p>
     </>
   );
 }

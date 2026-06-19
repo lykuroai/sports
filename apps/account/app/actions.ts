@@ -51,15 +51,23 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   redirect("/profile");
 }
 
-export async function loginWithGoogle() {
+async function oauthLogin(provider: "google" | "apple") {
   const supabase = await createServerClient();
   const origin = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "http://localhost:3001";
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
+    provider,
     options: { redirectTo: `${origin}/auth/callback` },
   });
-  if (error || !data.url) redirect("/login?error=google");
+  if (error || !data.url) redirect(`/login?error=${provider}`);
   redirect(data.url);
+}
+
+export async function loginWithGoogle() {
+  await oauthLogin("google");
+}
+
+export async function loginWithApple() {
+  await oauthLogin("apple");
 }
 
 export async function logout() {
