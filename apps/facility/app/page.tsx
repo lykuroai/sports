@@ -22,9 +22,10 @@ export default async function FacilityHome({
         <Link href="/submit" className="btn-outline">施設の登録・修正を申請</Link>
       </div>
 
-      <form className="card flex gap-2 p-4" action="/">
+      <form className="card flex items-center gap-2 p-4" action="/">
         <input name="pref" defaultValue={sp.pref ?? ""} placeholder="都道府県" className="input max-w-[12rem]" />
         <button className="btn-outline" type="submit">地域で検索</button>
+        <Link href="/nearby" className="text-sm text-brand hover:underline">現在地周辺（補助）</Link>
       </form>
 
       {facilities.length === 0 ? (
@@ -32,10 +33,10 @@ export default async function FacilityHome({
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {facilities.map((f) => (
-            <div key={f.id} className="card p-4">
+            <Link key={f.id} href={`/facilities/${f.id}`} className="card p-4 hover:shadow">
               <div className="font-medium">{f.name}</div>
               <div className="text-sm text-slate-500">{f.prefecture}{f.city}{f.address}</div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
