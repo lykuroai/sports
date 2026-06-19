@@ -1,0 +1,68 @@
+# 自前サーバ / EC2 向け。7 app + Caddy リバースプロキシ（自動HTTPS）。
+# 使い方:
+#   cp .env.production.example .env.production   # 値を設定
+#   docker compose up -d --build
+#
+# DNS: 各サブドメインを当サーバへ向け、Caddyfile を編集すること。
+# Supabase は別途（ホスティング or セルフホスト）。
+
+x-app-common: &app-common
+  env_file: .env.production
+  restart: unless-stopped
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  expose:
+    - "3000"
+
+services:
+  web:
+    <<: *app-common
+    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: web } }
+
+  account:
+    <<: *app-common
+    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: account } }
+
+  golf:
+    <<: *app-common
+    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: golf } }
+
+  running:
+    <<: *app-common
+    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: running } }
+
+  outdoor:
+    <<: *app-common
+    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: outdoor } }
+
+  facility:
+    <<: *app-common
+    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: facility } }
+
+  admin:
+    <<: *app-common
+    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: admin } }
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - account
+      - golf
+      - running
+      - outdoor
+      - facility
+      - admin
+
+volumes:
+  caddy_data:
+  caddy_config:

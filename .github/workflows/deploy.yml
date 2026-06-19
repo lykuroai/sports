@@ -1,45 +1,38 @@
-name: Deploy (manual)
+name: Deploy (self-host)
 
-# 【任意】Vercel CLI で 7 app を明示デプロイするワークフロー。
-# 通常は Vercel の Git 連携で push 時に自動デプロイされる（こちらが推奨）。
-# Git 連携を使わず CI 主導でデプロイしたい場合のみ使用する。
+# 自前サーバ / EC2 へ SSH してデプロイ（git pull → docker compose up -d --build）。
+# サーバ側に事前準備が必要:
+#   - リポジトリを clone 済み（DEPLOY_PATH）
+#   - .env.production を配置済み
+#   - Docker / docker compose 導入済み、Caddyfile をドメインに合わせ編集済み
 #
 # 必要な GitHub Secrets:
-#   VERCEL_TOKEN, VERCEL_ORG_ID
-#   VERCEL_PROJECT_ID_WEB / _ACCOUNT / _GOLF / _RUNNING / _OUTDOOR / _FACILITY / _ADMIN
+#   DEPLOY_HOST     … サーバの公開IP/ホスト名
+#   DEPLOY_USER     … SSH ユーザ（例: ubuntu / ec2-user）
+#   DEPLOY_SSH_KEY  … 秘密鍵（対応する公開鍵をサーバに登録）
+#   DEPLOY_PATH     … サーバ上のリポジトリパス（例: /opt/spotomo）
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      target:
-        description: "デプロイ対象（all または app 名）"
-        default: all
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { app: web,      secret: VERCEL_PROJECT_ID_WEB }
-          - { app: account,  secret: VERCEL_PROJECT_ID_ACCOUNT }
-          - { app: golf,     secret: VERCEL_PROJECT_ID_GOLF }
-          - { app: running,  secret: VERCEL_PROJECT_ID_RUNNING }
-          - { app: outdoor,  secret: VERCEL_PROJECT_ID_OUTDOOR }
-          - { app: facility, secret: VERCEL_PROJECT_ID_FACILITY }
-          - { app: admin,    secret: VERCEL_PROJECT_ID_ADMIN }
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets[matrix.secret] }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - if: ${{ github.event.inputs.target == 'all' || github.event.inputs.target == matrix.app }}
-        name: Install Vercel CLI
-        run: npm i -g vercel@latest
-      - if: ${{ github.event.inputs.target == 'all' || github.event.inputs.target == matrix.app }}
-        name: Pull / Build / Deploy
-        run: |
-          vercel pull --yes --environment=production --token="$VERCEL_TOKEN" --cwd "apps/${{ matrix.app }}"
-          vercel build --prod --token="$VERCEL_TOKEN" --cwd "apps/${{ matrix.app }}"
-          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" --cwd "apps/${{ matrix.app }}"
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            git pull --ff-only
+            docker compose up -d --build
+            docker image prune -f

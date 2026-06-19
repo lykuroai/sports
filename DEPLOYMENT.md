@@ -1,7 +1,7 @@
 # 開発・デプロイ環境ガイド
 
 スタック: **pnpm + Turborepo モノレポ（apps×7）/ Next.js 16 / Supabase**。
-デプロイ: **Vercel（app ごとに 1 プロジェクト・サブドメイン）+ Supabase ホスティング**、
+デプロイ: **自前サーバ / EC2（Docker Compose + Caddy）+ Supabase（ホスティング or セルフホスト）**、
 CI/CD: **GitHub Actions**。
 
 ---
@@ -11,7 +11,7 @@ CI/CD: **GitHub Actions**。
 | 環境 | アプリ | DB | 用途 |
 |---|---|---|---|
 | ローカル開発 | `pnpm dev`（:3000–3006） | Supabase ローカル（Docker） | 日常開発 |
-| Preview | Vercel Preview（PR ごと） | Supabase（staging 推奨） | レビュー |
+| 本番 | EC2/自前サーバ（Docker Compose・Caddy） | Supabase | 公開 |
 | 本番 | Vercel Production（各サブドメイン） | Supabase 本番 | 公開 |
 
 ---
@@ -59,42 +59,55 @@ make check       # lint + typecheck + build（CI 相当）
 
 ---
 
-## 4. Vercel 設定（app ごとに 1 プロジェクト）
+## 4. 自前サーバ / EC2（Docker Compose + Caddy）
 
-7 つの Vercel プロジェクトを同一リポジトリから作成し、**Root Directory** を各 app に設定する。
+7 app をコンテナ化（Next.js standalone）し、Caddy リバースプロキシでサブドメインへ振り分ける。
+Caddy が Let's Encrypt で**自動 HTTPS** を取得する。
 
-| Vercel Project | Root Directory | 本番ドメイン |
+| サービス | コンテナ | 本番ドメイン |
 |---|---|---|
-| spotomo-web | `apps/web` | spotomo-park.jp |
-| spotomo-account | `apps/account` | account.spotomo-park.jp |
-| spotomo-golf | `apps/golf` | golf.spotomo-park.jp |
-| spotomo-running | `apps/running` | running.spotomo-park.jp |
-| spotomo-outdoor | `apps/outdoor` | outdoor.spotomo-park.jp |
-| spotomo-facility | `apps/facility` | facility.spotomo-park.jp |
-| spotomo-admin | `apps/admin` | admin.spotomo-park.jp |
+| web | `web:3000` | spotomo-park.jp |
+| account | `account:3000` | account.spotomo-park.jp |
+| golf | `golf:3000` | golf.spotomo-park.jp |
+| running | `running:3000` | running.spotomo-park.jp |
+| outdoor | `outdoor:3000` | outdoor.spotomo-park.jp |
+| facility | `facility:3000` | facility.spotomo-park.jp |
+| admin | `admin:3000` | admin.spotomo-park.jp |
 
-- **ビルド設定**: フレームワークは Next.js（自動検出）。pnpm workspace + Turborepo を Vercel が認識し、
-  ルートで `pnpm install` → 当該 app をビルドする。各 app の `vercel.json` に
-  `ignoreCommand: turbo-ignore` を設定済みで、**変更が無い app の再デプロイをスキップ**する。
-- **自動デプロイ**: Vercel の Git 連携で push 時に自動デプロイ（推奨）。
-  CI 主導にしたい場合のみ `.github/workflows/deploy.yml`（手動）を使用。
+### サーバ前提
+- Docker + docker compose 導入済み（EC2 は t3.medium 以上推奨。ビルドにメモリを使う）
+- セキュリティグループ/ファイアウォールで **80/443 を開放**
+- 各サブドメインの DNS A レコードをサーバ IP へ向ける
 
-### 環境変数（Vercel の各プロジェクトに設定）
+### 初回セットアップ（サーバ上）
+```bash
+git clone <repo> /opt/spotomo && cd /opt/spotomo
+cp .env.production.example .env.production   # 値を設定（下表）
+vim docker/Caddyfile                          # ドメイン/メールを自社用に編集
+docker compose up -d --build                  # = make docker-up
+```
+ローカルからのビルド確認は `make docker-build`。
 
-| 変数 | web | account | golf/running/outdoor | facility | admin |
-|---|:--:|:--:|:--:|:--:|:--:|
-| `NEXT_PUBLIC_SUPABASE_URL` | ● | ● | ● | ● | ● |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ● | ● | ● | ● | ● |
-| `SUPABASE_SERVICE_ROLE_KEY` | | ● | ● | ● | ● |
-| `NEXT_PUBLIC_ACCOUNT_URL` | ● | ● | ● | ● | ● |
-| `NEXT_PUBLIC_COOKIE_DOMAIN`（`.spotomo-park.jp`） | ● | ● | ● | ● | ● |
-| `NEXT_PUBLIC_FACILITY_URL` | | | | ● | |
-| `RESEND_API_KEY` / `EMAIL_FROM` | | ● | ● | ● | ● |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | | | | ● | |
-| `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` | | ● | | | |
+### 環境変数（`.env.production`。全 app コンテナへ env_file で渡す）
 
-> `SUPABASE_SERVICE_ROLE_KEY` はサーバー専用。クライアントへ露出しないこと。
-> Stripe Webhook の宛先は `https://facility.spotomo-park.jp/api/stripe/webhook`。
+| 変数 | 使う app |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 全 app |
+| `SUPABASE_SERVICE_ROLE_KEY` | account / golf / running / outdoor / facility / admin（web 不要） |
+| `NEXT_PUBLIC_ACCOUNT_URL` | 全 app（ヘッダ導線・ログイン誘導） |
+| `NEXT_PUBLIC_COOKIE_DOMAIN`（`.spotomo-park.jp`） | 全 app（サブドメイン SSO） |
+| `NEXT_PUBLIC_FACILITY_URL` | facility（Stripe 戻り先） |
+| `RESEND_API_KEY` / `EMAIL_FROM` | 通知を送る app（account/golf/running/outdoor/facility/admin） |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | facility |
+| `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` | account |
+
+> 単一 `env_file` で全コンテナに渡す簡易構成。`SUPABASE_SERVICE_ROLE_KEY` を web から
+> 厳密に分離したい場合は、compose の `environment:` で per-service に切り替える。
+> Stripe Webhook 宛先: `https://facility.spotomo-park.jp/api/stripe/webhook`。
+
+### スケール時の選択肢（任意）
+サーバでのビルドが重い場合は、CI で GHCR にイメージを push し、compose を `image:` 参照に
+切り替える運用も可能（`docker-compose.yml` の `build:` を `image:` に置換）。
 
 ---
 
@@ -104,19 +117,21 @@ make check       # lint + typecheck + build（CI 相当）
 |---|---|---|
 | `ci.yml` | PR / main push | `pnpm install` → `lint` → `build`（型チェック込み） |
 | `db-migrate.yml` | main の `supabase/migrations/**` 変更 | `supabase db push` で本番 DB に適用 |
-| `deploy.yml` | 手動（`workflow_dispatch`） | 【任意】Vercel CLI で明示デプロイ |
+| `deploy.yml` | main push / 手動 | サーバへ SSH → `git pull` → `docker compose up -d --build` |
 
 ### 必要な GitHub Secrets
 
 - DB: `SUPABASE_ACCESS_TOKEN` / `SUPABASE_PROJECT_REF` / `SUPABASE_DB_PASSWORD`
-- Deploy（任意・CLI 利用時）: `VERCEL_TOKEN` / `VERCEL_ORG_ID` /
-  `VERCEL_PROJECT_ID_{WEB,ACCOUNT,GOLF,RUNNING,OUTDOOR,FACILITY,ADMIN}`
+- Deploy: `DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_SSH_KEY` / `DEPLOY_PATH`（例: `/opt/spotomo`）
+
+> サーバ側に repo clone と `.env.production` を事前配置しておくこと（`deploy.yml` は pull→rebuild のみ）。
 
 ---
 
 ## 6. DNS / サブドメイン
 
-`spotomo-park.jp` と各サブドメインを Vercel プロジェクトに割り当てる。
+`spotomo-park.jp` と各サブドメインの A レコードをサーバ IP へ向ける。Caddy が 80/443 で受け、
+`docker/Caddyfile` の定義に従って各コンテナへプロキシ＋自動 TLS。
 全 app で `NEXT_PUBLIC_COOKIE_DOMAIN=.spotomo-park.jp` を設定すると、account でログイン後に
 全種目サブドメインで session Cookie を共有できる（共通 user_id の SSO）。
 
@@ -125,11 +140,13 @@ make check       # lint + typecheck + build（CI 相当）
 ## 7. 本番デプロイ チェックリスト
 
 - [ ] Supabase 本番プロジェクト作成・`db push` 適用
-- [ ] **Exposed schemas に 6 スキーマ追加**
+- [ ] **Exposed schemas に 6 スキーマ追加**（ホスティングは Dashboard、セルフホストは Kong 設定）
 - [ ] `seed.sql`（カテゴリ）適用
 - [ ] Auth プロバイダ（Google/Apple/LINE/SMS）設定・リダイレクト URL 登録
-- [ ] Vercel 7 プロジェクト作成・Root Directory・ドメイン・env 設定
-- [ ] `NEXT_PUBLIC_COOKIE_DOMAIN` を全 app に設定
+- [ ] サーバ: Docker 導入・80/443 開放・repo clone・`.env.production` 設定・`Caddyfile` 編集
+- [ ] DNS: 各サブドメインをサーバ IP へ
+- [ ] `docker compose up -d --build`（または `deploy.yml` 経由）
+- [ ] `NEXT_PUBLIC_COOKIE_DOMAIN` を設定（SSO）
 - [ ] Stripe（price 設定・Webhook 登録）
-- [ ] GitHub Secrets 登録（DB マイグレーション用）
+- [ ] GitHub Secrets 登録（DB マイグレーション + SSH デプロイ）
 - [ ] 管理者付与: `insert into account.user_roles (user_id, role) values ('<uuid>','admin');`

@@ -1,0 +1,40 @@
+# サブドメイン → 各 app コンテナへリバースプロキシ（Caddy 自動HTTPS）
+# 本番ドメインに合わせて編集すること。DNS を当サーバの 80/443 に向ける。
+#
+# メール（Let's Encrypt 通知用）はサーバ管理者のアドレスに。
+{
+	email admin@spotomo-park.jp
+}
+
+spotomo-park.jp, www.spotomo-park.jp {
+	reverse_proxy web:3000
+}
+
+account.spotomo-park.jp {
+	reverse_proxy account:3000
+}
+
+golf.spotomo-park.jp {
+	reverse_proxy golf:3000
+}
+
+running.spotomo-park.jp {
+	reverse_proxy running:3000
+}
+
+outdoor.spotomo-park.jp {
+	reverse_proxy outdoor:3000
+}
+
+facility.spotomo-park.jp {
+	reverse_proxy facility:3000
+}
+
+admin.spotomo-park.jp {
+	reverse_proxy admin:3000
+}
+
+# --- ドメイン未取得で動作確認したい場合（HTTP・ポート分け）の例 ---
+# :3000 { reverse_proxy web:3000 }
+# :3001 { reverse_proxy account:3000 }
+# ... など。あるいは EC2 のIPで各 :3000 を個別公開。

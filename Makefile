@@ -5,7 +5,7 @@ SHELL := /usr/bin/env bash
 
 SUPABASE := npx --yes supabase@latest
 
-.PHONY: help install db-start db-stop db-reset env-local seed-dev up down dev build lint typecheck types check clean
+.PHONY: help install db-start db-stop db-reset env-local seed-dev up down dev build lint typecheck types check clean docker-build docker-up docker-down docker-logs
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -54,3 +54,16 @@ check: lint typecheck build ## CI 相当の検証をローカルで実行
 clean: ## ビルド成果物を削除
 	find . -name '.next' -type d -prune -exec rm -rf {} + ; \
 	find . -name '.turbo' -type d -prune -exec rm -rf {} +
+
+# ---- 自前サーバ / EC2（Docker）----
+docker-build: ## 全 app の本番イメージをビルド（docker compose）
+	docker compose build
+
+docker-up: ## コンテナ起動（7 app + Caddy）。要 .env.production
+	docker compose up -d --build
+
+docker-down: ## コンテナ停止
+	docker compose down
+
+docker-logs: ## ログ追従（make docker-logs s=golf で個別）
+	docker compose logs -f $(s)
