@@ -5,7 +5,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./notification-bell": "./src/notification-bell.tsx"
   },
   "dependencies": {
     "@spotomo/auth-client": "workspace:*",

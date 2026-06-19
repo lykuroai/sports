@@ -10,7 +10,8 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "db:types": "supabase gen types typescript --linked --schema account,core,facility,golf,running,outdoor > packages/shared-types/src/database.generated.ts"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
