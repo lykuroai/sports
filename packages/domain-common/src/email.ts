@@ -1,7 +1,16 @@
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
+
 /**
- * メール送信の薄いラッパー。RESEND_API_KEY があれば Resend、無ければログのみ（開発時 no-op）。
+ * メール送信の薄いラッパー。Amazon SES（SESv2）を使用する。
+ * AWS 認証情報（環境変数 or インスタンスロール）と FROM_ADDRESS が無ければログのみ（開発時 no-op）。
  * 別プロバイダに差し替える場合はこの関数のみ変更する。
  */
+let _client: SESv2Client | null = null;
+function sesClient(): SESv2Client {
+  if (!_client) _client = new SESv2Client({ region: process.env.AWS_REGION ?? "ap-northeast-1" });
+  return _client;
+}
+
 export async function sendEmail({
   to,
   subject,
@@ -11,21 +20,30 @@ export async function sendEmail({
   subject: string;
   text: string;
 }): Promise<void> {
-  const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM ?? "no-reply@example.com";
+  const fromAddress = process.env.FROM_ADDRESS ?? process.env.EMAIL_FROM;
+  const fromName = process.env.FROM_NAME;
 
-  if (!key) {
+  // SES 未設定（ローカル開発等）はメール送信をスキップしログ出力のみ。
+  if (!fromAddress || !process.env.AWS_ACCESS_KEY_ID) {
     console.log(`[email skipped] to=${to} subject=${subject}`);
     return;
   }
 
+  const from = fromName ? `${fromName} <${fromAddress}>` : fromAddress;
+
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject, text }),
-    });
-    if (!res.ok) console.error("email send failed", res.status, await res.text());
+    await sesClient().send(
+      new SendEmailCommand({
+        FromEmailAddress: from,
+        Destination: { ToAddresses: [to] },
+        Content: {
+          Simple: {
+            Subject: { Data: subject, Charset: "UTF-8" },
+            Body: { Text: { Data: text, Charset: "UTF-8" } },
+          },
+        },
+      }),
+    );
   } catch (e) {
     console.error("email send error", e);
   }

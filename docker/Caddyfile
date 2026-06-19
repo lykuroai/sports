@@ -3,34 +3,34 @@
 #
 # メール（Let's Encrypt 通知用）はサーバ管理者のアドレスに。
 {
-	email admin@spotomo-park.jp
+	email admin@lykuro.ai
 }
 
-spotomo-park.jp, www.spotomo-park.jp {
+spotomo.lykuro.ai {
 	reverse_proxy web:3000
 }
 
-account.spotomo-park.jp {
+account-spotomo.lykuro.ai {
 	reverse_proxy account:3000
 }
 
-golf.spotomo-park.jp {
+golf-spotomo.lykuro.ai {
 	reverse_proxy golf:3000
 }
 
-running.spotomo-park.jp {
+running-spotomo.lykuro.ai {
 	reverse_proxy running:3000
 }
 
-outdoor.spotomo-park.jp {
+outdoor-spotomo.lykuro.ai {
 	reverse_proxy outdoor:3000
 }
 
-facility.spotomo-park.jp {
+facility-spotomo.lykuro.ai {
 	reverse_proxy facility:3000
 }
 
-admin.spotomo-park.jp {
+admin-spotomo.lykuro.ai {
 	reverse_proxy admin:3000
 }
 

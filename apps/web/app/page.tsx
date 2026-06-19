@@ -16,7 +16,7 @@ export default function HomePage() {
           {SPORT_DOMAINS.map((d) => (
             <a
               key={d.slug}
-              href={`https://${d.host}`}
+              href={`//${d.host}`}
               className="card p-6 transition hover:border-brand hover:shadow"
             >
               <div className="text-lg font-medium">{d.name}</div>

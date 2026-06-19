@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@spotomo/auth-client";
+import { ACCOUNT_URL, createServerClient } from "@spotomo/auth-client";
 
 // OAuth（Google）/ メール確認のコールバック。code を session に交換する。
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+  // リバースプロキシ越しだと origin が内部アドレス（0.0.0.0:3000）になるため、
+  // 公開 URL（NEXT_PUBLIC_ACCOUNT_URL）を優先して戻り先を組み立てる。
+  const base = ACCOUNT_URL() || origin;
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/profile";
 
   if (code) {
     const supabase = await createServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) return NextResponse.redirect(`${base}${next}`);
   }
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  return NextResponse.redirect(`${base}/login?error=auth`);
 }

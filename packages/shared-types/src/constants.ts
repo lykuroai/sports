@@ -102,7 +102,7 @@ export const GENDER_CONDITION_OPTIONS: { value: Gender; label: string }[] = [
 
 /** 種目ドメインのメタ情報（サブドメイン・表示名・アイコン）。 */
 export const SPORT_DOMAINS = [
-  { slug: "golf", name: "ゴルフ", host: "golf.spotomo-park.jp" },
-  { slug: "running", name: "ランニング", host: "running.spotomo-park.jp" },
-  { slug: "outdoor", name: "アウトドア", host: "outdoor.spotomo-park.jp" },
+  { slug: "golf", name: "ゴルフ", host: "golf-spotomo.lykuro.ai" },
+  { slug: "running", name: "ランニング", host: "running-spotomo.lykuro.ai" },
+  { slug: "outdoor", name: "アウトドア", host: "outdoor-spotomo.lykuro.ai" },
 ] as const;

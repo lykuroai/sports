@@ -26,7 +26,7 @@ export function SiteHeader({ appName, accountUrl = "", actions }: SiteHeaderProp
 
       <nav className="flex items-center gap-3 text-sm">
         {SPORT_DOMAINS.map((d) => (
-          <a key={d.slug} href={`https://${d.host}`} className="hover:text-brand">
+          <a key={d.slug} href={`//${d.host}`} className="hover:text-brand">
             {d.name}
           </a>
         ))}

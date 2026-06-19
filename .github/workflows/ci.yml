@@ -38,5 +38,5 @@ jobs:
           # ビルド時に参照される公開 env（ダミーで型/ビルドを通す。実値はデプロイ先で設定）
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
-          NEXT_PUBLIC_ACCOUNT_URL: https://account.spotomo-park.jp
-          NEXT_PUBLIC_FACILITY_URL: https://facility.spotomo-park.jp
+          NEXT_PUBLIC_ACCOUNT_URL: https://account-spotomo.lykuro.ai
+          NEXT_PUBLIC_FACILITY_URL: https://facility-spotomo.lykuro.ai

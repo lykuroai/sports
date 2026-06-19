@@ -57,8 +57,12 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   CSV取り込み（`src/app/admin/facilities/import/`）の許可カラムも同様。
 - **通知作成は必ず `notifyUser()`（`src/lib/notify.ts`）経由**。notifications には INSERT
   用 RLS ポリシーが無く、セッションクライアントからの他ユーザー宛 insert は失敗する。
-  `notifyUser` はサービスロールで insert し、`users.email` 宛にメール送信（`src/lib/email.ts`、
-  `RESEND_API_KEY` 未設定ならログのみ）。
+  `notifyUser` はサービスロールで insert し、`users.email` 宛にメール送信
+  （`packages/domain-common/src/email.ts`、**Amazon SES**。`FROM_ADDRESS`/`AWS_*` 未設定ならログのみ）。
+- 携帯番号認証は **Twilio Verify**（`packages/domain-common/src/sms.ts`）で OTP 送信/検証し、
+  検証後にサービスロールでユーザ作成/更新＋使い捨てパスワードで `signInWithPassword` して
+  Supabase セッションを発行する（`apps/account/app/phone/actions.ts`）。Supabase 組み込みの
+  phone OTP は使わない。
 - ブロックの双方向判定は RLS で他者の行が読めないため RPC `is_blocked_between(a,b)`
   （`0005_blocks.sql`）を使う。現在地周辺検索は RPC `nearby_facilities(lat,lng,radius_m,lim)`
   （`0006_geo.sql`、PostGIS `ST_DWithin`/`ST_Distance`）。地図タイル描画は未実装。

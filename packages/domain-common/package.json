@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.730.0",
     "@spotomo/auth-client": "workspace:*",
     "@spotomo/shared-types": "workspace:*"
   },

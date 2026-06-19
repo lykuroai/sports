@@ -50,10 +50,13 @@ make check       # lint + typecheck + build（CI 相当）
    `psql "$DB_URL" -f supabase/seed.sql` など。
 5. **Auth プロバイダ**:
    - Google / Apple: Authentication → Providers で有効化（Client ID/Secret、Apple は Service ID/Key）。
-     リダイレクト URL に `https://account.spotomo-park.jp/auth/callback`。
-   - 電話番号: Authentication → SMS で SMS プロバイダ（Twilio 等）を設定。
+     リダイレクト URL に `https://account-spotomo.lykuro.ai/auth/callback`。
+   - 電話番号: OTP 送信/検証はアプリが **Twilio Verify** を直接利用するため、Supabase の
+     SMS プロバイダ設定は不要。ただし phone+password でのセッション発行を許可するため
+     Authentication → Phone で **Phone provider を有効化**しておくこと（SMS 送信は使わない）。
+     `TWILIO_ACCOUNT_SID/AUTH_TOKEN/VERIFY_SERVICE_SID` を account の env に設定。
    - LINE: Supabase 非対応のため自前実装。LINE Developers で Channel を作成し、
-     Callback に `https://account.spotomo-park.jp/auth/line/callback` を登録、
+     Callback に `https://account-spotomo.lykuro.ai/auth/line/callback` を登録、
      `LINE_CHANNEL_ID/SECRET` を account プロジェクトの env に設定。
 6. **Realtime**: チャットは `0013` で publication 登録済み。Database → Replication で有効を確認。
 
@@ -66,13 +69,13 @@ Caddy が Let's Encrypt で**自動 HTTPS** を取得する。
 
 | サービス | コンテナ | 本番ドメイン |
 |---|---|---|
-| web | `web:3000` | spotomo-park.jp |
-| account | `account:3000` | account.spotomo-park.jp |
-| golf | `golf:3000` | golf.spotomo-park.jp |
-| running | `running:3000` | running.spotomo-park.jp |
-| outdoor | `outdoor:3000` | outdoor.spotomo-park.jp |
-| facility | `facility:3000` | facility.spotomo-park.jp |
-| admin | `admin:3000` | admin.spotomo-park.jp |
+| web | `web:3000` | spotomo.lykuro.ai |
+| account | `account:3000` | account-spotomo.lykuro.ai |
+| golf | `golf:3000` | golf-spotomo.lykuro.ai |
+| running | `running:3000` | running-spotomo.lykuro.ai |
+| outdoor | `outdoor:3000` | outdoor-spotomo.lykuro.ai |
+| facility | `facility:3000` | facility-spotomo.lykuro.ai |
+| admin | `admin:3000` | admin-spotomo.lykuro.ai |
 
 ### サーバ前提
 - Docker + docker compose 導入済み（EC2 は t3.medium 以上推奨。ビルドにメモリを使う）
@@ -95,15 +98,16 @@ docker compose up -d --build                  # = make docker-up
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 全 app |
 | `SUPABASE_SERVICE_ROLE_KEY` | account / golf / running / outdoor / facility / admin（web 不要） |
 | `NEXT_PUBLIC_ACCOUNT_URL` | 全 app（ヘッダ導線・ログイン誘導） |
-| `NEXT_PUBLIC_COOKIE_DOMAIN`（`.spotomo-park.jp`） | 全 app（サブドメイン SSO） |
+| `NEXT_PUBLIC_COOKIE_DOMAIN`（`.lykuro.ai`） | 全 app（サブドメイン SSO） |
 | `NEXT_PUBLIC_FACILITY_URL` | facility（Stripe 戻り先） |
-| `RESEND_API_KEY` / `EMAIL_FROM` | 通知を送る app（account/golf/running/outdoor/facility/admin） |
+| `AWS_REGION` / `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `MAIL_PROVIDER` / `FROM_ADDRESS` / `FROM_NAME`（Amazon SES） | 通知を送る app（account/golf/running/outdoor/facility/admin） |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_VERIFY_SERVICE_SID`（携帯認証 OTP） | account |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | facility |
 | `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` | account |
 
 > 単一 `env_file` で全コンテナに渡す簡易構成。`SUPABASE_SERVICE_ROLE_KEY` を web から
 > 厳密に分離したい場合は、compose の `environment:` で per-service に切り替える。
-> Stripe Webhook 宛先: `https://facility.spotomo-park.jp/api/stripe/webhook`。
+> Stripe Webhook 宛先: `https://facility-spotomo.lykuro.ai/api/stripe/webhook`。
 
 ### スケール時の選択肢（任意）
 サーバでのビルドが重い場合は、CI で GHCR にイメージを push し、compose を `image:` 参照に
@@ -130,9 +134,9 @@ docker compose up -d --build                  # = make docker-up
 
 ## 6. DNS / サブドメイン
 
-`spotomo-park.jp` と各サブドメインの A レコードをサーバ IP へ向ける。Caddy が 80/443 で受け、
+`spotomo.lykuro.ai` と各サブドメインの A レコードをサーバ IP へ向ける。Caddy が 80/443 で受け、
 `docker/Caddyfile` の定義に従って各コンテナへプロキシ＋自動 TLS。
-全 app で `NEXT_PUBLIC_COOKIE_DOMAIN=.spotomo-park.jp` を設定すると、account でログイン後に
+全 app で `NEXT_PUBLIC_COOKIE_DOMAIN=.lykuro.ai` を設定すると、account でログイン後に
 全種目サブドメインで session Cookie を共有できる（共通 user_id の SSO）。
 
 ---

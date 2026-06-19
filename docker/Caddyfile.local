@@ -1,0 +1,33 @@
+# ローカル確認用 Caddyfile。`http://` 指定で自動HTTPSを無効化し、80番のみで配信
+# （証明書取得・警告なし）。/etc/hosts で各ドメインを 127.0.0.1 に向けて使う。
+# 使い方:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+# アクセス: http://spotomo.lykuro.ai など（http:// を明示すること）。
+
+http://spotomo.lykuro.ai {
+	reverse_proxy web:3000
+}
+
+http://account-spotomo.lykuro.ai {
+	reverse_proxy account:3000
+}
+
+http://golf-spotomo.lykuro.ai {
+	reverse_proxy golf:3000
+}
+
+http://running-spotomo.lykuro.ai {
+	reverse_proxy running:3000
+}
+
+http://outdoor-spotomo.lykuro.ai {
+	reverse_proxy outdoor:3000
+}
+
+http://facility-spotomo.lykuro.ai {
+	reverse_proxy facility:3000
+}
+
+http://admin-spotomo.lykuro.ai {
+	reverse_proxy admin:3000
+}
