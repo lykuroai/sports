@@ -34,7 +34,9 @@ export default async function ProfilePage() {
       <ProfileForm profile={profile} />
 
       <nav className="card divide-y p-2 text-sm">
+        <a className="block px-3 py-2 hover:bg-slate-50" href="/notifications">通知一覧</a>
         <a className="block px-3 py-2 hover:bg-slate-50" href="/settings/notifications">通知設定</a>
+        <a className="block px-3 py-2 hover:bg-slate-50" href="/blocks">ブロックした利用者</a>
         <a className="block px-3 py-2 hover:bg-slate-50" href="/billing">決済情報</a>
         <a className="block px-3 py-2 hover:bg-slate-50" href="/verification">本人確認</a>
         <a className="block px-3 py-2 text-red-600 hover:bg-slate-50" href="/withdraw">退会</a>

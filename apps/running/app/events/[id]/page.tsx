@@ -6,8 +6,13 @@ import {
   formatFee,
 } from "@spotomo/shared-types";
 import { createServerClient, getUser } from "@spotomo/auth-client";
+import { isFavorited, isFollowing } from "@spotomo/domain-common";
 import { fetchEventDetail, isApplyable } from "../../../lib/events";
 import { applyToEvent } from "../actions";
+import { FavoriteButton } from "../favorite-button";
+import { FollowButton } from "../follow-button";
+
+const SCHEMA = "running";
 
 export default async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,6 +22,21 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
 
   const user = await getUser();
   const isOrganizer = user?.id === ev.organizer_id;
+  const isPast = ev.status === "finished" || new Date(ev.event_start_at) < new Date();
+
+  let fav = false;
+  let following = false;
+  let isMember = isOrganizer;
+  if (user) {
+    fav = await isFavorited(supabase, { userId: user.id, targetType: "recruitment", targetId: ev.id });
+    if (!isOrganizer) {
+      following = await isFollowing(supabase, { followerId: user.id, followeeId: ev.organizer_id });
+      const { data: part } = await supabase
+        .schema(SCHEMA).from("event_participants")
+        .select("status").eq("event_id", ev.id).eq("user_id", user.id).maybeSingle();
+      isMember = part?.status === "approved";
+    }
+  }
 
   return (
     <article className="mx-auto max-w-2xl space-y-6">
@@ -32,6 +52,16 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
           </p>
         )}
       </header>
+
+      {user && (
+        <div className="flex flex-wrap gap-2">
+          <FavoriteButton eventId={ev.id} initial={fav} />
+          {!isOrganizer && <FollowButton organizerId={ev.organizer_id} initial={following} />}
+          {isMember && isPast && (
+            <a href={`/events/${ev.id}/review`} className="btn-outline">相互評価する</a>
+          )}
+        </div>
+      )}
 
       <dl className="card grid grid-cols-[6rem_1fr] gap-y-3 p-5 text-sm">
         <dt className="text-slate-400">日時</dt><dd>{formatDateTime(ev.event_start_at)}</dd>
