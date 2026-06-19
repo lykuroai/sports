@@ -58,3 +58,11 @@ insert into core.sports (category_type, name, slug, display_order) values
   ('outdoor', 'アウトドア写真撮影', 'outdoor-photo', 230),
   ('outdoor', 'その他のアウトドア', 'other-outdoor', 240)
 on conflict (slug) do nothing;
+
+-- 施設運営者プラン（収益化 Phase A）。stripe_price_id は環境ごとに後から設定。
+insert into facility.subscription_plans (code, name, description, amount, billing_interval, entitlements, display_order) values
+  ('basic', 'ベーシック', '検索上位表示・画像枠拡張', 3000, 'month',
+   '{"promotion_rank": 1, "max_images": 10, "analytics": false}'::jsonb, 10),
+  ('pro', 'プロ', '上位表示強化・リード分析', 8000, 'month',
+   '{"promotion_rank": 3, "max_images": 30, "analytics": true}'::jsonb, 20)
+on conflict (code) do nothing;
