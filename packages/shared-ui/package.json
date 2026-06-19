@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@spotomo/auth-client": "workspace:*",
     "@spotomo/domain-common": "workspace:*",
     "@spotomo/shared-types": "workspace:*"
   },
