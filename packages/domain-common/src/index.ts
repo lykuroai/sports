@@ -15,3 +15,10 @@ export {
 export type { FavoriteTarget } from "./social";
 export { fetchReviewTargets, submitReview } from "./reviews";
 export type { ReviewTarget } from "./reviews";
+export {
+  fetchParticipants,
+  approveParticipant,
+  rejectParticipant,
+  cancelParticipation,
+} from "./participants";
+export type { ParticipantRow } from "./participants";

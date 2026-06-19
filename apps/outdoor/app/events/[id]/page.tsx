@@ -11,6 +11,7 @@ import { fetchEventDetail, isApplyable } from "../../../lib/events";
 import { applyToEvent } from "../actions";
 import { FavoriteButton } from "../favorite-button";
 import { FollowButton } from "../follow-button";
+import { cancelAction } from "./participants/actions";
 
 const SCHEMA = "outdoor";
 
@@ -26,7 +27,7 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
 
   let fav = false;
   let following = false;
-  let isMember = isOrganizer;
+  let partStatus: string | null = null;
   if (user) {
     fav = await isFavorited(supabase, { userId: user.id, targetType: "recruitment", targetId: ev.id });
     if (!isOrganizer) {
@@ -34,9 +35,11 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
       const { data: part } = await supabase
         .schema(SCHEMA).from("event_participants")
         .select("status").eq("event_id", ev.id).eq("user_id", user.id).maybeSingle();
-      isMember = part?.status === "approved";
+      partStatus = (part?.status as string | undefined) ?? null;
     }
   }
+  const isMember = isOrganizer || partStatus === "approved";
+  const canCancel = partStatus === "applied" || partStatus === "approved" || partStatus === "waitlist";
 
   return (
     <article className="mx-auto max-w-2xl space-y-6">
@@ -57,6 +60,9 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
         <div className="flex flex-wrap gap-2">
           <FavoriteButton eventId={ev.id} initial={fav} />
           {!isOrganizer && <FollowButton organizerId={ev.organizer_id} initial={following} />}
+          {isOrganizer && (
+            <a href={`/events/${ev.id}/participants`} className="btn-outline">参加者管理</a>
+          )}
           {isMember && isPast && (
             <a href={`/events/${ev.id}/review`} className="btn-outline">相互評価する</a>
           )}
@@ -76,7 +82,19 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
 
       {isOrganizer ? (
         <div className="card p-4 text-sm text-slate-600">
-          あなたが主催する募集です。<a href={`/chat/${ev.id}`} className="text-brand hover:underline">グループチャット</a>で連絡できます。
+          あなたが主催する募集です。<a href={`/chat/${ev.id}`} className="text-brand hover:underline">グループチャット</a>・
+          <a href={`/events/${ev.id}/participants`} className="text-brand hover:underline">参加者管理</a>で運営できます。
+        </div>
+      ) : canCancel ? (
+        <div className="card space-y-2 p-4 text-sm">
+          <p>現在のステータス: <span className="font-medium">{partStatus === "approved" ? "参加承認済み" : "申請中"}</span></p>
+          {partStatus === "approved" && (
+            <a href={`/chat/${ev.id}`} className="text-brand hover:underline">グループチャットを開く</a>
+          )}
+          <form action={cancelAction}>
+            <input type="hidden" name="event_id" value={ev.id} />
+            <button className="btn-outline" type="submit">参加をキャンセル</button>
+          </form>
         </div>
       ) : isApplyable(ev.status) ? (
         <form action={applyToEvent} className="card space-y-3 p-4">
