@@ -3,7 +3,7 @@
 -- カテゴリーは管理画面から追加・変更・並び替え・公開停止が可能。
 -- =============================================================
 
-insert into public.sports (category_type, name, slug, display_order) values
+insert into core.sports (category_type, name, slug, display_order) values
   -- 5.1 スポーツ・レジャー
   ('sports', 'ゴルフ',           'golf',          10),
   ('sports', 'テニス',           'tennis',        20),

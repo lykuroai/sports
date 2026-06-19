@@ -1,0 +1,18 @@
+{
+  "name": "@spotomo/domain-common",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@spotomo/auth-client": "workspace:*",
+    "@spotomo/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@spotomo/config": "workspace:*",
+    "typescript": "^5.7.3"
+  }
+}

@@ -3,13 +3,33 @@
 スポーツ・レジャーを一緒に楽しむ仲間を募集・検索できるWebプラットフォーム。
 募集（仲間集め）と参加を中心に据え、施設検索はその開催場所探しを補助する。
 
-仕様の全文は [`sports_leisure_platform_requirements.md`](./sports_leisure_platform_requirements.md)、
-アーキテクチャ方針は [`CLAUDE.md`](./CLAUDE.md) を参照。
+**共通ユーザ基盤 + 種目別ドメイン分離**のモノレポ構成（pnpm + Turborepo）。
+ひとつのアカウントで複数種目（ゴルフ／ランニング／アウトドア…）を利用できる。
+設計の全体像は [`docs/architecture/`](./docs/architecture/README.md) を参照。
+
+## モノレポ構成
+
+```text
+apps/
+  web/        トップ・種目ハブ (:3000)        account/  共通ユーザ管理 (:3001)
+  golf/       ゴルフ＝種目テンプレ (:3002)     running/  ランニング (:3003)
+  outdoor/    アウトドア (:3004)              facility/ 施設運営者 (:3005)
+  admin/      運営管理 (:3006)
+packages/
+  shared-types  共通型・enum・状態遷移カタログ   auth-client  Supabase/認証クライアント
+  domain-common 通知(notifyUser)・メール          shared-ui    共通UI（ヘッダ等）
+  api-client    ドメインAPIクライアント          config       tsconfig/eslint/tailwind 共有
+```
+
+DB は単一 Supabase をスキーマ分離（`account` / `core` / `facility` / `golf` / `running` / `outdoor`）。
+全種目が共通 `account.users.id` を参照する。詳細は
+[`docs/architecture/database_design.md`](./docs/architecture/database_design.md)。
 
 ## 技術スタック
 
-- **Next.js 16**（App Router / Server Actions）+ TypeScript + React 19
-- **Supabase**（Auth / PostgreSQL / PostGIS / Storage / Realtime）
+- **pnpm workspaces + Turborepo**（モノレポ）
+- **Next.js 16**（App Router / Server Actions）+ TypeScript + React 19（apps ごとに独立）
+- **Supabase**（Auth / PostgreSQL / PostGIS / Storage / Realtime、スキーマ分離）
 - **Tailwind CSS v3**
 
 ## セットアップ
@@ -17,7 +37,9 @@
 ### 1. 依存関係
 
 ```bash
-npm install
+pnpm install          # ルートで実行（全 workspace を解決）
+pnpm dev              # 全 app を並行起動（turbo）。個別は pnpm --filter @spotomo/app-golf dev
+pnpm build            # 全 app をビルド（型チェック込み）
 ```
 
 ### 2. 環境変数
@@ -44,16 +66,21 @@ supabase db push          # supabase/migrations/*.sql を適用
 psql "$DATABASE_URL" -f supabase/seed.sql   # スポーツカテゴリーを投入
 ```
 
-> CLI を使わない場合は、Supabase ダッシュボードの SQL Editor で
-> `0001_init.sql` → `0002_rls.sql` → `0003_reviews.sql` → `0004_admin.sql` →
-> `0005_blocks.sql` → `0006_geo.sql` → `seed.sql` の順に実行する。
+> CLI を使わない場合は、SQL Editor で `0001`〜`0008`（旧 public スキーマの初期構築）→
+> **`0009_schema_split.sql`（旧 public を破棄し account/core/facility を再構築）→
+> `0010_schema_split_rls.sql` → `0011_golf.sql` → `0012_running_outdoor.sql`** →
+> `seed.sql`（core.sports へ投入）の順に実行する。
+>
+> ★ 適用後、**Supabase > Project Settings > API > Exposed schemas** に
+> `account, core, facility, golf, running, outdoor` を追加すること（supabase-js が
+> `.schema()` でこれらを参照するため。usage 自体は migration で grant 済み）。
 
 #### 管理者の付与
 
 管理画面（`/admin`）を使うには、対象ユーザーに admin ロールを付与する。
 
 ```sql
-insert into public.user_roles (user_id, role)
+insert into account.user_roles (user_id, role)
 values ('<auth.users の UUID>', 'admin');
 ```
 
