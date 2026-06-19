@@ -1,0 +1,36 @@
+{
+  "name": "@spotomo/app-facility",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3005",
+    "build": "next build",
+    "start": "next start -p 3005",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@spotomo/api-client": "workspace:*",
+    "@spotomo/auth-client": "workspace:*",
+    "@spotomo/domain-common": "workspace:*",
+    "@spotomo/shared-types": "workspace:*",
+    "@spotomo/shared-ui": "workspace:*",
+    "next": "^16.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "stripe": "^22.2.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@spotomo/config": "workspace:*",
+    "@types/node": "^20.14.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^16.2.9",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  }
+}

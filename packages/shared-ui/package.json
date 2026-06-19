@@ -1,0 +1,26 @@
+{
+  "name": "@spotomo/shared-ui",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./notification-bell": "./src/notification-bell.tsx"
+  },
+  "dependencies": {
+    "@spotomo/auth-client": "workspace:*",
+    "@spotomo/domain-common": "workspace:*",
+    "@spotomo/shared-types": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@spotomo/config": "workspace:*",
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.3"
+  }
+}
