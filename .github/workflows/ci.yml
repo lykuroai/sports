@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint / Typecheck / Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      # next build が TypeScript チェックも兼ねる（全 app）
+      - name: Build (turbo)
+        run: pnpm build
+        env:
+          # ビルド時に参照される公開 env（ダミーで型/ビルドを通す。実値はデプロイ先で設定）
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
+          NEXT_PUBLIC_ACCOUNT_URL: https://account.spotomo-park.jp
+          NEXT_PUBLIC_FACILITY_URL: https://facility.spotomo-park.jp

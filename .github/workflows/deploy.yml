@@ -1,0 +1,45 @@
+name: Deploy (manual)
+
+# 【任意】Vercel CLI で 7 app を明示デプロイするワークフロー。
+# 通常は Vercel の Git 連携で push 時に自動デプロイされる（こちらが推奨）。
+# Git 連携を使わず CI 主導でデプロイしたい場合のみ使用する。
+#
+# 必要な GitHub Secrets:
+#   VERCEL_TOKEN, VERCEL_ORG_ID
+#   VERCEL_PROJECT_ID_WEB / _ACCOUNT / _GOLF / _RUNNING / _OUTDOOR / _FACILITY / _ADMIN
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "デプロイ対象（all または app 名）"
+        default: all
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { app: web,      secret: VERCEL_PROJECT_ID_WEB }
+          - { app: account,  secret: VERCEL_PROJECT_ID_ACCOUNT }
+          - { app: golf,     secret: VERCEL_PROJECT_ID_GOLF }
+          - { app: running,  secret: VERCEL_PROJECT_ID_RUNNING }
+          - { app: outdoor,  secret: VERCEL_PROJECT_ID_OUTDOOR }
+          - { app: facility, secret: VERCEL_PROJECT_ID_FACILITY }
+          - { app: admin,    secret: VERCEL_PROJECT_ID_ADMIN }
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets[matrix.secret] }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: ${{ github.event.inputs.target == 'all' || github.event.inputs.target == matrix.app }}
+        name: Install Vercel CLI
+        run: npm i -g vercel@latest
+      - if: ${{ github.event.inputs.target == 'all' || github.event.inputs.target == matrix.app }}
+        name: Pull / Build / Deploy
+        run: |
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN" --cwd "apps/${{ matrix.app }}"
+          vercel build --prod --token="$VERCEL_TOKEN" --cwd "apps/${{ matrix.app }}"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" --cwd "apps/${{ matrix.app }}"

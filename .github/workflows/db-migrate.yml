@@ -1,0 +1,38 @@
+name: DB Migrate
+
+# main の supabase/migrations 変更時に、ホスティングされた Supabase へ自動適用。
+# 必要な GitHub Secrets:
+#   SUPABASE_ACCESS_TOKEN  … supabase.com のアクセストークン
+#   SUPABASE_PROJECT_REF   … 対象プロジェクトの ref（xxxx.supabase.co の xxxx）
+#   SUPABASE_DB_PASSWORD   … プロジェクトの DB パスワード
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    name: supabase db push
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+
+      - name: Push migrations
+        run: supabase db push
+
+      # ★ 適用後、Supabase ダッシュボードで Exposed schemas に
+      #   account, core, facility, golf, running, outdoor を追加すること
+      #   （config.toml の [api] schemas はローカル専用。ホスティングは Dashboard 設定）。
