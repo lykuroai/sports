@@ -6,7 +6,7 @@ import {
   formatFee,
   type EventStatus,
 } from "@spotomo/shared-types";
-import type { EventCardData } from "../lib/events";
+import type { DecoratedEvent } from "@spotomo/domain-common";
 
 const statusColor: Partial<Record<EventStatus, string>> = {
   open: "bg-emerald-100 text-emerald-700",
@@ -16,14 +16,23 @@ const statusColor: Partial<Record<EventStatus, string>> = {
   finished: "bg-slate-100 text-slate-500",
 };
 
-export function EventCard({ r }: { r: EventCardData }) {
+export interface EventCardProps {
+  event: DecoratedEvent;
+  /** 種目の表示名（例: "ゴルフ"）。 */
+  sportLabel: string;
+  /** 詳細ページのベースパス（既定 "/events"）。 */
+  hrefBase?: string;
+}
+
+/** 全種目共通の募集カード。種目名のバッジだけ差し替える。 */
+export function EventCard({ event: r, sportLabel, hrefBase = "/events" }: EventCardProps) {
   return (
-    <Link href={`/events/${r.id}`} className="card block p-4 transition-shadow hover:shadow-md">
+    <Link href={`${hrefBase}/${r.id}`} className="card block p-4 transition-shadow hover:shadow-md">
       <div className="mb-2 flex items-center gap-2">
         <span className={`badge ${statusColor[r.status] ?? "bg-slate-100 text-slate-600"}`}>
           {EVENT_STATUS_LABEL[r.status]}
         </span>
-        <span className="badge bg-brand/10 text-brand">ゴルフ</span>
+        <span className="badge bg-brand/10 text-brand">{sportLabel}</span>
         {r.beginner_allowed && <span className="badge bg-sky-100 text-sky-700">初心者歓迎</span>}
       </div>
 

@@ -1,8 +1,8 @@
 import { makeEventRepo, isApplyable } from "@spotomo/domain-common";
 import type { DecoratedEvent, EventFilter } from "@spotomo/domain-common";
 
-// golf イベントの取得は共通リポジトリ（domain-common）を schema='golf' で利用。
-const repo = makeEventRepo("golf");
+// ランニング イベントの取得は共通リポジトリ（domain-common）を schema='running' で利用。
+const repo = makeEventRepo("running");
 
 export const fetchEvents = repo.fetchEvents;
 export const fetchEventDetail = repo.fetchEventDetail;

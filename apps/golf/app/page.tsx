@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createServerClient } from "@spotomo/auth-client";
+import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../lib/events";
-import { EventCard } from "../components/event-card";
 
 export default async function GolfHome({
   searchParams,
@@ -38,7 +38,7 @@ export default async function GolfHome({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {events.map((r) => (
-            <EventCard key={r.id} r={r} />
+            <EventCard key={r.id} event={r} sportLabel="ゴルフ" />
           ))}
         </div>
       )}

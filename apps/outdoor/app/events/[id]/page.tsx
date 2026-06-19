@@ -1,0 +1,66 @@
+import { notFound } from "next/navigation";
+import {
+  EVENT_STATUS_LABEL,
+  SKILL_LEVEL_LABEL,
+  formatDateTime,
+  formatFee,
+} from "@spotomo/shared-types";
+import { createServerClient, getUser } from "@spotomo/auth-client";
+import { fetchEventDetail, isApplyable } from "../../../lib/events";
+import { applyToEvent } from "../actions";
+
+export default async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createServerClient();
+  const ev = await fetchEventDetail(supabase, id);
+  if (!ev) notFound();
+
+  const user = await getUser();
+  const isOrganizer = user?.id === ev.organizer_id;
+
+  return (
+    <article className="mx-auto max-w-2xl space-y-6">
+      <header className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="badge bg-brand/10 text-brand">アウトドア</span>
+          <span className="badge bg-slate-100 text-slate-600">{EVENT_STATUS_LABEL[ev.status]}</span>
+        </div>
+        <h1 className="text-2xl font-bold">{ev.title}</h1>
+        {ev.organizer_nickname && (
+          <p className="text-sm text-slate-500">
+            主催: {ev.organizer_nickname}（評価 {(ev.organizer_rating ?? 0).toFixed(1)}）
+          </p>
+        )}
+      </header>
+
+      <dl className="card grid grid-cols-[6rem_1fr] gap-y-3 p-5 text-sm">
+        <dt className="text-slate-400">日時</dt><dd>{formatDateTime(ev.event_start_at)}</dd>
+        <dt className="text-slate-400">場所</dt>
+        <dd>{ev.prefecture}{ev.city}{ev.facility_name ? `・${ev.facility_name}` : "・施設未定"}</dd>
+        <dt className="text-slate-400">参加費</dt><dd>{formatFee(ev.participation_fee)}</dd>
+        <dt className="text-slate-400">定員</dt><dd>{ev.approved_count}/{ev.capacity}人</dd>
+        <dt className="text-slate-400">レベル</dt><dd>{SKILL_LEVEL_LABEL[ev.skill_level]}</dd>
+      </dl>
+
+      {ev.description && <p className="whitespace-pre-wrap text-sm text-slate-700">{ev.description}</p>}
+
+      {isOrganizer ? (
+        <div className="card p-4 text-sm text-slate-600">
+          あなたが主催する募集です。<a href={`/chat/${ev.id}`} className="text-brand hover:underline">グループチャット</a>で連絡できます。
+        </div>
+      ) : isApplyable(ev.status) ? (
+        <form action={applyToEvent} className="card space-y-3 p-4">
+          <input type="hidden" name="event_id" value={ev.id} />
+          <label className="label" htmlFor="msg">参加メッセージ（任意）</label>
+          <textarea id="msg" name="application_message" className="input" rows={3} />
+          <button className="btn-primary" type="submit">この募集に参加申請する</button>
+          <p className="text-xs text-slate-400">
+            連絡先（メール・電話・本名）は主催者にも公開されません。
+          </p>
+        </form>
+      ) : (
+        <p className="text-sm text-slate-500">現在この募集は参加申請を受け付けていません。</p>
+      )}
+    </article>
+  );
+}

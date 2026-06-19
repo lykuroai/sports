@@ -1,48 +1,47 @@
+import Link from "next/link";
 import { createServerClient } from "@spotomo/auth-client";
-import { EVENT_STATUS_LABEL, formatDateTime, formatFee, VISIBLE_EVENT_STATUSES } from "@spotomo/shared-types";
+import { EventCard } from "@spotomo/shared-ui";
+import { fetchEvents } from "../lib/events";
 
-// アウトドア の仲間募集一覧。golf(apps/golf) を雛形に、固有機能は今後拡張。
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; pref?: string; beginner?: string }>;
+}) {
+  const sp = await searchParams;
   const supabase = await createServerClient();
-  const { data } = await supabase
-    .schema("outdoor").from("events")
-    .select("id, title, status, prefecture, city, event_start_at, participation_fee, capacity")
-    .is("deleted_at", null)
-    .in("status", VISIBLE_EVENT_STATUSES)
-    .order("event_start_at", { ascending: true })
-    .limit(30);
-
-  type Row = {
-    id: string; title: string; status: keyof typeof EVENT_STATUS_LABEL;
-    prefecture: string | null; city: string | null; event_start_at: string;
-    participation_fee: number; capacity: number;
-  };
-  const events = (data ?? []) as Row[];
+  const events = await fetchEvents(supabase, {
+    keyword: sp.q,
+    prefecture: sp.pref,
+    beginnerOnly: sp.beginner === "1",
+  });
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">アウトドア の仲間募集</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">アウトドアの仲間募集</h1>
+        <Link href="/events/new" className="btn-primary">募集を作成</Link>
+      </div>
+
+      <form className="card flex flex-wrap gap-2 p-4" action="/">
+        <input name="q" defaultValue={sp.q ?? ""} placeholder="キーワード" className="input max-w-xs" />
+        <input name="pref" defaultValue={sp.pref ?? ""} placeholder="都道府県" className="input max-w-[10rem]" />
+        <label className="flex items-center gap-1 text-sm">
+          <input type="checkbox" name="beginner" value="1" defaultChecked={sp.beginner === "1"} />
+          初心者歓迎のみ
+        </label>
+        <button className="btn-outline" type="submit">検索</button>
+      </form>
+
       {events.length === 0 ? (
-        <p className="text-slate-500">現在募集中の活動はありません。</p>
+        <p className="text-slate-500">条件に合う募集がありません。</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {events.map((r) => (
-            <div key={r.id} className="card p-4">
-              <div className="mb-1 flex gap-2">
-                <span className="badge bg-brand/10 text-brand">アウトドア</span>
-                <span className="badge bg-slate-100 text-slate-600">{EVENT_STATUS_LABEL[r.status]}</span>
-              </div>
-              <h3 className="font-semibold">{r.title}</h3>
-              <p className="mt-1 text-sm text-slate-600">
-                {formatDateTime(r.event_start_at)}・{r.prefecture ?? ""}{r.city ?? ""}・{formatFee(r.participation_fee)}
-              </p>
-            </div>
+            <EventCard key={r.id} event={r} sportLabel="アウトドア" />
           ))}
         </div>
       )}
-      <p className="text-xs text-slate-400">
-        募集作成・参加申請・チャット・アウトドア 固有プロフィールは golf 雛形を複製して実装します。
-      </p>
     </div>
   );
 }

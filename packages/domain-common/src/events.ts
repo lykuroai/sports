@@ -1,0 +1,121 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { SCHEMA } from "@spotomo/auth-client";
+import {
+  APPLYABLE_EVENT_STATUSES,
+  VISIBLE_EVENT_STATUSES,
+  type EventStatus,
+  type SportEventBase,
+} from "@spotomo/shared-types";
+
+// 種目イベントの取得ロジックは全種目で共通（テーブルはスキーマで分かれる）。
+// CLAUDE.md 方針に従い untyped(SupabaseClient) で扱い、行はドメイン型へキャスト。
+type Client = SupabaseClient;
+
+export interface DecoratedEvent extends SportEventBase {
+  organizer_nickname: string | null;
+  organizer_rating: number | null;
+  facility_name: string | null;
+  approved_count: number;
+}
+
+export interface EventFilter {
+  keyword?: string;
+  prefecture?: string;
+  city?: string;
+  beginnerOnly?: boolean;
+  sort?: "soon" | "new" | "fee";
+  limit?: number;
+}
+
+export function isApplyable(status: EventStatus): boolean {
+  return APPLYABLE_EVENT_STATUSES.includes(status);
+}
+
+/**
+ * 種目スキーマ（'golf' | 'running' | 'outdoor' | ...）を渡すと、その種目の
+ * イベント取得リポジトリを返す。種目追加時はスキーマ名を渡すだけで再利用できる。
+ */
+export function makeEventRepo(schema: string) {
+  async function fetchEvents(supabase: Client, filter: EventFilter = {}): Promise<DecoratedEvent[]> {
+    let query = supabase
+      .schema(schema)
+      .from("events")
+      .select("*")
+      .is("deleted_at", null)
+      .in("status", VISIBLE_EVENT_STATUSES);
+
+    if (filter.keyword) {
+      query = query.or(`title.ilike.%${filter.keyword}%,description.ilike.%${filter.keyword}%`);
+    }
+    if (filter.prefecture) query = query.eq("prefecture", filter.prefecture);
+    if (filter.city) query = query.eq("city", filter.city);
+    if (filter.beginnerOnly) query = query.eq("beginner_allowed", true);
+
+    switch (filter.sort) {
+      case "new":
+        query = query.order("created_at", { ascending: false });
+        break;
+      case "fee":
+        query = query.order("participation_fee", { ascending: true });
+        break;
+      default:
+        query = query.order("event_start_at", { ascending: true });
+    }
+    query = query.limit(filter.limit ?? 30);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    const rows = (data ?? []) as unknown as DecoratedEvent[];
+    await decorate(supabase, schema, rows);
+    return rows;
+  }
+
+  async function fetchEventDetail(supabase: Client, id: string): Promise<DecoratedEvent | null> {
+    const { data, error } = await supabase
+      .schema(schema)
+      .from("events")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    const row = data as unknown as DecoratedEvent;
+    await decorate(supabase, schema, [row]);
+    return row;
+  }
+
+  return { fetchEvents, fetchEventDetail };
+}
+
+/** 主催者プロフィール(account)・施設名(facility)・承認済み人数(種目) を付与。 */
+async function decorate(supabase: Client, schema: string, rows: DecoratedEvent[]) {
+  if (rows.length === 0) return;
+  const ids = rows.map((r) => r.id);
+  const organizerIds = [...new Set(rows.map((r) => r.organizer_id))];
+  const facilityIds = [...new Set(rows.map((r) => r.facility_id).filter(Boolean))] as string[];
+
+  const [{ data: parts }, { data: profiles }, { data: facilities }] = await Promise.all([
+    supabase.schema(schema).from("event_participants").select("event_id").in("event_id", ids).eq("status", "approved"),
+    supabase.schema(SCHEMA.account).from("profiles").select("user_id, nickname, rating").in("user_id", organizerIds),
+    facilityIds.length
+      ? supabase.schema(SCHEMA.facility).from("facilities").select("id, name").in("id", facilityIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ]);
+
+  const counts = new Map<string, number>();
+  for (const p of (parts ?? []) as { event_id: string }[]) {
+    counts.set(p.event_id, (counts.get(p.event_id) ?? 0) + 1);
+  }
+  const profMap = new Map(
+    (profiles ?? []).map((p: { user_id: string; nickname: string; rating: number }) => [p.user_id, p]),
+  );
+  const facMap = new Map((facilities ?? []).map((f: { id: string; name: string }) => [f.id, f.name]));
+
+  for (const r of rows) {
+    r.approved_count = counts.get(r.id) ?? 0;
+    const prof = profMap.get(r.organizer_id);
+    r.organizer_nickname = prof?.nickname ?? null;
+    r.organizer_rating = prof?.rating ?? null;
+    r.facility_name = r.facility_id ? (facMap.get(r.facility_id) ?? null) : null;
+  }
+}

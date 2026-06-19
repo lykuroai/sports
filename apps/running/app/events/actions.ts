@@ -6,8 +6,8 @@ import { z } from "zod";
 import { createServerClient } from "@spotomo/auth-client";
 import { applyToSportEvent, createSportEvent } from "@spotomo/domain-common";
 
-const SCHEMA = "golf";
-const SPORT_LABEL = "ゴルフ";
+const SCHEMA = "running";
+const SPORT_LABEL = "ランニング";
 
 const createSchema = z.object({
   title: z.string().min(1, "タイトルを入力してください").max(120),
@@ -19,6 +19,7 @@ const createSchema = z.object({
   participation_fee: z.coerce.number().int().min(0),
   beginner_allowed: z.coerce.boolean().optional(),
   approval_type: z.enum(["approval", "first_come"]),
+  target_pace: z.string().max(120).optional(),
 });
 
 export type CreateState = { error: string | null };
@@ -45,6 +46,7 @@ export async function createEvent(_prev: CreateState, formData: FormData): Promi
     participation_fee: v.participation_fee,
     beginner_allowed: v.beginner_allowed ?? true,
     approval_type: v.approval_type,
+    extra: v.target_pace ? { target_pace: v.target_pace } : undefined,
   });
   if ("error" in result) return { error: result.error };
 
