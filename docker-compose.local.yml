@@ -1,20 +1,20 @@
 # ローカル確認用オーバーライド。本番 docker-compose.yml と併用する:
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 #
-# - Caddy をローカル用 Caddyfile（HTTP のみ・自動HTTPS無効）へ差し替え
-# - NEXT_PUBLIC_* を http://*-spotomo.lykuro.ai に:
+# - Caddy をローカル用 Caddyfile（HTTPS / tls internal）へ差し替え
+# - NEXT_PUBLIC_* を https://*-spotomo.lykuro.ai に:
 #     * build.args … クライアント側へ焼き込み（要 --build で再ビルド）
-#     * environment … サーバ側の実行時値（env_file の https を上書き）
+#     * environment … サーバ側の実行時値（env_file の値を上書き）
 # /etc/hosts で各ドメインを 127.0.0.1 に向けて使う。
 
-# クライアント/サーバ共通の公開値（ローカル http）
+# クライアント/サーバ共通の公開値（ローカル https）
 x-public: &public
   NEXT_PUBLIC_SUPABASE_URL: https://lkdltkkggjmsyodimdoy.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_acZRB7VYWjvTuJHrbe-5mA_NKg7G36i
-  NEXT_PUBLIC_ACCOUNT_URL: http://account-spotomo.lykuro.ai
-  NEXT_PUBLIC_FACILITY_URL: http://facility-spotomo.lykuro.ai
+  NEXT_PUBLIC_ACCOUNT_URL: https://account-spotomo.lykuro.ai
+  NEXT_PUBLIC_FACILITY_URL: https://facility-spotomo.lykuro.ai
   NEXT_PUBLIC_COOKIE_DOMAIN: .lykuro.ai
-  NEXT_PUBLIC_SITE_URL: http://spotomo.lykuro.ai
+  NEXT_PUBLIC_SITE_URL: https://spotomo.lykuro.ai
 
 x-local-app: &local-app
   build:

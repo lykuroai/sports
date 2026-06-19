@@ -1,33 +1,43 @@
-# ローカル確認用 Caddyfile。`http://` 指定で自動HTTPSを無効化し、80番のみで配信
-# （証明書取得・警告なし）。/etc/hosts で各ドメインを 127.0.0.1 に向けて使う。
+# ローカル確認用 Caddyfile（HTTPS / ローカルCA）。
+# `tls internal` で Caddy 内部CAの自己署名証明書を使い、https で配信する
+# （LINE など https 必須のOAuthをローカルで検証するため）。
 # 使い方:
-#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
-# アクセス: http://spotomo.lykuro.ai など（http:// を明示すること）。
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+# アクセス: https://spotomo.lykuro.ai など（ブラウザは証明書警告 → 続行、
+#   または Caddy のルートCAを信頼させる: docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt）。
+# /etc/hosts で各ドメインを 127.0.0.1 に向けて使う。
 
-http://spotomo.lykuro.ai {
+spotomo.lykuro.ai {
+	tls internal
 	reverse_proxy web:3000
 }
 
-http://account-spotomo.lykuro.ai {
+account-spotomo.lykuro.ai {
+	tls internal
 	reverse_proxy account:3000
 }
 
-http://golf-spotomo.lykuro.ai {
+golf-spotomo.lykuro.ai {
+	tls internal
 	reverse_proxy golf:3000
 }
 
-http://running-spotomo.lykuro.ai {
+running-spotomo.lykuro.ai {
+	tls internal
 	reverse_proxy running:3000
 }
 
-http://outdoor-spotomo.lykuro.ai {
+outdoor-spotomo.lykuro.ai {
+	tls internal
 	reverse_proxy outdoor:3000
 }
 
-http://facility-spotomo.lykuro.ai {
+facility-spotomo.lykuro.ai {
+	tls internal
 	reverse_proxy facility:3000
 }
 
-http://admin-spotomo.lykuro.ai {
+admin-spotomo.lykuro.ai {
+	tls internal
 	reverse_proxy admin:3000
 }
