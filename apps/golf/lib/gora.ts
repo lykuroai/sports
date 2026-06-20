@@ -146,16 +146,15 @@ function buildUrl(path: string, params: Record<string, string>, withAffiliate: b
 }
 
 async function callGora(path: string, params: Record<string, string>, revalidate: number): Promise<unknown> {
-  // affiliate 有効時のみ: affiliate + Referer で先に試行（収益リンク）。失敗したら最小構成へ。
+  // 楽天ゲートウェイは登録リファラ必須（affiliate の有無に関わらず）。サーバー fetch は
+  // Referer を自動付与しないため、常に登録URLを Referer として送る。
+  const init = { headers: { Referer: REFERER() }, next: { revalidate } } as const;
+  // affiliate 有効時のみ affiliate 付きで先に試行（収益リンク）。失敗したら affiliate 無しへ。
   if (USE_AFFILIATE()) {
-    const res = await fetch(buildUrl(path, params, true), {
-      headers: { Referer: REFERER() },
-      next: { revalidate },
-    });
-    if (res.ok) return res.json();
+    const r = await fetch(buildUrl(path, params, true), init);
+    if (r.ok) return r.json();
   }
-  // 既定: affiliate なし・Referer なし（= 実証済みで成功する最小構成）。
-  const res = await fetch(buildUrl(path, params, false), { next: { revalidate } });
+  const res = await fetch(buildUrl(path, params, false), init);
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`GORA API ${res.status} ${path} ${body.slice(0, 200)}`);
