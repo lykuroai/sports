@@ -71,7 +71,7 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   redirect("/profile");
 }
 
-async function oauthLogin(provider: "google" | "apple") {
+async function oauthLogin(provider: "google") {
   const supabase = await createServerClient();
   const origin = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "http://localhost:3001";
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -84,10 +84,6 @@ async function oauthLogin(provider: "google" | "apple") {
 
 export async function loginWithGoogle() {
   await oauthLogin("google");
-}
-
-export async function loginWithApple() {
-  await oauthLogin("apple");
 }
 
 export async function logout() {

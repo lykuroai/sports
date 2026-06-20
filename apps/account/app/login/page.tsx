@@ -4,7 +4,7 @@ import { Suspense, useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Turnstile } from "@spotomo/shared-ui";
-import { login, loginWithGoogle, loginWithApple, type AuthState } from "../actions";
+import { login, loginWithGoogle, type AuthState } from "../actions";
 
 const initial: AuthState = { error: null };
 
@@ -46,9 +46,6 @@ function LoginForm() {
       <div className="mt-3 space-y-2">
         <form action={loginWithGoogle}>
           <button type="submit" className="btn-outline w-full">Googleでログイン</button>
-        </form>
-        <form action={loginWithApple}>
-          <button type="submit" className="btn-outline w-full">Appleでログイン</button>
         </form>
         <a href="/auth/line" className="btn-outline block w-full text-center">LINEでログイン</a>
         <Link href="/phone" className="btn-outline block w-full text-center">電話番号でログイン</Link>
