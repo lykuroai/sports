@@ -17,7 +17,7 @@ const ACCESS_KEY = () => process.env.RAKUTEN_ACCESS_KEY ?? "";
 const AFFILIATE_ID = () => process.env.RAKUTEN_AFFILIATE_ID ?? "";
 // 楽天ゲートウェイは登録済みリファラ必須。サーバー fetch は Referer を自動付与しないため明示送出する。
 const REFERER = () =>
-  process.env.RAKUTEN_GORA_REFERER ?? process.env.NEXT_PUBLIC_GOLF_URL ?? "https://golf-spotomo.lykuro.ai";
+  process.env.RAKUTEN_GORA_REFERER ?? process.env.NEXT_PUBLIC_GOLF_URL ?? "https://golf-spotomo.lykuro.ai/";
 // affiliateId を使うと登録リファラ必須になり 403 になりやすい。リファラ登録が確認できるまでは
 // 既定で affiliate 無し（= 実証済みで成功する最小構成）。RAKUTEN_GORA_USE_AFFILIATE=1 で有効化。
 const USE_AFFILIATE = () => process.env.RAKUTEN_GORA_USE_AFFILIATE === "1" && Boolean(AFFILIATE_ID());
@@ -148,14 +148,28 @@ function buildUrl(path: string, params: Record<string, string>, withAffiliate: b
   return url;
 }
 
-// node:https で GET（fetch と違い Referer 禁止ヘッダを確実に送れる）。
+function originOf(referer: string): string {
+  try {
+    return new URL(referer).origin; // scheme+host（末尾スラッシュ/パスなし）
+  } catch {
+    return referer;
+  }
+}
+
+// node:https で GET（fetch と違い Referer/Origin 禁止ヘッダを確実に送れる）。
+// 楽天ゲートウェイは Origin（登録アプリURLのスキーム+ホスト）で検査するため Origin も送る。
 function httpGet(url: URL, referer: string): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
     const req = https.request(
       url,
       {
         method: "GET",
-        headers: { Referer: referer, Accept: "application/json", "User-Agent": "spotomo-golf/1.0" },
+        headers: {
+          Referer: referer,
+          Origin: originOf(referer),
+          Accept: "application/json",
+          "User-Agent": "spotomo-golf/1.0",
+        },
       },
       (res) => {
         let data = "";
