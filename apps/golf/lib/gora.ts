@@ -8,10 +8,13 @@
 // ※ GORA は applicationId に加え accessKey が必須。
 
 const BASE = () =>
-  process.env.RAKUTEN_GORA_API_BASE_URL ?? "https://app.rakuten.co.jp/services/api";
+  process.env.RAKUTEN_GORA_API_BASE_URL ?? "https://openapi.rakuten.co.jp/engine/api";
 const APP_ID = () => process.env.RAKUTEN_APPLICATION_ID ?? "";
 const ACCESS_KEY = () => process.env.RAKUTEN_ACCESS_KEY ?? "";
 const AFFILIATE_ID = () => process.env.RAKUTEN_AFFILIATE_ID ?? "";
+// 楽天ゲートウェイは登録済みリファラ必須。サーバー fetch は Referer を自動付与しないため明示送出する。
+const REFERER = () =>
+  process.env.RAKUTEN_GORA_REFERER ?? process.env.NEXT_PUBLIC_GOLF_URL ?? "https://golf-spotomo.lykuro.ai";
 
 // エンドポイントのバージョンは公式ドキュメントの最新に追従すること（古い版は廃止され得る）。
 const COURSE_SEARCH_PATH = "Gora/GoraGolfCourseSearch/20170623";
@@ -127,7 +130,10 @@ async function callGora(path: string, params: Record<string, string>, revalidate
   if (AFFILIATE_ID()) url.searchParams.set("affiliateId", AFFILIATE_ID());
   for (const [k, v] of Object.entries(params)) if (v) url.searchParams.set(k, v);
 
-  const res = await fetch(url, { next: { revalidate } });
+  const res = await fetch(url, {
+    headers: { Referer: REFERER() },
+    next: { revalidate },
+  });
   if (!res.ok) throw new Error(`GORA API ${res.status}`);
   return res.json();
 }
