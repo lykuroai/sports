@@ -1,11 +1,14 @@
 // 楽天GORA API クライアント（サーバー専用：API ルートとサーバーコンポーネントからのみ import）。
 // - APIキーはサーバー側の環境変数のみ。フロントには公開しない（仕様 §10.2）。
 // - 未設定なら configured=false を返し、API は呼ばない（ローカル/未契約での安全動作）。
-// - 料金・空き枠は変動するため Next の fetch キャッシュで短時間キャッシュ（仕様 §12）。
+// - 楽天ゲートウェイは登録リファラ必須。ただし fetch(undici) は Referer を「禁止ヘッダ」
+//   として黙って落とすため、node:https で明示送出する（fetch では常に REFERRER_MISSING）。
+// - レート制限緩和のためプロセス内 TTL キャッシュを持つ。
 // マッピングは楽天Web Service 公式ドキュメントのレスポンス仕様（formatVersion=2）に準拠:
 //   GoraGolfCourseSearch: https://webservice.rakuten.co.jp/documentation/gora-golf-course-search
 //   GoraPlanSearch:       https://webservice.rakuten.co.jp/documentation/gora-plan-search
 // ※ GORA は applicationId に加え accessKey が必須。
+import https from "node:https";
 
 const BASE = () =>
   process.env.RAKUTEN_GORA_API_BASE_URL ?? "https://openapi.rakuten.co.jp/engine/api";
@@ -145,21 +148,55 @@ function buildUrl(path: string, params: Record<string, string>, withAffiliate: b
   return url;
 }
 
-async function callGora(path: string, params: Record<string, string>, revalidate: number): Promise<unknown> {
-  // 楽天ゲートウェイは登録リファラ必須（affiliate の有無に関わらず）。サーバー fetch は
-  // Referer を自動付与しないため、常に登録URLを Referer として送る。
-  const init = { headers: { Referer: REFERER() }, next: { revalidate } } as const;
+// node:https で GET（fetch と違い Referer 禁止ヘッダを確実に送れる）。
+function httpGet(url: URL, referer: string): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      url,
+      {
+        method: "GET",
+        headers: { Referer: referer, Accept: "application/json", "User-Agent": "spotomo-golf/1.0" },
+      },
+      (res) => {
+        let data = "";
+        res.setEncoding("utf8");
+        res.on("data", (c) => (data += c));
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: data }));
+      },
+    );
+    req.on("error", reject);
+    req.setTimeout(10_000, () => req.destroy(new Error("GORA timeout")));
+    req.end();
+  });
+}
+
+// プロセス内 TTL キャッシュ（料金・空き枠の頻繁な再取得とレート制限を緩和）。
+const cache = new Map<string, { at: number; json: unknown }>();
+
+async function callGora(path: string, params: Record<string, string>, ttlSec: number): Promise<unknown> {
+  const ref = REFERER();
+  const tryOnce = async (withAffiliate: boolean): Promise<{ ok: true; json: unknown } | { ok: false; status: number; body: string }> => {
+    const url = buildUrl(path, params, withAffiliate);
+    const key = url.toString();
+    const hit = cache.get(key);
+    if (hit && Date.now() - hit.at < ttlSec * 1000) return { ok: true, json: hit.json };
+    const res = await httpGet(url, ref);
+    if (res.status >= 200 && res.status < 300) {
+      const json = JSON.parse(res.body);
+      cache.set(key, { at: Date.now(), json });
+      return { ok: true, json };
+    }
+    return { ok: false, status: res.status, body: res.body };
+  };
+
   // affiliate 有効時のみ affiliate 付きで先に試行（収益リンク）。失敗したら affiliate 無しへ。
   if (USE_AFFILIATE()) {
-    const r = await fetch(buildUrl(path, params, true), init);
-    if (r.ok) return r.json();
+    const a = await tryOnce(true);
+    if (a.ok) return a.json;
   }
-  const res = await fetch(buildUrl(path, params, false), init);
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`GORA API ${res.status} ${path} ${body.slice(0, 200)}`);
-  }
-  return res.json();
+  const r = await tryOnce(false);
+  if (r.ok) return r.json;
+  throw new Error(`GORA API ${r.status} ${path} ${r.body.slice(0, 200)}`);
 }
 
 // ---- ゴルフ場検索 ----
