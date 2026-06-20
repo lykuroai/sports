@@ -4,17 +4,27 @@ import { searchCourses, isGoraConfigured } from "../../lib/gora";
 
 export const metadata: Metadata = { title: "ゴルフ場を探す" };
 
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "標準（口コミ多い順）" },
+  { value: "evaluation", label: "総合評価が高い順" },
+  { value: "reservation", label: "予約が多い順" },
+  { value: "50on", label: "50音順" },
+];
+
 // ゴルフ場検索は楽天GORA API（送客モデル）。料金・空き枠は変動し、予約確定は楽天GORA側で行う。
 export default async function GolfCourseSearch({
   searchParams,
 }: {
-  searchParams: Promise<{ keyword?: string; pref?: string }>;
+  searchParams: Promise<{ keyword?: string; pref?: string; sort?: string; date?: string }>;
 }) {
   const sp = await searchParams;
   const hasQuery = Boolean(sp.keyword || sp.pref);
   const result = hasQuery
-    ? await searchCourses({ keyword: sp.keyword, prefecture: sp.pref })
+    ? await searchCourses({ keyword: sp.keyword, prefecture: sp.pref, sort: sp.sort })
     : { configured: isGoraConfigured(), items: [] };
+
+  // プレー日は詳細ページのプラン検索へ引き継ぐ。
+  const detailQuery = sp.date ? `?date=${encodeURIComponent(sp.date)}` : "";
 
   return (
     <div className="space-y-6">
@@ -23,10 +33,28 @@ export default async function GolfCourseSearch({
         <Link href="/" className="btn-outline">仲間募集を探す</Link>
       </div>
 
-      <form className="card flex flex-wrap gap-2 p-4" action="/clubs">
-        <input name="keyword" defaultValue={sp.keyword ?? ""} placeholder="ゴルフ場名・キーワード" className="input max-w-xs" />
-        <input name="pref" defaultValue={sp.pref ?? ""} placeholder="都道府県" className="input max-w-[10rem]" />
-        <button className="btn-outline" type="submit">検索</button>
+      <form className="card space-y-3 p-4" action="/clubs">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="text-sm">
+            <span className="label">キーワード・ゴルフ場名</span>
+            <input name="keyword" defaultValue={sp.keyword ?? ""} placeholder="例: 〇〇カントリークラブ" className="input" />
+          </label>
+          <label className="text-sm">
+            <span className="label">都道府県</span>
+            <input name="pref" defaultValue={sp.pref ?? ""} placeholder="例: 千葉県" className="input" />
+          </label>
+          <label className="text-sm">
+            <span className="label">プレー日</span>
+            <input name="date" type="date" defaultValue={sp.date ?? ""} className="input" />
+          </label>
+          <label className="text-sm">
+            <span className="label">並び替え</span>
+            <select name="sort" defaultValue={sp.sort ?? ""} className="input">
+              {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </label>
+        </div>
+        <button className="btn-primary" type="submit">この条件で検索</button>
       </form>
 
       {!result.configured && (
@@ -39,23 +67,39 @@ export default async function GolfCourseSearch({
           検索中にエラーが発生しました。時間をおいて再度お試しください。
         </p>
       )}
-
       {result.configured && hasQuery && result.items.length === 0 && !result.error && (
         <p className="text-slate-500">条件に合うゴルフ場が見つかりません。</p>
       )}
 
       {result.items.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {result.items.map((c) => (
-            <Link key={c.courseId} href={`/clubs/${c.courseId}`} className="card p-4 hover:shadow">
-              <div className="font-medium">{c.name}</div>
-              <div className="text-sm text-slate-500">
-                {c.prefecture ?? ""}{c.address ?? ""}
-              </div>
-              {c.rating != null && <div className="mt-1 text-sm text-amber-600">★ {c.rating.toFixed(1)}</div>}
-            </Link>
-          ))}
-        </div>
+        <>
+          <p className="text-sm text-slate-500">{result.items.length}件のゴルフ場</p>
+          <ul className="space-y-3">
+            {result.items.map((c) => (
+              <li key={c.courseId}>
+                <Link href={`/clubs/${c.courseId}${detailQuery}`} className="card flex gap-3 overflow-hidden p-0 hover:shadow">
+                  <div className="h-28 w-36 shrink-0 bg-slate-100">
+                    {c.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={c.imageUrl} alt={c.name} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No Image</div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 py-3 pr-3">
+                    <div className="truncate font-medium">{c.name}</div>
+                    <div className="truncate text-sm text-slate-500">{c.prefecture ?? ""}{c.address ?? ""}</div>
+                    {c.highway && <div className="truncate text-xs text-slate-400">{c.highway}</div>}
+                    <div className="mt-1 flex items-center gap-2">
+                      {c.rating != null && <span className="text-sm text-amber-600">★ {c.rating.toFixed(1)}</span>}
+                      <span className="text-sm text-brand">プランを見る →</span>
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <p className="text-xs text-slate-400">

@@ -57,6 +57,7 @@ export interface GoraPlan {
   threeBExtraFee: number | null;
   cancelFeeFlag: boolean | null;
   cancelFeeDescription: string | null;
+  stockCount: number | null;
   reserveUrl: string | null;
   raw: unknown;
 }
@@ -73,6 +74,7 @@ export interface CourseSearchParams {
   areaCode?: string;
   latitude?: string;
   longitude?: string;
+  sort?: string; // rating（既定）/ evaluation / reservation など
   page?: number;
 }
 
@@ -186,6 +188,7 @@ export async function searchCourses(params: CourseSearchParams): Promise<GoraRes
         areaCode: params.areaCode ?? "",
         latitude: params.latitude ?? "",
         longitude: params.longitude ?? "",
+        sort: params.sort ?? "",
         page: params.page ? String(params.page) : "",
       },
       86_400, // ゴルフ場基本情報は1日キャッシュ
@@ -225,6 +228,7 @@ function flattenPlans(json: unknown, fallbackDate: string): GoraPlan[] {
     const cals = asRows(course.calInfo, "cal");
     const firstCal = cals[0];
     const playDate = (firstCal && str(firstCal.playDate)) ?? fallbackDate;
+    const stockCount = firstCal ? num(firstCal.stockCount) : null;
     const reserveUrl =
       (firstCal && (str(firstCal.reservePageUrlPC) ?? str(firstCal.reservePageUrlMobile))) ??
       str(course.reserveCalUrlPC) ??
@@ -254,6 +258,7 @@ function flattenPlans(json: unknown, fallbackDate: string): GoraPlan[] {
         threeBExtraFee: num(p.addFee3b),
         cancelFeeFlag,
         cancelFeeDescription: cancelFeeAmount != null ? `${cancelFeeAmount.toLocaleString()}円` : null,
+        stockCount,
         reserveUrl,
         raw: { course: { golfCourseId: courseId, golfCourseName: courseName }, plan: p },
       });

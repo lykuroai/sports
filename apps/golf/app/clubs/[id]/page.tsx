@@ -47,7 +47,11 @@ export default async function CourseDetail({
         <h1 className="text-2xl font-bold">{course.name}</h1>
         <Link href="/clubs" className="btn-outline">ゴルフ場一覧</Link>
       </div>
-      <p className="text-sm text-slate-500">{course.prefecture ?? ""}{course.address ?? ""}</p>
+      {course.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={course.imageUrl} alt={course.name} className="h-48 w-full rounded-lg object-cover" />
+      )}
+      <p className="text-sm text-slate-500">{course.prefecture ?? ""}{course.address ?? ""}{course.highway ? `・${course.highway}` : ""}</p>
       {course.rating != null && <p className="text-sm text-amber-600">★ {course.rating.toFixed(1)}</p>}
       {course.caption && <p className="whitespace-pre-wrap text-sm text-slate-700">{course.caption}</p>}
       {course.detailUrl && (
@@ -88,7 +92,10 @@ export default async function CourseDetail({
                   {p.price != null && (
                     <div className="shrink-0 text-right">
                       <div className="text-lg font-bold">{p.price.toLocaleString()}円</div>
-                      <div className="text-xs text-slate-400">/ 1名</div>
+                      <div className="text-xs text-slate-400">/ 1名（税込）</div>
+                      {p.stockCount != null && p.stockCount > 0 && (
+                        <div className="text-xs text-emerald-600">残り{p.stockCount}枠</div>
+                      )}
                     </div>
                   )}
                 </div>
