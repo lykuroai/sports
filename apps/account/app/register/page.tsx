@@ -17,9 +17,6 @@ export default function RegisterPage() {
         {state.error && (
           <p className="rounded bg-red-50 p-2 text-sm text-red-700">{state.error}</p>
         )}
-        {state.notice && (
-          <p className="rounded bg-green-50 p-2 text-sm text-green-700">{state.notice}</p>
-        )}
         <div>
           <label className="label" htmlFor="nickname">ニックネーム（公開されます）</label>
           <input id="nickname" name="nickname" type="text" className="input" required maxLength={50} />

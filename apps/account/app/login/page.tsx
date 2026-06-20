@@ -7,12 +7,22 @@ import { login, loginWithGoogle, loginWithApple, type AuthState } from "../actio
 
 const initial: AuthState = { error: null };
 
+const NOTICES: Record<string, string> = {
+  "check-email": "確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。",
+  verified: "メール認証が完了しました。ログインしてください。",
+};
+
 function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initial);
-  const redirectTo = useSearchParams().get("redirect") ?? "";
+  const params = useSearchParams();
+  const redirectTo = params.get("redirect") ?? "";
+  const notice = NOTICES[params.get("notice") ?? ""];
 
   return (
     <>
+      {notice && (
+        <p className="mb-3 rounded bg-green-50 p-2 text-sm text-green-700">{notice}</p>
+      )}
       <form action={formAction} className="card space-y-4 p-6">
         <input type="hidden" name="redirect" value={redirectTo} />
         {state.error && (

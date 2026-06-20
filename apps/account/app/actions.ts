@@ -10,7 +10,7 @@ const credsSchema = z.object({
   password: z.string().min(8, "パスワードは8文字以上で入力してください"),
 });
 
-export type AuthState = { error: string | null; notice?: string | null };
+export type AuthState = { error: string | null };
 
 export async function login(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = credsSchema.safeParse({
@@ -47,18 +47,17 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
     options: {
       data: { nickname: parsed.data.nickname },
       // 確認メールのリンクを PKCE コード交換を行う /auth/callback に通す。
+      // verify=email で「認証後はログイン画面へ」を callback に伝える。
       // 未指定だと Supabase の Site URL（ルート）に戻り、セッションが確立しない。
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: `${origin}/auth/callback?verify=email`,
     },
   });
   if (error) return { error: error.message };
 
-  // メール確認が有効な場合 signUp はセッションを返さない。確認待ちを表示する。
+  // メール確認が有効な場合 signUp はセッションを返さない。
+  // 確認メール送信を知らせるため、ログイン画面へリダイレクトする。
   if (!data.session) {
-    return {
-      error: null,
-      notice: "確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。",
-    };
+    redirect("/login?notice=check-email");
   }
 
   revalidatePath("/", "layout");
