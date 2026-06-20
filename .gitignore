@@ -13,3 +13,6 @@ next-env.d.ts
 *.swp
 .env.production
 docker/data/
+
+# ローカル用の実SSL証明書・秘密鍵（コミット禁止）
+docker/certs/
