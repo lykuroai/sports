@@ -267,6 +267,16 @@ function flattenPlans(json: unknown, fallbackDate: string): GoraPlan[] {
   return out;
 }
 
+/**
+ * 当該コースの最安プラン料金（一覧カードの「〜円」表示用）。コース検索APIは料金を
+ * 返さないため、表示中の上位コースのみプラン検索で取得する想定。失敗時は null。
+ */
+export async function getLowestPrice(courseId: string, playDate?: string): Promise<number | null> {
+  const res = await searchPlans({ courseId, playDate });
+  const prices = res.items.map((p) => p.price).filter((n): n is number => n != null && n > 0);
+  return prices.length ? Math.min(...prices) : null;
+}
+
 export async function searchPlans(params: PlanSearchParams): Promise<GoraResult<GoraPlan>> {
   if (!isGoraConfigured()) return { configured: false, items: [] };
   // playDate は必須。未指定は当日。

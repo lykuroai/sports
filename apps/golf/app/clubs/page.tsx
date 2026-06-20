@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { searchCourses, isGoraConfigured } from "../../lib/gora";
+import { searchCourses, getLowestPrice, isGoraConfigured } from "../../lib/gora";
+
+// 一覧で最安料金を取得する上限件数（API レート制限に配慮）。
+const PRICE_FETCH_LIMIT = 8;
 
 export const metadata: Metadata = { title: "ゴルフ場を探す" };
 
@@ -25,6 +28,11 @@ export default async function GolfCourseSearch({
 
   // プレー日は詳細ページのプラン検索へ引き継ぐ。
   const detailQuery = sp.date ? `?date=${encodeURIComponent(sp.date)}` : "";
+
+  // 上位コースの最安料金（コース検索は料金を返さないためプラン検索で補完）。
+  const priced = result.items.slice(0, PRICE_FETCH_LIMIT);
+  const prices = await Promise.all(priced.map((c) => getLowestPrice(c.courseId, sp.date)));
+  const priceMap = new Map(priced.map((c, i) => [c.courseId, prices[i]]));
 
   return (
     <div className="space-y-6">
@@ -90,9 +98,17 @@ export default async function GolfCourseSearch({
                     <div className="truncate font-medium">{c.name}</div>
                     <div className="truncate text-sm text-slate-500">{c.prefecture ?? ""}{c.address ?? ""}</div>
                     {c.highway && <div className="truncate text-xs text-slate-400">{c.highway}</div>}
-                    <div className="mt-1 flex items-center gap-2">
-                      {c.rating != null && <span className="text-sm text-amber-600">★ {c.rating.toFixed(1)}</span>}
-                      <span className="text-sm text-brand">プランを見る →</span>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {c.rating != null && <span className="text-sm text-amber-600">★ {c.rating.toFixed(1)}</span>}
+                        <span className="text-sm text-brand">プランを見る →</span>
+                      </div>
+                      {priceMap.get(c.courseId) != null && (
+                        <div className="text-right leading-tight">
+                          <span className="text-base font-bold">{priceMap.get(c.courseId)!.toLocaleString()}円</span>
+                          <span className="text-xs text-slate-400">〜</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>
