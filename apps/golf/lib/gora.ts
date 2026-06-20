@@ -191,7 +191,9 @@ export async function searchCourses(params: CourseSearchParams): Promise<GoraRes
     const json = await callGora(
       COURSE_SEARCH_PATH,
       {
-        keyword: params.keyword ?? "",
+        // GORA は keyword / areaCode / 緯度経度 のいずれか必須。都道府県のみ指定時は
+        // 都道府県名を keyword として送る（結果は下の prefecture で住所絞り込みも行う）。
+        keyword: params.keyword || params.prefecture || "",
         areaCode: params.areaCode ?? "",
         latitude: params.latitude ?? "",
         longitude: params.longitude ?? "",

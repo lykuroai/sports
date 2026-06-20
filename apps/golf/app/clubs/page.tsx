@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { searchCourses, getLowestPrice, isGoraConfigured } from "../../lib/gora";
 import { CourseImage } from "./course-image";
+import { REGIONS } from "../../lib/areas";
 
 // 一覧で最安料金を取得する上限件数（API レート制限に配慮）。
 const PRICE_FETCH_LIMIT = 8;
@@ -50,7 +51,14 @@ export default async function GolfCourseSearch({
           </label>
           <label className="text-sm">
             <span className="label">都道府県</span>
-            <input name="pref" defaultValue={sp.pref ?? ""} placeholder="例: 千葉県" className="input" />
+            <select name="pref" defaultValue={sp.pref ?? ""} className="input">
+              <option value="">指定なし</option>
+              {REGIONS.map((r) => (
+                <optgroup key={r.name} label={r.name}>
+                  {r.prefectures.map((p) => <option key={p} value={p}>{p}</option>)}
+                </optgroup>
+              ))}
+            </select>
           </label>
           <label className="text-sm">
             <span className="label">プレー日</span>
@@ -65,6 +73,28 @@ export default async function GolfCourseSearch({
         </div>
         <button className="btn-primary" type="submit">この条件で検索</button>
       </form>
+
+      {!hasQuery && (
+        <section className="space-y-4">
+          <h2 className="font-semibold">エリアから探す</h2>
+          {REGIONS.map((r) => (
+            <div key={r.name} className="card p-4">
+              <div className="mb-2 text-sm font-medium text-slate-600">{r.name}</div>
+              <div className="flex flex-wrap gap-2">
+                {r.prefectures.map((p) => (
+                  <Link
+                    key={p}
+                    href={`/clubs?pref=${encodeURIComponent(p)}`}
+                    className="rounded-full border border-slate-300 px-3 py-1 text-sm hover:border-brand hover:text-brand"
+                  >
+                    {p}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
 
       {!result.configured && (
         <p className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
