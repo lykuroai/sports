@@ -7,6 +7,9 @@
     "tsconfig.nextjs.json",
     "tailwind.base.ts",
     "postcss.config.mjs",
-    "eslintrc.json"
-  ]
+    "eslint.base.mjs"
+  ],
+  "dependencies": {
+    "eslint-config-next": "^16.2.9"
+  }
 }
