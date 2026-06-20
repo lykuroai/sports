@@ -121,19 +121,27 @@ function prefFromAddress(address: string | null): string | null {
   return m ? m[1] : null;
 }
 
-async function callGora(path: string, params: Record<string, string>, revalidate: number): Promise<unknown> {
+function buildUrl(path: string, params: Record<string, string>, withAffiliate: boolean): URL {
   const url = new URL(`${BASE()}/${path}`);
   url.searchParams.set("applicationId", APP_ID());
   url.searchParams.set("accessKey", ACCESS_KEY());
   url.searchParams.set("format", "json");
   url.searchParams.set("formatVersion", "2");
-  if (AFFILIATE_ID()) url.searchParams.set("affiliateId", AFFILIATE_ID());
+  if (withAffiliate && AFFILIATE_ID()) url.searchParams.set("affiliateId", AFFILIATE_ID());
   for (const [k, v] of Object.entries(params)) if (v) url.searchParams.set(k, v);
+  return url;
+}
 
-  const res = await fetch(url, {
-    headers: { Referer: REFERER() },
-    next: { revalidate },
-  });
+async function callGora(path: string, params: Record<string, string>, revalidate: number): Promise<unknown> {
+  // 楽天ゲートウェイは affiliateId 利用時に「アプリ登録 URL」（リファラ）必須。
+  // 登録 URL から送るために Referer を明示付与する。
+  const init = { headers: { Referer: REFERER() }, next: { revalidate } } as const;
+  let res = await fetch(buildUrl(path, params, true), init);
+  // affiliate 付きで 403（リファラ不一致等）の場合、affiliate 無しで再試行し検索を止めない。
+  // （送客の affiliate 付与は GORA が返す予約URL側で別途対応可能。）
+  if (res.status === 403 && AFFILIATE_ID()) {
+    res = await fetch(buildUrl(path, params, false), init);
+  }
   if (!res.ok) throw new Error(`GORA API ${res.status}`);
   return res.json();
 }
