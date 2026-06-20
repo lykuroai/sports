@@ -25,6 +25,12 @@ SUPABASE_SERVICE_ROLE_KEY=${SVC}
 NEXT_PUBLIC_ACCOUNT_URL=http://localhost:3001
 NEXT_PUBLIC_FACILITY_URL=http://localhost:3005
 EMAIL_FROM=no-reply@example.com
+# 楽天GORA API（ゴルフ場検索・プラン検索。サーバー側のみで使用しフロントに公開しない）。
+# 未設定なら golf アプリのゴルフ場検索は「未設定」と表示され API は呼ばれない。
+RAKUTEN_APPLICATION_ID=${RAKUTEN_APPLICATION_ID:-}
+RAKUTEN_ACCESS_KEY=${RAKUTEN_ACCESS_KEY:-}
+RAKUTEN_AFFILIATE_ID=${RAKUTEN_AFFILIATE_ID:-}
+RAKUTEN_GORA_API_BASE_URL=${RAKUTEN_GORA_API_BASE_URL:-https://app.rakuten.co.jp/services/api}
 EOF
 done
 echo "apps/*/.env.local を生成しました（API: ${API_URL}）"

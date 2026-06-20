@@ -2,18 +2,28 @@ import { notFound } from "next/navigation";
 import {
   EVENT_STATUS_LABEL,
   SKILL_LEVEL_LABEL,
+  GOLF_RESERVATION_STATUS_LABEL,
   formatDateTime,
   formatFee,
 } from "@spotomo/shared-types";
+import type { EventGolfDetails, GolfCourse, GolfPlan, GolfReservationStatus } from "@spotomo/shared-types";
 import { createServerClient, getUser } from "@spotomo/auth-client";
 import { isFavorited, isFollowing } from "@spotomo/domain-common";
 import { fetchEventDetail, isApplyable } from "../../../lib/events";
-import { applyToEvent } from "../actions";
+import { applyToEvent, updateReservationStatus } from "../actions";
 import { FavoriteButton } from "../favorite-button";
 import { FollowButton } from "../follow-button";
 import { cancelAction } from "./participants/actions";
 
 const SCHEMA = "golf";
+
+const STATUS_OPTIONS: GolfReservationStatus[] = [
+  "planning",
+  "reserved_external",
+  "changed_external",
+  "cancelled_external",
+  "unknown",
+];
 
 export default async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,6 +33,25 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
 
   const user = await getUser();
   const isOrganizer = user?.id === ev.organizer_id;
+
+  // 楽天GORA 連携情報（紐づくゴルフ場・プラン・予約状態）。
+  const { data: detailRow } = await supabase
+    .schema(SCHEMA).from("event_golf_details").select("*").eq("event_id", ev.id).maybeSingle();
+  const golfDetails = (detailRow as EventGolfDetails | null) ?? null;
+  let golfPlan: GolfPlan | null = null;
+  let golfCourse: GolfCourse | null = null;
+  if (golfDetails) {
+    const [{ data: planRow }, { data: courseRow }] = await Promise.all([
+      golfDetails.golf_plan_id
+        ? supabase.schema(SCHEMA).from("golf_plans").select("*").eq("id", golfDetails.golf_plan_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      golfDetails.golf_course_id
+        ? supabase.schema(SCHEMA).from("golf_courses").select("*").eq("id", golfDetails.golf_course_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    golfPlan = (planRow as GolfPlan | null) ?? null;
+    golfCourse = (courseRow as GolfCourse | null) ?? null;
+  }
   const isPast = ev.status === "finished" || new Date(ev.event_start_at) < new Date();
 
   let fav = false;
@@ -79,6 +108,83 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
       </dl>
 
       {ev.description && <p className="whitespace-pre-wrap text-sm text-slate-700">{ev.description}</p>}
+
+      {golfDetails && (golfCourse || golfPlan) && (
+        <section className="card space-y-3 p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-semibold">ゴルフ場・プラン（楽天GORA）</h2>
+            <span className="badge bg-slate-100 text-slate-600">
+              {GOLF_RESERVATION_STATUS_LABEL[golfDetails.reservation_status]}
+            </span>
+          </div>
+
+          <dl className="grid grid-cols-[6rem_1fr] gap-y-2 text-sm">
+            {golfCourse && (
+              <>
+                <dt className="text-slate-400">ゴルフ場</dt>
+                <dd>{golfCourse.golf_course_name}</dd>
+                {(golfCourse.prefecture || golfCourse.address) && (
+                  <>
+                    <dt className="text-slate-400">住所</dt>
+                    <dd>{golfCourse.prefecture ?? ""}{golfCourse.address ?? ""}</dd>
+                  </>
+                )}
+              </>
+            )}
+            {golfPlan && (
+              <>
+                <dt className="text-slate-400">プラン</dt>
+                <dd>{golfPlan.plan_name ?? "—"}</dd>
+                <dt className="text-slate-400">プレー日</dt>
+                <dd>{golfPlan.play_date ?? "—"}{golfPlan.start_time_zone ? `・${golfPlan.start_time_zone}` : ""}</dd>
+                {golfPlan.price != null && (
+                  <>
+                    <dt className="text-slate-400">料金</dt>
+                    <dd>{golfPlan.price.toLocaleString()}円 / 1名</dd>
+                  </>
+                )}
+              </>
+            )}
+          </dl>
+
+          {golfDetails.external_reservation_note && (
+            <p className="whitespace-pre-wrap rounded bg-slate-50 p-2 text-sm text-slate-600">
+              {golfDetails.external_reservation_note}
+            </p>
+          )}
+
+          {golfPlan?.reserve_url && (
+            <a href={golfPlan.reserve_url} target="_blank" rel="noopener noreferrer" className="btn-primary inline-block">
+              楽天GORAで予約する ↗
+            </a>
+          )}
+
+          {isOrganizer && (
+            <form action={updateReservationStatus} className="space-y-2 border-t pt-3">
+              <input type="hidden" name="event_id" value={ev.id} />
+              <p className="text-sm font-medium">予約状態を更新（楽天GORAで予約後に反映）</p>
+              <select name="reservation_status" className="input max-w-[16rem]" defaultValue={golfDetails.reservation_status}>
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{GOLF_RESERVATION_STATUS_LABEL[s]}</option>
+                ))}
+              </select>
+              <textarea
+                name="external_reservation_note"
+                className="input"
+                rows={2}
+                placeholder="予約メモ（予約番号・集合時間など）"
+                defaultValue={golfDetails.external_reservation_note ?? ""}
+              />
+              <button className="btn-outline" type="submit">予約状態を更新</button>
+            </form>
+          )}
+
+          <p className="text-xs text-slate-400">
+            ゴルフ場・プラン情報は楽天GORAから取得しています。料金・空き枠は変更される場合があります。
+            予約確定は楽天GORAの予約ページで行ってください。キャンセル規定は楽天GORAおよびゴルフ場の条件に従います。
+          </p>
+        </section>
+      )}
 
       {isOrganizer ? (
         <div className="card p-4 text-sm text-slate-600">

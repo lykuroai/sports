@@ -18,9 +18,12 @@ export default async function GolfHome({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">ゴルフの仲間募集</h1>
-        <Link href="/events/new" className="btn-primary">募集を作成</Link>
+        <div className="flex gap-2">
+          <Link href="/clubs" className="btn-outline">ゴルフ場を探す</Link>
+          <Link href="/events/new" className="btn-primary">募集を作成</Link>
+        </div>
       </div>
 
       <form className="card flex flex-wrap gap-2 p-4" action="/">

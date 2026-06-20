@@ -67,6 +67,19 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
 - ブロックの双方向判定は RLS で他者の行が読めないため RPC `is_blocked_between(a,b)`
   （`0005_blocks.sql`）を使う。現在地周辺検索は RPC `nearby_facilities(lat,lng,radius_m,lim)`
   （`0006_geo.sql`、PostGIS `ST_DWithin`/`ST_Distance`）。地図タイル描画は未実装。
+- ゴルフ場予約は **楽天GORA API 連携（送客モデル）**。仕様は
+  `rakuten_gora_reservation_spec.md`。本システム内で予約・決済は **行わず**、楽天GORAの
+  予約ページへ送客し、主催者が予約後に予約状態を **手動更新** する。実装は golf 種目のみ。
+  - DB: `0020_golf_gora.sql`。`golf.golf_courses`（GORA ゴルフ場の永続記録、facilities と任意リンク）、
+    `golf.golf_plans`（募集に紐づくプラン・スナップショット＋`reserve_url`/`raw_response`）、
+    `golf.event_golf_details`（`golf.events` とゴルフ予約情報の関連＋`reservation_status`）。
+  - 楽天API は **サーバー側のみ**（`apps/golf/lib/gora.ts`）。キーは `RAKUTEN_APPLICATION_ID`
+    等（フロントに公開しない）。未設定時は検索結果を空＋通知でフォールバック。API ルートは
+    `apps/golf/app/api/golf/courses`（検索/詳細）・`/api/golf/plans`（プラン検索）。
+  - 導線: `/clubs`（ゴルフ場検索＝GORA）→ `/clubs/[courseId]`（詳細＋プラン一覧）→
+    「このプランで募集する」→ `/events/new`（GORA 情報を引き継ぎ作成）。募集詳細で
+    予約ページリンクと予約状態の手動更新（主催者）を表示。表示には楽天GORA出典・料金/空き枠
+    変動・予約は楽天側で確定する旨を明示（仕様 §14、楽天Web Service 利用規約 §15）。
 
 ## このプロジェクトの概要
 

@@ -1,70 +1,39 @@
-"use client";
+import NewEventForm, { type GoraPrefill } from "./new-event-form";
 
-import { useActionState } from "react";
-import { APPROVAL_TYPE_LABEL, MVP_APPROVAL_TYPES } from "@spotomo/shared-types";
-import { createEvent, type CreateState } from "../actions";
+// /clubs（楽天GORA）からの「このプランで募集する」遷移時は、クエリのGORA情報を引き継ぐ。
+export default async function NewEventPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const get = (k: string): string | undefined => {
+    const v = sp[k];
+    return Array.isArray(v) ? v[0] : v;
+  };
 
-const initial: CreateState = { error: null };
+  const courseId = get("gora_course_id");
+  const planId = get("gora_plan_id");
+  const gora: GoraPrefill | null =
+    courseId && planId
+      ? {
+          course_id: courseId,
+          course_name: get("gora_course_name") ?? "",
+          prefecture: get("gora_prefecture"),
+          address: get("gora_address"),
+          course_url: get("gora_course_url"),
+          plan_id: planId,
+          plan_name: get("gora_plan_name") ?? "",
+          price: get("gora_price"),
+          play_date: get("gora_play_date"),
+          start_time: get("gora_start_time"),
+          lunch: get("gora_lunch"),
+          caddie: get("gora_caddie"),
+          cart: get("gora_cart"),
+          two_sum: get("gora_two_sum"),
+          reserve_url: get("gora_reserve_url"),
+        }
+      : null;
 
-export default function NewEventPage() {
-  const [state, formAction, pending] = useActionState(createEvent, initial);
-
-  return (
-    <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-2xl font-bold">ゴルフの募集を作成</h1>
-
-      <form action={formAction} className="card space-y-4 p-6">
-        {state.error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{state.error}</p>}
-
-        <div>
-          <label className="label" htmlFor="title">タイトル</label>
-          <input id="title" name="title" className="input" required maxLength={120} />
-        </div>
-        <div>
-          <label className="label" htmlFor="description">説明</label>
-          <textarea id="description" name="description" className="input" rows={4} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label" htmlFor="prefecture">都道府県</label>
-            <input id="prefecture" name="prefecture" className="input" />
-          </div>
-          <div>
-            <label className="label" htmlFor="city">市区町村</label>
-            <input id="city" name="city" className="input" />
-          </div>
-        </div>
-        <div>
-          <label className="label" htmlFor="event_start_at">開催日時</label>
-          <input id="event_start_at" name="event_start_at" type="datetime-local" className="input" required />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label" htmlFor="capacity">定員</label>
-            <input id="capacity" name="capacity" type="number" min={1} defaultValue={4} className="input" required />
-          </div>
-          <div>
-            <label className="label" htmlFor="participation_fee">参加費（円）</label>
-            <input id="participation_fee" name="participation_fee" type="number" min={0} defaultValue={0} className="input" required />
-          </div>
-        </div>
-        <div>
-          <label className="label" htmlFor="approval_type">参加方式</label>
-          <select id="approval_type" name="approval_type" className="input">
-            {MVP_APPROVAL_TYPES.map((t) => (
-              <option key={t} value={t}>{APPROVAL_TYPE_LABEL[t]}</option>
-            ))}
-          </select>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="beginner_allowed" value="true" defaultChecked />
-          初心者歓迎
-        </label>
-
-        <button className="btn-primary w-full" type="submit" disabled={pending}>
-          {pending ? "作成中..." : "募集を作成する"}
-        </button>
-      </form>
-    </div>
-  );
+  return <NewEventForm gora={gora} />;
 }
