@@ -15,6 +15,9 @@ const AFFILIATE_ID = () => process.env.RAKUTEN_AFFILIATE_ID ?? "";
 // 楽天ゲートウェイは登録済みリファラ必須。サーバー fetch は Referer を自動付与しないため明示送出する。
 const REFERER = () =>
   process.env.RAKUTEN_GORA_REFERER ?? process.env.NEXT_PUBLIC_GOLF_URL ?? "https://golf-spotomo.lykuro.ai";
+// affiliateId を使うと登録リファラ必須になり 403 になりやすい。リファラ登録が確認できるまでは
+// 既定で affiliate 無し（= 実証済みで成功する最小構成）。RAKUTEN_GORA_USE_AFFILIATE=1 で有効化。
+const USE_AFFILIATE = () => process.env.RAKUTEN_GORA_USE_AFFILIATE === "1" && Boolean(AFFILIATE_ID());
 
 // エンドポイントのバージョンは公式ドキュメントの最新に追従すること（古い版は廃止され得る）。
 const COURSE_SEARCH_PATH = "Gora/GoraGolfCourseSearch/20170623";
@@ -143,16 +146,20 @@ function buildUrl(path: string, params: Record<string, string>, withAffiliate: b
 }
 
 async function callGora(path: string, params: Record<string, string>, revalidate: number): Promise<unknown> {
-  // 楽天ゲートウェイは affiliateId 利用時に「アプリ登録 URL」（リファラ）必須。
-  // 登録 URL から送るために Referer を明示付与する。
-  const init = { headers: { Referer: REFERER() }, next: { revalidate } } as const;
-  let res = await fetch(buildUrl(path, params, true), init);
-  // affiliate 付きで 403（リファラ不一致等）の場合、affiliate 無しで再試行し検索を止めない。
-  // （送客の affiliate 付与は GORA が返す予約URL側で別途対応可能。）
-  if (res.status === 403 && AFFILIATE_ID()) {
-    res = await fetch(buildUrl(path, params, false), init);
+  // affiliate 有効時のみ: affiliate + Referer で先に試行（収益リンク）。失敗したら最小構成へ。
+  if (USE_AFFILIATE()) {
+    const res = await fetch(buildUrl(path, params, true), {
+      headers: { Referer: REFERER() },
+      next: { revalidate },
+    });
+    if (res.ok) return res.json();
   }
-  if (!res.ok) throw new Error(`GORA API ${res.status}`);
+  // 既定: affiliate なし・Referer なし（= 実証済みで成功する最小構成）。
+  const res = await fetch(buildUrl(path, params, false), { next: { revalidate } });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`GORA API ${res.status} ${path} ${body.slice(0, 200)}`);
+  }
   return res.json();
 }
 
@@ -201,6 +208,7 @@ export async function searchCourses(params: CourseSearchParams): Promise<GoraRes
     }
     return { configured: true, items };
   } catch (e) {
+    console.error("[gora] searchCourses failed:", e instanceof Error ? e.message : e);
     return { configured: true, items: [], error: e instanceof Error ? e.message : "GORA API error" };
   }
 }
@@ -299,6 +307,7 @@ export async function searchPlans(params: PlanSearchParams): Promise<GoraResult<
     );
     return { configured: true, items: flattenPlans(json, playDate) };
   } catch (e) {
+    console.error("[gora] searchPlans failed:", e instanceof Error ? e.message : e);
     return { configured: true, items: [], error: e instanceof Error ? e.message : "GORA API error" };
   }
 }
