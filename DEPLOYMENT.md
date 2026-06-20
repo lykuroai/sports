@@ -104,6 +104,7 @@ docker compose up -d --build                  # = make docker-up
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_VERIFY_SERVICE_SID`（携帯認証 OTP） | account |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | facility |
 | `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` | account |
+| `RAKUTEN_APPLICATION_ID` / `RAKUTEN_ACCESS_KEY` / `RAKUTEN_AFFILIATE_ID`（任意） / `RAKUTEN_GORA_API_BASE_URL` / `RAKUTEN_GORA_REFERER`（楽天に登録した URL。API は登録リファラ必須） | golf |
 
 > 単一 `env_file` で全コンテナに渡す簡易構成。`SUPABASE_SERVICE_ROLE_KEY` を web から
 > 厳密に分離したい場合は、compose の `environment:` で per-service に切り替える。
