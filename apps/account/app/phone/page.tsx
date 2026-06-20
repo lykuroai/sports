@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { Turnstile } from "@spotomo/shared-ui";
 import { requestOtp, verifyOtp, type PhoneState } from "./actions";
 
 const reqInitial: PhoneState = { step: "request", phone: "", error: null };
@@ -25,6 +26,7 @@ export default function PhoneLoginPage() {
             <input id="phone" name="phone" type="tel" className="input" required placeholder="090-1234-5678" autoComplete="tel" />
             <p className="mt-1 text-xs text-slate-400">SMS で認証コードを送信します。</p>
           </div>
+          <Turnstile />
           <button type="submit" className="btn-primary w-full" disabled={reqPending}>
             {reqPending ? "送信中..." : "認証コードを送信"}
           </button>

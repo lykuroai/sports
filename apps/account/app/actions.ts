@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerClient } from "@spotomo/auth-client";
+import { verifyTurnstile } from "@spotomo/domain-common";
 
 const credsSchema = z.object({
   email: z.string().email("メールアドレスの形式が正しくありません"),
@@ -18,6 +19,9 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
     password: formData.get("password"),
   });
   if (!parsed.success) return { error: parsed.error.errors[0].message };
+
+  const captcha = await verifyTurnstile(formData.get("cf-turnstile-response") as string | null);
+  if (!captcha) return { error: "認証（CAPTCHA）に失敗しました。もう一度お試しください。" };
 
   const supabase = await createServerClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
@@ -38,6 +42,9 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
     nickname: formData.get("nickname"),
   });
   if (!parsed.success) return { error: parsed.error.errors[0].message };
+
+  const captcha = await verifyTurnstile(formData.get("cf-turnstile-response") as string | null);
+  if (!captcha) return { error: "認証（CAPTCHA）に失敗しました。もう一度お試しください。" };
 
   const supabase = await createServerClient();
   const origin = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "http://localhost:3001";

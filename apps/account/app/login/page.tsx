@@ -3,6 +3,7 @@
 import { Suspense, useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Turnstile } from "@spotomo/shared-ui";
 import { login, loginWithGoogle, loginWithApple, type AuthState } from "../actions";
 
 const initial: AuthState = { error: null };
@@ -36,6 +37,7 @@ function LoginForm() {
           <label className="label" htmlFor="password">パスワード</label>
           <input id="password" name="password" type="password" className="input" required autoComplete="current-password" />
         </div>
+        <Turnstile />
         <button type="submit" className="btn-primary w-full" disabled={pending}>
           {pending ? "ログイン中..." : "ログイン"}
         </button>

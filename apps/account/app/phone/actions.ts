@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerClient, createAdminClient, SCHEMA } from "@spotomo/auth-client";
-import { sendVerification, checkVerification } from "@spotomo/domain-common";
+import { sendVerification, checkVerification, verifyTurnstile } from "@spotomo/domain-common";
 
 export type PhoneState = { step: "request" | "verify"; phone: string; error: string | null };
 
@@ -22,6 +22,12 @@ function toE164(raw: string): string {
 export async function requestOtp(_prev: PhoneState, formData: FormData): Promise<PhoneState> {
   const parsed = phoneSchema.safeParse(formData.get("phone"));
   if (!parsed.success) return { step: "request", phone: "", error: parsed.error.errors[0].message };
+
+  // SMS は Twilio 課金が発生するため、送信前に CAPTCHA を検証してボット/トールフラウドを弾く。
+  const captcha = await verifyTurnstile(formData.get("cf-turnstile-response") as string | null);
+  if (!captcha) {
+    return { step: "request", phone: "", error: "認証（CAPTCHA）に失敗しました。もう一度お試しください。" };
+  }
 
   const phone = toE164(parsed.data);
   try {

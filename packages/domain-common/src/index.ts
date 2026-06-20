@@ -1,5 +1,6 @@
 export { sendEmail } from "./email";
 export { sendVerification, checkVerification } from "./sms";
+export { verifyTurnstile } from "./captcha";
 export { notifyUser } from "./notify";
 export { makeEventRepo, isApplyable } from "./events";
 export type { DecoratedEvent, EventFilter } from "./events";

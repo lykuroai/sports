@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { Turnstile } from "@spotomo/shared-ui";
 import { register, loginWithGoogle, type AuthState } from "../actions";
 
 const initial: AuthState = { error: null };
@@ -32,6 +33,7 @@ export default function RegisterPage() {
         <p className="text-xs text-slate-500">
           本名・生年月日・電話番号・メールアドレスは他の利用者に公開されません。
         </p>
+        <Turnstile />
         <button type="submit" className="btn-primary w-full" disabled={pending}>
           {pending ? "登録中..." : "登録する"}
         </button>
