@@ -102,9 +102,11 @@ export default async function GolfCourseSearch({
         </p>
       )}
       {result.error && (
-        <p className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          検索中にエラーが発生しました。時間をおいて再度お試しください。
-        </p>
+        <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+          <p>検索中にエラーが発生しました。時間をおいて再度お試しください。</p>
+          {/* 原因特定用の詳細（楽天GORAの応答ステータス・本文）。 */}
+          <p className="mt-1 break-all font-mono text-xs text-red-500">詳細: {result.error}</p>
+        </div>
       )}
       {result.configured && hasQuery && result.items.length === 0 && !result.error && (
         <p className="text-slate-500">条件に合うゴルフ場が見つかりません。</p>
