@@ -48,7 +48,7 @@ export default function PhoneLoginPage() {
         <Link href="/login" className="text-brand hover:underline">他の方法でログイン</Link>
       </p>
       <p className="text-center text-xs text-slate-400">
-        ※ SMS 認証には Supabase で SMS プロバイダ（Twilio 等）の設定が必要です。
+        ※ 認証コードは Twilio Verify から SMS で送信されます。
       </p>
     </div>
   );

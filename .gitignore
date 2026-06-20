@@ -7,3 +7,12 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Vercel
+.vercel
+*.swp
+.env.production
+docker/data/
+
+# ローカル用の実SSL証明書・秘密鍵（コミット禁止）
+docker/certs/

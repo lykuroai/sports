@@ -6,7 +6,7 @@ export const SUPABASE_ANON_KEY = () => process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 export const ACCOUNT_URL = () => process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
 
 /**
- * サブドメイン間でセッション Cookie を共有するためのドメイン（本番: ".spotomo-park.jp"）。
+ * サブドメイン間でセッション Cookie を共有するためのドメイン（本番: ".lykuro.ai"）。
  * 未設定（ローカル開発の単一オリジン）なら host-only Cookie のまま。
  */
 export const COOKIE_DOMAIN = () => process.env.NEXT_PUBLIC_COOKIE_DOMAIN;

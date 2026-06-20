@@ -28,7 +28,7 @@
 | コード構成 | **最初から `apps/*` 物理分割モノレポ**（`web` / `account` / `golf` / `running` / `outdoor` / `facility` / `admin`）|
 | DB | **1 Supabase・PostgreSQL スキーマ分離**（`account` / `core` / `facility` / `golf` / `running` / `outdoor`）|
 | 認証 | Supabase Auth 1本・共通 `user_id`（変更なし）|
-| ドメイン | サブドメインごとに独立デプロイ（`golf.spotomo-park.jp` 等）|
+| ドメイン | サブドメインごとに独立デプロイ（`golf-spotomo.lykuro.ai` 等）|
 | 既存データ | **実データ無し（クリーンスタート）** → 移行スクリプト不要。既存 `public` スキーマは破棄して再構築可 |
 | `services/*-api` | 当面作らず、各 app の Next.js Route Handlers / Server Actions に内包。切り出しが要るドメインのみ後で昇格 |
 
@@ -68,7 +68,7 @@
 
 ```text
                          ┌──────────────────────────────┐
-                         │  spotomo-park.jp（web/トップ） │
+                         │  spotomo.lykuro.ai（web/トップ） │
                          └───────────────┬──────────────┘
                                          │
           ┌───────────────┬─────────────┼──────────────┬───────────────┐

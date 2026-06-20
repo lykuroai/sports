@@ -91,11 +91,11 @@ POST   /api/blocks
 ドメイン（サブドメイン）ごとに画面を分割。共通ヘッダ/フッタ/種目スイッチャは `packages/shared-ui`。
 
 ```text
-spotomo-park.jp（web）
+spotomo.lykuro.ai（web）
   /                     トップ（種目選択ハブ）→ 各種目サブドメインへ誘導
   /about /terms /privacy
 
-account.spotomo-park.jp（共通ユーザ管理）
+account-spotomo.lykuro.ai（共通ユーザ管理）
   /login /signup        ログイン・会員登録（全種目共通）
   /profile              共通プロフィール編集（nickname/area/自己紹介）
   /verification         本人確認
@@ -104,7 +104,7 @@ account.spotomo-park.jp（共通ユーザ管理）
   /withdraw             退会
   ※ ログイン成功 → 共通 user_id 発行 → 直前の種目サブドメインへ戻す
 
-golf.spotomo-park.jp（ゴルフ。running/outdoor も同型）
+golf-spotomo.lykuro.ai（ゴルフ。running/outdoor も同型）
   /                     ゴルフ・トップ（募集一覧/検索）
   /events               募集検索（地域・日時・スキル）
   /events/new          募集作成
@@ -114,12 +114,12 @@ golf.spotomo-park.jp（ゴルフ。running/outdoor も同型）
   /profile              ゴルフ用プロフィール（ハンディキャップ等）
   /mypage               参加履歴・スコア・お気に入り（種目内）
 
-facility.spotomo-park.jp（施設運営者）
+facility-spotomo.lykuro.ai（施設運営者）
   /                     管理する施設一覧
   /facilities/[id]/edit
   /facilities/submit    登録/修正申請（一般利用者導線もここへ）
 
-admin.spotomo-park.jp（運営管理）
+admin-spotomo.lykuro.ai（運営管理）
   /                     ダッシュボード
   /users /reports /facilities/submissions /sports /facilities/import
   ※ 多要素認証必須（仕様§11.1）
@@ -129,7 +129,7 @@ admin.spotomo-park.jp（運営管理）
 
 ```text
 任意の種目サブドメインで「ログインが必要な操作」
-   ↓ 未ログインなら account.spotomo-park.jp/login へ（return_to 付き）
+   ↓ 未ログインなら account-spotomo.lykuro.ai/login へ（return_to 付き）
 ログイン（メール/Google）
    ↓ 共通 user_id を持つセッション発行（Supabase Auth・サブドメイン間でCookie共有）
 return_to の種目サブドメインへ復帰
@@ -137,7 +137,7 @@ return_to の種目サブドメインへ復帰
 種目機能を利用
 ```
 
-> サブドメイン間セッション共有は、Cookie ドメインを `.spotomo-park.jp` に設定して実現
+> サブドメイン間セッション共有は、Cookie ドメインを `.lykuro.ai` に設定して実現
 > （段階1のパスベース運用なら単一ドメインで自然に共有）。
 
 ### 2.2 既存画面の振り分け

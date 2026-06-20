@@ -19,15 +19,15 @@ MVPを止めないため**段階1はモジュラモノリス**から入る。境
 ## 2. 最終形（段階2）ディレクトリ
 
 ```text
-spotomo-park/
+spotomo/
   apps/
-    web/                 # spotomo-park.jp トップ・種目ハブ
-    account/             # account.spotomo-park.jp 共通ユーザ管理（唯一の認証UI）
-    golf/                # golf.spotomo-park.jp
-    running/             # running.spotomo-park.jp
-    outdoor/             # outdoor.spotomo-park.jp
-    facility/            # facility.spotomo-park.jp 施設運営者向け
-    admin/               # admin.spotomo-park.jp 運営管理
+    web/                 # spotomo.lykuro.ai トップ・種目ハブ
+    account/             # account-spotomo.lykuro.ai 共通ユーザ管理（唯一の認証UI）
+    golf/                # golf-spotomo.lykuro.ai
+    running/             # running-spotomo.lykuro.ai
+    outdoor/             # outdoor-spotomo.lykuro.ai
+    facility/            # facility-spotomo.lykuro.ai 施設運営者向け
+    admin/               # admin-spotomo.lykuro.ai 運営管理
   packages/
     shared-ui/           # 共通UI（ヘッダ/種目スイッチャ/フォーム部品）
     shared-types/        # 共通型・Supabase生成型・enum/状態遷移カタログ
@@ -71,7 +71,7 @@ apps 同士       → 相互依存禁止（共有は必ず packages 経由）
 物理的に1 Next.js のまま、**ルートグループ**でドメインを切り、`packages/` だけ先に作る。
 
 ```text
-spotomo-park/
+spotomo/
   app/
     (web)/               # トップ
     (account)/           # login, signup, profile, billing, verification, withdraw
@@ -84,7 +84,7 @@ spotomo-park/
   supabase/migrations/   # 0009_schema_split.sql でスキーマ分離
 ```
 
-サブドメイン（`golf.spotomo-park.jp` 等）は、段階1では Vercel の rewrites か
+サブドメイン（`golf-spotomo.lykuro.ai` 等）は、段階1では Vercel の rewrites か
 ホスト名→ルートグループのマッピングで対応し、段階2で `apps/*` の独立デプロイに移行する。
 
 ### 3.1 段階1 → 段階2 の移行が機械的になる理由

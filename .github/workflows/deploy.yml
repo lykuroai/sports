@@ -1,0 +1,38 @@
+name: Deploy (self-host)
+
+# 自前サーバ / EC2 へ SSH してデプロイ（git pull → docker compose up -d --build）。
+# サーバ側に事前準備が必要:
+#   - リポジトリを clone 済み（DEPLOY_PATH）
+#   - .env.production を配置済み
+#   - Docker / docker compose 導入済み、Caddyfile をドメインに合わせ編集済み
+#
+# 必要な GitHub Secrets:
+#   DEPLOY_HOST     … サーバの公開IP/ホスト名
+#   DEPLOY_USER     … SSH ユーザ（例: ubuntu / ec2-user）
+#   DEPLOY_SSH_KEY  … 秘密鍵（対応する公開鍵をサーバに登録）
+#   DEPLOY_PATH     … サーバ上のリポジトリパス（例: /opt/spotomo）
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            git pull --ff-only
+            docker compose up -d --build
+            docker image prune -f

@@ -130,4 +130,3 @@ create policy facility_subscriptions_owner_select on public.facility_subscriptio
 -- 6.4 stripe_events: ポリシー無し（サービスロール専用。is_admin の読みは許可）。
 create policy stripe_events_admin_select on public.stripe_events
   for select using (public.is_admin());
-</content>

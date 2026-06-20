@@ -5,7 +5,7 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL, cookieOptions } from "./env";
 /**
  * サーバーコンポーネント／Server Actions／Route Handlers 用クライアント。
  * Cookie を介してセッションを共有する（@supabase/ssr）。サブドメイン間で
- * Cookie を共有するため、本番では Cookie ドメインを `.spotomo-park.jp` に設定する。
+ * Cookie を共有するため、本番では Cookie ドメインを `.lykuro.ai` に設定する。
  */
 export async function createClient() {
   const cookieStore = await cookies();

@@ -1,0 +1,49 @@
+# サブドメイン → 各 app コンテナへリバースプロキシ。
+# 本番・開発とも同一構成。TLS は docker/certs のワイルドカード実証明書
+# （*.lykuro.ai, 公的CA発行）を使う。ACME 自動取得はしない。
+#   - fullchain.pem        … 証明書チェーン
+#   - privkey.nopass.pem   … 復号済み秘密鍵（Caddy は暗号化鍵を読めないため
+#                            key_pass.txt のパスフレーズで openssl pkey 復号したもの）
+#
+# DNS: 各サブドメインを当サーバ（本番）/ 127.0.0.1（開発機の /etc/hosts）へ向ける。
+# 証明書が無い環境で動かす場合は各ブロックの `import realtls` を `tls internal` に
+# 戻せば Caddy 内部CAの自己署名で動作する。
+
+(realtls) {
+	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.nopass.pem
+}
+
+spotomo.lykuro.ai {
+	import realtls
+	reverse_proxy web:3000
+}
+
+account-spotomo.lykuro.ai {
+	import realtls
+	reverse_proxy account:3000
+}
+
+golf-spotomo.lykuro.ai {
+	import realtls
+	reverse_proxy golf:3000
+}
+
+running-spotomo.lykuro.ai {
+	import realtls
+	reverse_proxy running:3000
+}
+
+outdoor-spotomo.lykuro.ai {
+	import realtls
+	reverse_proxy outdoor:3000
+}
+
+facility-spotomo.lykuro.ai {
+	import realtls
+	reverse_proxy facility:3000
+}
+
+admin-spotomo.lykuro.ai {
+	import realtls
+	reverse_proxy admin:3000
+}

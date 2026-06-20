@@ -24,14 +24,14 @@
 以下のような構成を前提にしてください。
 
 ```text
-spotomo-park.jp              トップページ
-account.spotomo-park.jp      共通ユーザ管理
-app.spotomo-park.jp          共通アプリ入口
-golf.spotomo-park.jp         ゴルフ
-running.spotomo-park.jp      ランニング
-outdoor.spotomo-park.jp      登山・キャンプ・アウトドア
-facility.spotomo-park.jp     施設管理者向け
-admin.spotomo-park.jp        運営管理画面
+spotomo.lykuro.ai              トップページ
+account-spotomo.lykuro.ai      共通ユーザ管理
+app-spotomo.lykuro.ai          共通アプリ入口
+golf-spotomo.lykuro.ai         ゴルフ
+running-spotomo.lykuro.ai      ランニング
+outdoor-spotomo.lykuro.ai      登山・キャンプ・アウトドア
+facility-spotomo.lykuro.ai     施設管理者向け
+admin-spotomo.lykuro.ai        運営管理画面
 ```
 
 将来的に種目を追加しやすいように、種目別機能は疎結合にしてください。
@@ -45,7 +45,7 @@ admin.spotomo-park.jp        運営管理画面
 想定構成例：
 
 ```text
-spotomo-park/
+spotomo/
   apps/
     web/                 # トップページ・共通入口
     account/             # 共通ユーザ管理
