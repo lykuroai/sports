@@ -18,7 +18,7 @@ const REFERER = () =>
 
 // エンドポイントのバージョンは公式ドキュメントの最新に追従すること（古い版は廃止され得る）。
 const COURSE_SEARCH_PATH = "Gora/GoraGolfCourseSearch/20170623";
-const PLAN_SEARCH_PATH = "Gora/GoraPlanSearch/20170915";
+const PLAN_SEARCH_PATH = "Gora/GoraPlanSearch/20170623";
 
 // GORA は applicationId と accessKey の双方が必須。
 export function isGoraConfigured(): boolean {
@@ -99,19 +99,27 @@ const flag = (v: unknown): boolean | null => {
   return n == null ? null : n >= 1;
 };
 
-/** formatVersion=2 では配列要素は素のオブジェクト。旧形式（{Item:{...}} 等）にも対応。 */
+/**
+ * formatVersion=2 では配列要素は素のオブジェクト。formatVersion=1 は { item: {...} } 等の
+ * 単一キーラッパで包まれる。公式のキーは小文字（item/plan/cal）だが大文字にも防御的に対応。
+ */
 function asRows(v: unknown, wrapKey?: string): Row[] {
   if (!Array.isArray(v)) return [];
+  const cap = wrapKey ? wrapKey.charAt(0).toUpperCase() + wrapKey.slice(1) : "";
   return v.map((el) => {
     const o = el as Row;
-    if (wrapKey && o[wrapKey] && typeof o[wrapKey] === "object") return o[wrapKey] as Row;
-    // v1 互換: 単一キーラッパ（{ Item: {...} } / { plan: {...} } / { cal: {...} }）。
+    if (wrapKey) {
+      const w = o[wrapKey] ?? o[cap];
+      if (w && typeof w === "object") return w as Row;
+    }
     return o;
   });
 }
 
+/** ルート配列は公式仕様では小文字 items（旧実装の Items 大文字にもフォールバック）。 */
 function topItems(json: unknown): Row[] {
-  return asRows((json as { Items?: unknown })?.Items, "Item");
+  const root = json as { items?: unknown; Items?: unknown };
+  return asRows(root?.items ?? root?.Items, "item");
 }
 
 /** 住所の先頭から都道府県を推定（コース検索は prefecture を返さないため）。 */
