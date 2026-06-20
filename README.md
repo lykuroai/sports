@@ -114,6 +114,41 @@ outdoor :3004 / facility :3005 / admin :3006。
 | `pnpm typecheck` | 型チェック |
 | `pnpm db:types` | Supabase から型生成（`supabase link` 後、`packages/shared-types/src/database.generated.ts` へ） |
 
+## Docker 起動
+
+7 app + Caddy（リバースプロキシ／自動HTTPS）を `docker-compose.yml`（本番想定）と
+`docker-compose.local.yml`（ローカル用オーバーライド）で起動する。Makefile に
+ショートカットあり。
+
+### ローカル
+
+`tls internal`（`docker/certs` の `*.lykuro.ai` 実証明書）で HTTPS 起動。
+`NEXT_PUBLIC_*` は `https://*-spotomo.lykuro.ai` を焼き込む（クライアント値のため要 `--build`）。
+事前に `/etc/hosts` で各ドメインを `127.0.0.1` に向ける。
+
+```bash
+make docker-up-local
+# = docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+### 本番（自前サーバ / EC2）
+
+`.env.production` を用意し、各サブドメインの DNS をサーバへ向け、`docker/Caddyfile` を
+編集（Caddy が Let's Encrypt で自動 HTTPS）。Supabase は別途。
+
+```bash
+cp .env.production.example .env.production   # 値を設定
+make docker-up                               # = docker compose up -d --build
+```
+
+### 共通
+
+```bash
+make docker-down            # 停止（docker compose down）
+make docker-logs            # 全ログ追従
+make docker-logs s=golf     # 個別サービスのログ
+```
+
 ## 実装済み機能
 
 **共通基盤（account）**: メール／Google ログイン・会員登録・ログアウト、共通プロフィール、
