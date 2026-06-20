@@ -5,10 +5,7 @@ SHELL := /usr/bin/env bash
 
 SUPABASE := npx --yes supabase@latest
 
-.PHONY: help install db-start db-stop db-reset env-local seed-dev up down dev build lint typecheck types check clean docker-build docker-up docker-up-local docker-down docker-logs
-
-# ローカル https 確認用の compose オーバーレイ（Caddy=tls internal / NEXT_PUBLIC_*）
-COMPOSE_LOCAL := -f docker-compose.yml -f docker-compose.local.yml
+.PHONY: help install db-start db-stop db-reset env-local seed-dev up down dev build lint typecheck types check clean docker-build docker-up docker-down docker-logs
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -62,11 +59,8 @@ clean: ## ビルド成果物を削除
 docker-build: ## 全 app の本番イメージをビルド（docker compose）
 	docker compose build
 
-docker-up: ## コンテナ起動（7 app + Caddy）。要 .env.production
+docker-up: ## コンテナ起動（7 app + Caddy）。本番・開発共通。要 .env.production + docker/certs
 	docker compose up -d --build
-
-docker-up-local: ## ローカルhttps起動（tls internal / *-spotomo.lykuro.ai）。要 /etc/hosts
-	docker compose $(COMPOSE_LOCAL) up -d --build
 
 docker-down: ## コンテナ停止
 	docker compose down

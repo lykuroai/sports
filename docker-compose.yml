@@ -1,48 +1,81 @@
-# 自前サーバ / EC2 向け。7 app + Caddy リバースプロキシ（自動HTTPS）。
+# 自前サーバ / EC2 / 開発機 共通。7 app + Caddy リバースプロキシ。
+# 本番・開発とも同一構成（ローカル専用オーバーライドは廃止）。
 # 使い方:
-#   cp .env.production.example .env.production   # 値を設定
+#   cp .env.production.example .env.production   # シークレット等を設定
 #   docker compose up -d --build
 #
-# DNS: 各サブドメインを当サーバへ向け、Caddyfile を編集すること。
+# DNS: 各サブドメインを当サーバ（本番）/ 127.0.0.1（開発機の /etc/hosts）へ向ける。
+# TLS: Caddy が docker/certs のワイルドカード実証明書（*.lykuro.ai）で配信。
 # Supabase は別途（ホスティング or セルフホスト）。
+
+# クライアント/サーバ共通の公開値。
+#   * build.args  … NEXT_PUBLIC_* をクライアントバンドルへ焼き込み（要 --build）
+#   * environment … サーバ側の実行時値（env_file の値を上書きし齟齬を防ぐ）
+x-public: &public
+  NEXT_PUBLIC_SUPABASE_URL: https://lkdltkkggjmsyodimdoy.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_acZRB7VYWjvTuJHrbe-5mA_NKg7G36i
+  NEXT_PUBLIC_SITE_URL: https://spotomo.lykuro.ai
+  NEXT_PUBLIC_ACCOUNT_URL: https://account-spotomo.lykuro.ai
+  NEXT_PUBLIC_FACILITY_URL: https://facility-spotomo.lykuro.ai
+  NEXT_PUBLIC_COOKIE_DOMAIN: .lykuro.ai
 
 x-app-common: &app-common
   env_file: .env.production
   restart: unless-stopped
-  build:
-    context: .
-    dockerfile: docker/Dockerfile
+  environment:
+    <<: *public
   expose:
     - "3000"
 
 services:
   web:
     <<: *app-common
-    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: web } }
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { APP: web, <<: *public }
 
   account:
     <<: *app-common
-    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: account } }
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { APP: account, <<: *public }
 
   golf:
     <<: *app-common
-    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: golf } }
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { APP: golf, <<: *public }
 
   running:
     <<: *app-common
-    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: running } }
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { APP: running, <<: *public }
 
   outdoor:
     <<: *app-common
-    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: outdoor } }
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { APP: outdoor, <<: *public }
 
   facility:
     <<: *app-common
-    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: facility } }
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { APP: facility, <<: *public }
 
   admin:
     <<: *app-common
-    build: { context: ., dockerfile: docker/Dockerfile, args: { APP: admin } }
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { APP: admin, <<: *public }
 
   caddy:
     image: caddy:2-alpine
@@ -52,6 +85,7 @@ services:
       - "443:443"
     volumes:
       - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

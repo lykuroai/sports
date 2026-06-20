@@ -116,38 +116,26 @@ outdoor :3004 / facility :3005 / admin :3006。
 
 ## Docker 起動
 
-7 app + Caddy（リバースプロキシ／自動HTTPS）を `docker-compose.yml`（本番想定）と
-`docker-compose.local.yml`（ローカル用オーバーライド）で起動する。Makefile に
-ショートカットあり。
+7 app + Caddy（リバースプロキシ）を `docker-compose.yml` で起動する。**本番・開発とも
+同一構成**で、Caddy が `docker/certs` のワイルドカード実証明書（`*.lykuro.ai`、公的CA発行）
+で HTTPS 配信する（ACME 自動取得はしない）。Makefile にショートカットあり。
 
-### ローカル
-
-`tls internal`（`docker/certs` の `*.lykuro.ai` 実証明書）で HTTPS 起動。
-`NEXT_PUBLIC_*` は `https://*-spotomo.lykuro.ai` を焼き込む（クライアント値のため要 `--build`）。
-事前に `/etc/hosts` で各ドメインを `127.0.0.1` に向ける。
-
-```bash
-make docker-up-local
-# = docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
-```
-
-### 本番（自前サーバ / EC2）
-
-`.env.production` を用意し、各サブドメインの DNS をサーバへ向け、`docker/Caddyfile` を
-編集（Caddy が Let's Encrypt で自動 HTTPS）。Supabase は別途。
+事前準備:
+- `cp .env.production.example .env.production` … シークレット等を設定（`NEXT_PUBLIC_*` は
+  `docker-compose.yml` 側にも焼き込み値あり）。
+- `docker/certs/` に `fullchain.pem` と復号済み `privkey.nopass.pem` を配置（gitignore 済み）。
+- DNS: 各サブドメイン（`spotomo` / `account-spotomo` / `golf-spotomo` / `running-spotomo` /
+  `outdoor-spotomo` / `facility-spotomo` / `admin-spotomo` `.lykuro.ai`）を、本番はサーバへ、
+  開発機は `/etc/hosts` で `127.0.0.1` へ向ける。
 
 ```bash
-cp .env.production.example .env.production   # 値を設定
-make docker-up                               # = docker compose up -d --build
-```
-
-### 共通
-
-```bash
+make docker-up              # = docker compose up -d --build（本番・開発共通）
 make docker-down            # 停止（docker compose down）
 make docker-logs            # 全ログ追従
 make docker-logs s=golf     # 個別サービスのログ
 ```
+
+開発機で UI を素早く回す場合は Docker ではなく `pnpm dev`（localhost:3000–3006）を使う。
 
 ## 実装済み機能
 
