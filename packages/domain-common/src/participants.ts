@@ -46,6 +46,67 @@ export async function fetchParticipants(
   }));
 }
 
+export interface EventMember {
+  user_id: string;
+  nickname: string | null;
+  rating: number | null;
+  role: "organizer" | "participant";
+}
+
+/**
+ * イベントのメンバー一覧（発起者＋承認済み参加者）。承認済みメンバー同士で
+ * 相互公開する用途。返すのは公開情報（ニックネーム・評価）のみで、連絡先は含めない。
+ * RLS により非メンバーは承認済み参加者行を読めないため、結果は発起者のみに縮退する。
+ */
+export async function fetchEventMembers(
+  supabase: Client,
+  schema: string,
+  eventId: string,
+): Promise<EventMember[]> {
+  const { data: ev } = await supabase
+    .schema(schema)
+    .from("events")
+    .select("organizer_id")
+    .eq("id", eventId)
+    .maybeSingle();
+  const organizerId = (ev as { organizer_id: string } | null)?.organizer_id ?? null;
+
+  const { data: parts } = await supabase
+    .schema(schema)
+    .from("event_participants")
+    .select("user_id, approved_at")
+    .eq("event_id", eventId)
+    .eq("status", "approved")
+    .order("approved_at", { ascending: true });
+  const participantIds = ((parts ?? []) as { user_id: string }[])
+    .map((p) => p.user_id)
+    .filter((uid) => uid !== organizerId);
+
+  const ids = [...new Set([organizerId, ...participantIds].filter(Boolean) as string[])];
+  if (ids.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .schema(SCHEMA.account)
+    .from("profiles")
+    .select("user_id, nickname, rating")
+    .in("user_id", ids);
+  const map = new Map(
+    (profiles ?? []).map((p: { user_id: string; nickname: string; rating: number }) => [p.user_id, p]),
+  );
+
+  const member = (uid: string, role: EventMember["role"]): EventMember => ({
+    user_id: uid,
+    nickname: map.get(uid)?.nickname ?? null,
+    rating: map.get(uid)?.rating ?? null,
+    role,
+  });
+
+  const members: EventMember[] = [];
+  if (organizerId) members.push(member(organizerId, "organizer"));
+  for (const uid of participantIds) members.push(member(uid, "participant"));
+  return members;
+}
+
 /**
  * 参加承認。ステータス更新は主催者セッション（RLS）で、チャット参加と通知は
  * サービスロールで行う（chat_room_members には INSERT 用 RLS が無いため）。

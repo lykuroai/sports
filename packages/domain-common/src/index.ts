@@ -19,8 +19,13 @@ export { fetchReviewTargets, submitReview } from "./reviews";
 export type { ReviewTarget } from "./reviews";
 export {
   fetchParticipants,
+  fetchEventMembers,
   approveParticipant,
   rejectParticipant,
   cancelParticipation,
 } from "./participants";
-export type { ParticipantRow } from "./participants";
+export type { ParticipantRow, EventMember } from "./participants";
+export { fetchPublicProfile, isBlockedBetween } from "./profiles";
+export type { PublicProfile } from "./profiles";
+export { fetchPublishedSports, fetchUserSports, syncUserSports } from "./sports";
+export type { SportOption, UserSportRow } from "./sports";

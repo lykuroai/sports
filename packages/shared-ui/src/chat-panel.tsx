@@ -19,13 +19,22 @@ export interface ChatPanelProps {
   initialMessages: ChatMessageView[];
   /** 送信用 Server Action（呼び出し側でメンバー検証）。 */
   sendAction: (text: string) => Promise<{ error: string | null }>;
+  /** 送信者ID→表示名のマップ（公開ニックネーム）。発言者名の表示に使う。 */
+  memberNames?: Record<string, string>;
 }
 
 /**
  * グループチャット。初期メッセージをサーバから受け取り、Realtime で新着を購読する。
  * 送信は Server Action（RLS で承認済みメンバーのみ insert 可）。
  */
-export function ChatPanel({ schema, roomId, userId, initialMessages, sendAction }: ChatPanelProps) {
+export function ChatPanel({
+  schema,
+  roomId,
+  userId,
+  initialMessages,
+  sendAction,
+  memberNames,
+}: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessageView[]>(initialMessages);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -72,12 +81,19 @@ export function ChatPanel({ schema, roomId, userId, initialMessages, sendAction 
         {messages.length === 0 ? (
           <p className="text-sm text-slate-400">まだメッセージはありません。</p>
         ) : (
-          messages.map((m) => (
-            <div key={m.id} className={`text-sm ${m.sender_id === userId ? "text-right" : ""}`}>
-              <span className="text-xs text-slate-400">{formatDateTime(m.created_at)}</span>
-              <p className={m.sender_id === userId ? "text-brand-dark" : ""}>{m.message}</p>
-            </div>
-          ))
+          messages.map((m) => {
+            const mine = m.sender_id === userId;
+            const name = mine
+              ? "あなた"
+              : (m.sender_id && memberNames?.[m.sender_id]) || "退出したメンバー";
+            return (
+              <div key={m.id} className={`text-sm ${mine ? "text-right" : ""}`}>
+                <span className="text-xs font-medium text-slate-500">{name}</span>
+                <span className="ml-2 text-xs text-slate-400">{formatDateTime(m.created_at)}</span>
+                <p className={mine ? "text-brand-dark" : ""}>{m.message}</p>
+              </div>
+            );
+          })
         )}
         <div ref={bottomRef} />
       </div>

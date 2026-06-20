@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@spotomo/auth-client";
 import { notifyUser } from "./notify";
 
 type Client = SupabaseClient;
@@ -36,14 +37,17 @@ export async function createSportEvent(
     .single();
   if (error) return { error: error.message };
 
-  const { data: room } = await supabase
+  // chat_rooms / chat_room_members には INSERT 用 RLS が無いため、ルーム作成と
+  // 主催者のメンバー登録はサービスロールで行う（approveParticipant と同じ方針）。
+  const admin = createAdminClient();
+  const { data: room } = await admin
     .schema(schema)
     .from("chat_rooms")
     .insert({ event_id: data.id })
     .select("id")
     .single();
   if (room) {
-    await supabase
+    await admin
       .schema(schema)
       .from("chat_room_members")
       .insert({ chat_room_id: room.id, user_id: input.organizer_id, role: "organizer" });
