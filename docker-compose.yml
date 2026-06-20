@@ -18,6 +18,7 @@ x-public: &public
   NEXT_PUBLIC_ACCOUNT_URL: https://account-spotomo.lykuro.ai
   NEXT_PUBLIC_FACILITY_URL: https://facility-spotomo.lykuro.ai
   NEXT_PUBLIC_COOKIE_DOMAIN: .lykuro.ai
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: 0x4AAAAAADoFYwWljS9AE7a0
 
 x-app-common: &app-common
   env_file: .env.production
