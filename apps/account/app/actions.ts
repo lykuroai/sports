@@ -10,7 +10,7 @@ const credsSchema = z.object({
   password: z.string().min(8, "パスワードは8文字以上で入力してください"),
 });
 
-export type AuthState = { error: string | null };
+export type AuthState = { error: string | null; notice?: string | null };
 
 export async function login(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = credsSchema.safeParse({
@@ -40,12 +40,26 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   if (!parsed.success) return { error: parsed.error.errors[0].message };
 
   const supabase = await createServerClient();
-  const { error } = await supabase.auth.signUp({
+  const origin = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "http://localhost:3001";
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { nickname: parsed.data.nickname } },
+    options: {
+      data: { nickname: parsed.data.nickname },
+      // 確認メールのリンクを PKCE コード交換を行う /auth/callback に通す。
+      // 未指定だと Supabase の Site URL（ルート）に戻り、セッションが確立しない。
+      emailRedirectTo: `${origin}/auth/callback`,
+    },
   });
   if (error) return { error: error.message };
+
+  // メール確認が有効な場合 signUp はセッションを返さない。確認待ちを表示する。
+  if (!data.session) {
+    return {
+      error: null,
+      notice: "確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。",
+    };
+  }
 
   revalidatePath("/", "layout");
   redirect("/profile");
