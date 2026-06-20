@@ -19,7 +19,7 @@ MVPを止めないため**段階1はモジュラモノリス**から入る。境
 ## 2. 最終形（段階2）ディレクトリ
 
 ```text
-spotomo-park/
+spotomo/
   apps/
     web/                 # spotomo.lykuro.ai トップ・種目ハブ
     account/             # account-spotomo.lykuro.ai 共通ユーザ管理（唯一の認証UI）
@@ -71,7 +71,7 @@ apps 同士       → 相互依存禁止（共有は必ず packages 経由）
 物理的に1 Next.js のまま、**ルートグループ**でドメインを切り、`packages/` だけ先に作る。
 
 ```text
-spotomo-park/
+spotomo/
   app/
     (web)/               # トップ
     (account)/           # login, signup, profile, billing, verification, withdraw
