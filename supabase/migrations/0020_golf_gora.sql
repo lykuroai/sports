@@ -11,7 +11,7 @@
 -- 9.1 golf_courses : 楽天GORA ゴルフ場の永続記録（facilities と任意リンク）
 -- -------------------------------------------------------------
 create table golf.golf_courses (
-  id                     uuid primary key default uuid_generate_v4(),
+  id                     uuid primary key default gen_random_uuid(),
   facility_id            uuid references facility.facilities (id) on delete set null,
   rakuten_gora_course_id text not null unique,
   golf_course_name       text not null,
@@ -32,7 +32,7 @@ create table golf.golf_courses (
 --     料金・空き枠は変動するため、募集作成時点の値を保持し reserve_url で送客する。
 -- -------------------------------------------------------------
 create table golf.golf_plans (
-  id                     uuid primary key default uuid_generate_v4(),
+  id                     uuid primary key default gen_random_uuid(),
   event_id               uuid references golf.events (id) on delete cascade,
   rakuten_gora_course_id text,
   rakuten_gora_plan_id   text,
