@@ -43,11 +43,15 @@ async function bridgeSupabaseSession(phone: string): Promise<boolean> {
   const admin = createAdminClient();
   const password = randomBytes(24).toString("base64url"); // 使い捨て（ログイン毎に上書き）
 
+  // GoTrue は auth.users.phone を先頭 + 無しの E.164 で保存し、0015 トリガーが
+  // その値を account.users へコピーする。検索もこの形式（+ 無し）に揃える。
+  const phoneDigits = phone.replace(/^\+/, "");
+
   const { data: existing } = await admin
     .schema(SCHEMA.account)
     .from("users")
     .select("id")
-    .eq("phone", phone)
+    .eq("phone", phoneDigits)
     .maybeSingle();
 
   if (existing?.id) {
