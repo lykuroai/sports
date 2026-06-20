@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { searchCourses, getLowestPrice, isGoraConfigured } from "../../lib/gora";
 
@@ -86,10 +87,9 @@ export default async function GolfCourseSearch({
             {result.items.map((c) => (
               <li key={c.courseId}>
                 <Link href={`/clubs/${c.courseId}${detailQuery}`} className="card flex gap-3 overflow-hidden p-0 hover:shadow">
-                  <div className="h-28 w-36 shrink-0 bg-slate-100">
+                  <div className="relative h-28 w-36 shrink-0 bg-slate-100">
                     {c.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.imageUrl} alt={c.name} className="h-full w-full object-cover" loading="lazy" />
+                      <Image src={c.imageUrl} alt={c.name} fill sizes="144px" className="object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No Image</div>
                     )}

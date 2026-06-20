@@ -14,7 +14,13 @@ const nextConfig: NextConfig = {
     "@spotomo/api-client",
   ],
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "*.supabase.co" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "*.supabase.co" },
+      // 楽天GORA のゴルフ場画像（rakuten.co.jp 配下／楽天CDN r10s.jp・rakuten.ne.jp）
+      { protocol: "https", hostname: "**.rakuten.co.jp" },
+      { protocol: "https", hostname: "**.r10s.jp" },
+      { protocol: "https", hostname: "**.rakuten.ne.jp" },
+    ],
   },
 };
 
