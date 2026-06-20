@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { searchCourses, getLowestPrice, isGoraConfigured } from "../../lib/gora";
+import { CourseImage } from "./course-image";
 
 // 一覧で最安料金を取得する上限件数（API レート制限に配慮）。
 const PRICE_FETCH_LIMIT = 8;
@@ -89,7 +89,7 @@ export default async function GolfCourseSearch({
                 <Link href={`/clubs/${c.courseId}${detailQuery}`} className="card flex gap-3 overflow-hidden p-0 hover:shadow">
                   <div className="relative h-28 w-36 shrink-0 bg-slate-100">
                     {c.imageUrl ? (
-                      <Image src={c.imageUrl} alt={c.name} fill sizes="144px" className="object-cover" />
+                      <CourseImage src={c.imageUrl} alt={c.name} sizes="144px" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No Image</div>
                     )}

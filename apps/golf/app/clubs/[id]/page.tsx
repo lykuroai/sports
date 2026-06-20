@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { CourseImage } from "../course-image";
 import { getCourse, searchPlans } from "../../../lib/gora";
 import type { GoraCourse, GoraPlan } from "../../../lib/gora";
 
@@ -50,7 +50,7 @@ export default async function CourseDetail({
       </div>
       {course.imageUrl && (
         <div className="relative h-48 w-full overflow-hidden rounded-lg bg-slate-100">
-          <Image src={course.imageUrl} alt={course.name} fill sizes="(max-width: 672px) 100vw, 672px" className="object-cover" priority />
+          <CourseImage src={course.imageUrl} alt={course.name} sizes="(max-width: 672px) 100vw, 672px" priority />
         </div>
       )}
       <p className="text-sm text-slate-500">{course.prefecture ?? ""}{course.address ?? ""}{course.highway ? `・${course.highway}` : ""}</p>
