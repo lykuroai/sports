@@ -480,7 +480,11 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/config: {}
+  packages/config:
+    dependencies:
+      eslint-config-next:
+        specifier: ^16.2.9
+        version: 16.2.9(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
 
   packages/domain-common:
     dependencies:
