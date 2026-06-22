@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createServerClient, createAdminClient, SCHEMA } from "@spotomo/auth-client";
+import { createServerClient, createAdminClient, resolvePostLogin, SCHEMA } from "@spotomo/auth-client";
 import { sendVerification, checkVerification, verifyTurnstile } from "@spotomo/domain-common";
 
 export type PhoneState = { step: "request" | "verify"; phone: string; error: string | null };
@@ -102,5 +102,5 @@ export async function verifyOtp(_prev: PhoneState, formData: FormData): Promise<
   if (!ok) return { step: "verify", phone, error: "ログイン処理に失敗しました。時間をおいて再度お試しください。" };
 
   revalidatePath("/", "layout");
-  redirect("/profile");
+  redirect(resolvePostLogin(formData.get("redirect") as string | null));
 }

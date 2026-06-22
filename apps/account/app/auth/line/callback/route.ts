@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { ACCOUNT_URL, createAdminClient, createServerClient } from "@spotomo/auth-client";
+import { ACCOUNT_URL, createAdminClient, createServerClient, resolvePostLogin } from "@spotomo/auth-client";
 
 export const runtime = "nodejs";
 
@@ -71,7 +71,12 @@ export async function GET(request: Request) {
   const { error: verifyErr } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash });
   if (verifyErr) return fail("line_session");
 
-  const res = NextResponse.redirect(`${base}/profile`);
+  // 元ページ（line_next Cookie）へ戻す。外部URLは /profile にフォールバック。
+  const nextCookie = (await cookies()).get("line_next")?.value;
+  const next = resolvePostLogin(nextCookie);
+  const dest = next.startsWith("http") ? next : `${base}${next}`;
+  const res = NextResponse.redirect(dest);
   res.cookies.set("line_oauth_state", "", { maxAge: 0, path: "/" });
+  res.cookies.set("line_next", "", { maxAge: 0, path: "/" });
   return res;
 }

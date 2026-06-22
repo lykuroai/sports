@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ACCOUNT_URL, createServerClient } from "@spotomo/auth-client";
+import { ACCOUNT_URL, createServerClient, resolvePostLogin } from "@spotomo/auth-client";
 
 // OAuth（Google）/ メール確認のコールバック。code を session に交換する。
 export async function GET(request: Request) {
@@ -8,7 +8,9 @@ export async function GET(request: Request) {
   // 公開 URL（NEXT_PUBLIC_ACCOUNT_URL）を優先して戻り先を組み立てる。
   const base = ACCOUNT_URL() || origin;
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/profile";
+  // 元ページ（next）を安全に解決。外部URLは /profile にフォールバック。
+  const next = resolvePostLogin(searchParams.get("next"));
+  const dest = next.startsWith("http") ? next : `${base}${next}`;
   // メール確認（サインアップ）からの遷移。認証完了後は自動ログインせず
   // ログイン画面へ誘導する（OAuth 等は従来どおり next へ）。
   const verify = searchParams.get("verify");
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
         const q = next && next !== "/profile" ? `&redirect=${encodeURIComponent(next)}` : "";
         return NextResponse.redirect(`${base}/login?notice=verified${q}`);
       }
-      return NextResponse.redirect(`${base}${next}`);
+      return NextResponse.redirect(dest);
     }
   }
   return NextResponse.redirect(`${base}/login?error=auth`);

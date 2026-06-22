@@ -45,10 +45,21 @@ function LoginForm() {
 
       <div className="mt-3 space-y-2">
         <form action={loginWithGoogle}>
+          <input type="hidden" name="redirect" value={redirectTo} />
           <button type="submit" className="btn-outline w-full">Googleでログイン</button>
         </form>
-        <a href="/auth/line" className="btn-outline block w-full text-center">LINEでログイン</a>
-        <Link href="/phone" className="btn-outline block w-full text-center">電話番号でログイン</Link>
+        <a
+          href={`/auth/line${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
+          className="btn-outline block w-full text-center"
+        >
+          LINEでログイン
+        </a>
+        <Link
+          href={`/phone${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
+          className="btn-outline block w-full text-center"
+        >
+          電話番号でログイン
+        </Link>
       </div>
 
       <p className="mt-3 text-center text-xs text-slate-400">
