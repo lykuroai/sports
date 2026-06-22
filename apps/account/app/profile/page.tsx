@@ -4,12 +4,25 @@ import type { Profile } from "@spotomo/shared-types";
 import { logout } from "../actions";
 import { ProfileForm } from "./profile-form";
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login?redirect=/profile");
+
+  // 登録直後など、保存後に戻る先（例: 募集作成）。未ログインならその戻り先を保持してログインへ。
+  const sp = await searchParams;
+  const redirectTo = (Array.isArray(sp.redirect) ? sp.redirect[0] : sp.redirect) ?? "";
+  if (!user) {
+    const back = redirectTo
+      ? `/profile?redirect=${encodeURIComponent(redirectTo)}`
+      : "/profile";
+    redirect(`/login?redirect=${encodeURIComponent(back)}`);
+  }
 
   const { data } = await supabase
     .schema(SCHEMA.account)
@@ -31,7 +44,7 @@ export default async function ProfilePage() {
         </form>
       </div>
 
-      <ProfileForm profile={profile} />
+      <ProfileForm profile={profile} redirectTo={redirectTo} />
 
       <nav className="card divide-y p-2 text-sm">
         <a className="block px-3 py-2 hover:bg-slate-50" href="/notifications">通知一覧</a>

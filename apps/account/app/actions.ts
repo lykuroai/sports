@@ -46,6 +46,13 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   const captcha = await verifyTurnstile(formData.get("cf-turnstile-response") as string | null);
   if (!captcha) return { error: "認証（CAPTCHA）に失敗しました。もう一度お試しください。" };
 
+  // 登録後はまずプロフィール設定へ誘導し、保存後に元の目的地（例: 募集作成）へ戻す。
+  // 戻り先が無ければ通常どおりプロフィールで止まる。
+  const redirectTo = (formData.get("redirect") as string | null) || "";
+  const afterProfile = redirectTo
+    ? `/profile?redirect=${encodeURIComponent(redirectTo)}`
+    : "/profile";
+
   const supabase = await createServerClient();
   const origin = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "http://localhost:3001";
   const { data, error } = await supabase.auth.signUp({
@@ -54,21 +61,22 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
     options: {
       data: { nickname: parsed.data.nickname },
       // 確認メールのリンクを PKCE コード交換を行う /auth/callback に通す。
-      // verify=email で「認証後はログイン画面へ」を callback に伝える。
+      // verify=email で「認証後はログイン画面へ」を callback に伝える。next で
+      // 認証後の最終遷移先（プロフィール設定→元ページ）を引き継ぐ。
       // 未指定だと Supabase の Site URL（ルート）に戻り、セッションが確立しない。
-      emailRedirectTo: `${origin}/auth/callback?verify=email`,
+      emailRedirectTo: `${origin}/auth/callback?verify=email&next=${encodeURIComponent(afterProfile)}`,
     },
   });
   if (error) return { error: error.message };
 
   // メール確認が有効な場合 signUp はセッションを返さない。
-  // 確認メール送信を知らせるため、ログイン画面へリダイレクトする。
+  // 確認メール送信を知らせるため、ログイン画面へリダイレクトする（戻り先を保持）。
   if (!data.session) {
-    redirect("/login?notice=check-email");
+    redirect(`/login?notice=check-email${redirectTo ? `&redirect=${encodeURIComponent(afterProfile)}` : ""}`);
   }
 
   revalidatePath("/", "layout");
-  redirect("/profile");
+  redirect(afterProfile);
 }
 
 async function oauthLogin(provider: "google") {

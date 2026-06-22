@@ -19,7 +19,9 @@ export async function GET(request: Request) {
     if (!error) {
       if (verify === "email") {
         await supabase.auth.signOut();
-        return NextResponse.redirect(`${base}/login?notice=verified`);
+        // 認証後の戻り先（プロフィール設定→元ページ）をログイン画面へ引き継ぐ。
+        const q = next && next !== "/profile" ? `&redirect=${encodeURIComponent(next)}` : "";
+        return NextResponse.redirect(`${base}/login?notice=verified${q}`);
       }
       return NextResponse.redirect(`${base}${next}`);
     }

@@ -7,11 +7,24 @@ import { updateProfile, type ProfileState } from "./actions";
 
 const initial: ProfileState = { error: null };
 
-export function ProfileForm({ profile }: { profile: Partial<Profile> }) {
+export function ProfileForm({
+  profile,
+  redirectTo = "",
+}: {
+  profile: Partial<Profile>;
+  /** 保存後に戻る先（例: 登録直後の募集作成）。指定時は保存成功でその画面へ遷移する。 */
+  redirectTo?: string;
+}) {
   const [state, formAction, pending] = useActionState(updateProfile, initial);
 
   return (
     <form action={formAction} className="card space-y-4 p-6">
+      <input type="hidden" name="redirect" value={redirectTo} />
+      {redirectTo && (
+        <p className="rounded bg-blue-50 p-2 text-sm text-blue-700">
+          プロフィールを設定して保存すると、元の画面に戻ります。
+        </p>
+      )}
       {state.error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{state.error}</p>}
       {state.ok && <p className="rounded bg-green-50 p-2 text-sm text-green-700">保存しました</p>}
 
@@ -44,7 +57,7 @@ export function ProfileForm({ profile }: { profile: Partial<Profile> }) {
         ここは全種目で共通の公開プロフィールです。種目固有の情報（ゴルフのハンディキャップ等）は各種目サービスで設定します。
       </p>
       <button type="submit" className="btn-primary" disabled={pending}>
-        {pending ? "保存中..." : "保存する"}
+        {pending ? "保存中..." : redirectTo ? "保存して戻る" : "保存する"}
       </button>
     </form>
   );
