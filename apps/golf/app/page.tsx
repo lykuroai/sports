@@ -1,7 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { createServerClient } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../lib/events";
+import heroImage from "../public/golf-hero.png";
 
 export default async function GolfHome({
   searchParams,
@@ -18,25 +20,22 @@ export default async function GolfHome({
 
   return (
     <div className="space-y-6">
-      {/* ヒーロー（仮プレースホルダー。後で画像に差し替え可能）。 */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 px-6 py-12 text-white sm:px-10 sm:py-16">
-        <div className="relative z-10 max-w-xl space-y-3">
-          <h1 className="text-2xl font-bold sm:text-3xl">ゴルフ仲間を見つけよう</h1>
-          <p className="text-sm text-emerald-50 sm:text-base">
-            一緒にラウンドする仲間を募集・検索。ゴルフ場を探して、その場で募集を作成できます。
-          </p>
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Link href="/clubs" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">
-              ゴルフ場を探す
-            </Link>
-            <Link href="/events/new" className="rounded-md border border-white/70 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
-              募集を作成
-            </Link>
-          </div>
+      {/* ヒーロー（ゴルフ仲間募集のメインビジュアル）。 */}
+      <section className="relative overflow-hidden rounded-2xl">
+        <Image
+          src={heroImage}
+          alt="ゴルフ仲間をみつけよう"
+          priority
+          className="h-auto w-full"
+        />
+        <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-2 bg-gradient-to-t from-black/50 to-transparent p-4 sm:p-6">
+          <Link href="/clubs" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">
+            ゴルフ場を探す
+          </Link>
+          <Link href="/events/new" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
+            募集を作成
+          </Link>
         </div>
-        {/* 装飾。実画像導入時はここを背景画像に置き換える。 */}
-        <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-16 right-20 h-56 w-56 rounded-full bg-white/5" />
       </section>
 
       <section className="space-y-3">

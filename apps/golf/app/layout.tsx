@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 import { SiteHeader } from "@spotomo/shared-ui";
@@ -19,6 +20,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SiteHeader
           appName=""
           brand="ゴルフとも"
+          logo={
+            <Image
+              src="/golf-logo.png"
+              alt="ゴルフとも"
+              width={72}
+              height={48}
+              priority
+              className="h-12 w-auto"
+            />
+          }
           accountUrl={accountUrl}
           currentOrigin={currentOrigin}
           nav={

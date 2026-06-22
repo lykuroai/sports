@@ -7,6 +7,11 @@ export interface SiteHeaderProps {
   /** ロゴのブランド表記（既定: "スポともパーク"）。種目アプリは自前の名称を渡せる。 */
   brand?: string;
   /**
+   * ブランド名の前に表示するロゴ要素（例: 種目ロゴの <img>）。指定があればブランド表記の
+   * 左に並べる。種目アプリで自前のロゴ画像を渡す用途。
+   */
+  logo?: ReactNode;
+  /**
    * 中央ナビを差し替える。未指定なら全種目スイッチャを表示する。種目アプリで
    * その種目向けの導線（例: ゴルフ場を探す / 募集を作成）に置き換える用途。
    */
@@ -30,6 +35,7 @@ export interface SiteHeaderProps {
 export function SiteHeader({
   appName,
   brand = "スポともパーク",
+  logo,
   nav,
   accountUrl = "",
   currentOrigin = "",
@@ -52,7 +58,8 @@ export function SiteHeader({
   return (
     <header className="flex items-center justify-between border-b px-4 py-3">
       <div className="flex items-center gap-4">
-        <a href="/" className="font-bold text-brand">
+        <a href="/" className="flex items-center gap-2 font-bold text-brand">
+          {logo}
           {brand}
         </a>
         {appName && <span className="text-sm text-gray-500">{appName}</span>}
