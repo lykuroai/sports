@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { SiteHeader } from "@spotomo/shared-ui";
 import { NotificationBell } from "@spotomo/shared-ui/notification-bell";
@@ -15,7 +16,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ja">
       <body className="min-h-screen">
-        <SiteHeader appName="ゴルフ" accountUrl={accountUrl} currentOrigin={currentOrigin} actions={<NotificationBell accountUrl={accountUrl} />} />
+        <SiteHeader
+          appName=""
+          brand="ゴルフとも"
+          accountUrl={accountUrl}
+          currentOrigin={currentOrigin}
+          nav={
+            <>
+              <Link href="/clubs" className="hover:text-brand">ゴルフ場を探す</Link>
+              <Link href="/events/new" className="hover:text-brand">募集を作成</Link>
+            </>
+          }
+          actions={<NotificationBell accountUrl={accountUrl} />}
+        />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
           <div className="mx-auto max-w-5xl px-4 py-8 text-sm text-slate-500">

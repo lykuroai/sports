@@ -2,8 +2,15 @@ import type { ReactNode } from "react";
 import { SPORT_DOMAINS } from "@spotomo/shared-types";
 
 export interface SiteHeaderProps {
-  /** 現在の app の表示名（例: "ゴルフ" / "共通アカウント"）。 */
+  /** 現在の app の表示名（例: "ゴルフ" / "共通アカウント"）。空文字なら表示しない。 */
   appName: string;
+  /** ロゴのブランド表記（既定: "スポともパーク"）。種目アプリは自前の名称を渡せる。 */
+  brand?: string;
+  /**
+   * 中央ナビを差し替える。未指定なら全種目スイッチャを表示する。種目アプリで
+   * その種目向けの導線（例: ゴルフ場を探す / 募集を作成）に置き換える用途。
+   */
+  nav?: ReactNode;
   /** account サブドメインのベース URL。 */
   accountUrl?: string;
   /**
@@ -20,7 +27,14 @@ export interface SiteHeaderProps {
  * 全 app 共有のヘッダ。種目スイッチャと共通アカウントへの導線を持つ。
  * 種目間の遷移はサブドメイン跨ぎ（本番）。開発時は host が無ければ相対リンクに倒す。
  */
-export function SiteHeader({ appName, accountUrl = "", currentOrigin = "", actions }: SiteHeaderProps) {
+export function SiteHeader({
+  appName,
+  brand = "スポともパーク",
+  nav,
+  accountUrl = "",
+  currentOrigin = "",
+  actions,
+}: SiteHeaderProps) {
   // 種目アプリから「アカウント」へ移動して共通プロフィールを編集した後、元の種目アプリへ
   // 戻れるよう redirect（自オリジンの絶対URL）を付ける。account 側の resolvePostLogin が
   // 同一 apex のみ許可して検証する。account アプリ自身（同一オリジン）では付けない。
@@ -39,17 +53,18 @@ export function SiteHeader({ appName, accountUrl = "", currentOrigin = "", actio
     <header className="flex items-center justify-between border-b px-4 py-3">
       <div className="flex items-center gap-4">
         <a href="/" className="font-bold text-brand">
-          スポともパーク
+          {brand}
         </a>
-        <span className="text-sm text-gray-500">{appName}</span>
+        {appName && <span className="text-sm text-gray-500">{appName}</span>}
       </div>
 
       <nav className="flex items-center gap-3 text-sm">
-        {SPORT_DOMAINS.map((d) => (
-          <a key={d.slug} href={`//${d.host}`} className="hover:text-brand">
-            {d.name}
-          </a>
-        ))}
+        {nav ??
+          SPORT_DOMAINS.map((d) => (
+            <a key={d.slug} href={`//${d.host}`} className="hover:text-brand">
+              {d.name}
+            </a>
+          ))}
         <a href={accountHref} className="hover:text-brand">
           アカウント
         </a>
