@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "./server";
 import { createAdminClient } from "./admin";
+import { loginUrl } from "./env";
 
 /**
  * 共通ユーザ基盤のスキーマ名。supabase-js は既定で public のみを参照するため、
@@ -22,6 +24,20 @@ export async function getUser(): Promise<User | null> {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
+}
+
+/**
+ * 種目アプリ（golf/running/outdoor 等）の未ログイン導線用。現在のリクエストの自オリジンを基に、
+ * 認証後 `path` へ戻る account 共通ログインの絶対URLを作る。種目アプリには /login が無いため、
+ * 相対 "/login" へ飛ばすと 404 になる。必ずこの絶対URL（ACCOUNT_URL 配下）へ誘導すること。
+ */
+export async function loginUrlFor(path: string): Promise<string> {
+  const h = await headers();
+  // リバースプロキシ（Caddy）越しでは Host が内部アドレス（0.0.0.0:3000）になり得るため、
+  // X-Forwarded-Host/Proto を優先して公開URLを組み立てる。
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  return loginUrl(`${proto}://${host}${path}`);
 }
 
 /** ログイン必須。未ログインなら account のログインへ。 */
