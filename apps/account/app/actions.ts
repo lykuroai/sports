@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerClient, resolvePostLogin } from "@spotomo/auth-client";
@@ -82,11 +83,19 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
 async function oauthLogin(provider: "google", next?: string | null) {
   const supabase = await createServerClient();
   const origin = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "http://localhost:3001";
-  // 元ページ（next）を callback に引き継ぎ、認証後にそこへ戻す。
-  const callback = `${origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+  // 戻り先は Cookie で保持する。Supabase OAuth は redirectTo のクエリ(next)を
+  // 許可リスト次第で落とすため、callback まで確実に持ち回すには Cookie が堅い（LINE と同様）。
+  if (next) {
+    (await cookies()).set("oauth_next", next, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 600,
+      path: "/",
+    });
+  }
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: callback },
+    options: { redirectTo: `${origin}/auth/callback` },
   });
   if (error || !data.url) redirect(`/login?error=${provider}`);
   redirect(data.url);
