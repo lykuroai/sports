@@ -1,4 +1,4 @@
-import { createServerClient, requireGeneralAccount, SCHEMA } from "@spotomo/auth-client";
+import { createServerClient, requireGeneralAccount, resolvePostLogin, SCHEMA } from "@spotomo/auth-client";
 import { fetchPublishedSports, fetchUserSports } from "@spotomo/domain-common";
 import type { Profile } from "@spotomo/shared-types";
 import { logout } from "../actions";
@@ -36,9 +36,15 @@ export default async function ProfilePage({
     <div className="mx-auto max-w-xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">共通プロフィール</h1>
-        <form action={logout}>
-          <button className="btn-outline" type="submit">ログアウト</button>
-        </form>
+        <div className="flex items-center gap-2">
+          {redirectTo && (
+            // 保存せず元の画面（例: ゴルフ）へ戻る。戻り先は resolvePostLogin で検証済み。
+            <a className="btn-outline" href={resolvePostLogin(redirectTo)}>戻る</a>
+          )}
+          <form action={logout}>
+            <button className="btn-outline" type="submit">ログアウト</button>
+          </form>
+        </div>
       </div>
 
       <ProfileForm profile={profile} sports={sports} userSports={userSports} redirectTo={redirectTo} />

@@ -31,13 +31,17 @@ export async function getUser(): Promise<User | null> {
  * 認証後 `path` へ戻る account 共通ログインの絶対URLを作る。種目アプリには /login が無いため、
  * 相対 "/login" へ飛ばすと 404 になる。必ずこの絶対URL（ACCOUNT_URL 配下）へ誘導すること。
  */
-export async function loginUrlFor(path: string): Promise<string> {
+export async function selfOrigin(): Promise<string> {
   const h = await headers();
   // リバースプロキシ（Caddy）越しでは Host が内部アドレス（0.0.0.0:3000）になり得るため、
   // X-Forwarded-Host/Proto を優先して公開URLを組み立てる。
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const proto = h.get("x-forwarded-proto") ?? "http";
-  return loginUrl(`${proto}://${host}${path}`);
+  return `${proto}://${host}`;
+}
+
+export async function loginUrlFor(path: string): Promise<string> {
+  return loginUrl(`${await selfOrigin()}${path}`);
 }
 
 /** ログイン必須。未ログインなら account のログインへ。 */
