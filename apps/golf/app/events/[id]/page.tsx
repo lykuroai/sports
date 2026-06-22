@@ -7,7 +7,7 @@ import {
   formatFee,
 } from "@spotomo/shared-types";
 import type { EventGolfDetails, GolfCourse, GolfPlan, GolfReservationStatus } from "@spotomo/shared-types";
-import { createServerClient, getUser } from "@spotomo/auth-client";
+import { createServerClient, getUser, loginUrlFor } from "@spotomo/auth-client";
 import { isFavorited, isFollowing } from "@spotomo/domain-common";
 import { fetchEventDetail, isApplyable } from "../../../lib/events";
 import { applyToEvent, updateReservationStatus } from "../actions";
@@ -33,6 +33,8 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
 
   const user = await getUser();
   const isOrganizer = user?.id === ev.organizer_id;
+  // 未ログインで参加申請する場合は account 共通ログインへ誘導し、認証後この募集詳細へ戻す。
+  const loginHref = user ? "" : await loginUrlFor(`/events/${ev.id}`);
 
   // 楽天GORA 連携情報（紐づくゴルフ場・プラン・予約状態）。
   const { data: detailRow } = await supabase
@@ -203,15 +205,21 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
           </form>
         </div>
       ) : isApplyable(ev.status) ? (
-        <form action={applyToEvent} className="card space-y-3 p-4">
-          <input type="hidden" name="event_id" value={ev.id} />
-          <label className="label" htmlFor="msg">参加メッセージ（任意）</label>
-          <textarea id="msg" name="application_message" className="input" rows={3} />
-          <button className="btn-primary" type="submit">この募集に参加申請する</button>
-          <p className="text-xs text-slate-400">
-            連絡先（メール・電話・本名）は主催者にも公開されません。
-          </p>
-        </form>
+        user ? (
+          <form action={applyToEvent} className="card space-y-3 p-4">
+            <input type="hidden" name="event_id" value={ev.id} />
+            <label className="label" htmlFor="msg">参加メッセージ（任意）</label>
+            <textarea id="msg" name="application_message" className="input" rows={3} />
+            <button className="btn-primary" type="submit">この募集に参加申請する</button>
+            <p className="text-xs text-slate-400">
+              連絡先（メール・電話・本名）は主催者にも公開されません。
+            </p>
+          </form>
+        ) : (
+          <a href={loginHref} className="btn-primary block text-center">
+            ログインして参加申請する
+          </a>
+        )
       ) : (
         <p className="text-sm text-slate-500">現在この募集は参加申請を受け付けていません。</p>
       )}
