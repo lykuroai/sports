@@ -1,23 +1,23 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Turnstile } from "@spotomo/shared-ui";
 import { requestOtp, verifyOtp, type PhoneState } from "./actions";
 
 const reqInitial: PhoneState = { step: "request", phone: "", error: null };
 const verInitial: PhoneState = { step: "verify", phone: "", error: null };
 
-export default function PhoneLoginPage() {
+function PhoneLogin() {
   const [reqState, reqAction, reqPending] = useActionState(requestOtp, reqInitial);
   const [verState, verAction, verPending] = useActionState(verifyOtp, verInitial);
+  const redirectTo = useSearchParams().get("redirect") ?? "";
 
   const sent = reqState.step === "verify";
 
   return (
-    <div className="mx-auto max-w-sm space-y-4">
-      <h1 className="text-2xl font-bold">電話番号でログイン</h1>
-
+    <>
       {!sent ? (
         <form action={reqAction} className="card space-y-4 p-6">
           {reqState.error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{reqState.error}</p>}
@@ -35,6 +35,7 @@ export default function PhoneLoginPage() {
         <form action={verAction} className="card space-y-4 p-6">
           {verState.error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{verState.error}</p>}
           <input type="hidden" name="phone" value={reqState.phone} />
+          <input type="hidden" name="redirect" value={redirectTo} />
           <p className="text-sm text-slate-600">{reqState.phone} に送信したコードを入力してください。</p>
           <div>
             <label className="label" htmlFor="token">認証コード</label>
@@ -52,6 +53,17 @@ export default function PhoneLoginPage() {
       <p className="text-center text-xs text-slate-400">
         ※ 認証コードは Twilio Verify から SMS で送信されます。
       </p>
+    </>
+  );
+}
+
+export default function PhoneLoginPage() {
+  return (
+    <div className="mx-auto max-w-sm space-y-4">
+      <h1 className="text-2xl font-bold">電話番号でログイン</h1>
+      <Suspense fallback={<div className="card p-6 text-sm text-slate-400">読み込み中...</div>}>
+        <PhoneLogin />
+      </Suspense>
     </div>
   );
 }

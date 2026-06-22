@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createServerClient } from "@spotomo/auth-client";
+import { createServerClient, resolvePostLogin } from "@spotomo/auth-client";
 import { verifyTurnstile } from "@spotomo/domain-common";
 
 const credsSchema = z.object({
@@ -27,7 +27,7 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: "メールアドレスまたはパスワードが正しくありません" };
 
-  const redirectTo = (formData.get("redirect") as string) || "/profile";
+  const redirectTo = resolvePostLogin(formData.get("redirect") as string | null);
   revalidatePath("/", "layout");
   redirect(redirectTo);
 }
@@ -79,19 +79,21 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   redirect(afterProfile);
 }
 
-async function oauthLogin(provider: "google") {
+async function oauthLogin(provider: "google", next?: string | null) {
   const supabase = await createServerClient();
   const origin = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "http://localhost:3001";
+  // 元ページ（next）を callback に引き継ぎ、認証後にそこへ戻す。
+  const callback = `${origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: `${origin}/auth/callback` },
+    options: { redirectTo: callback },
   });
   if (error || !data.url) redirect(`/login?error=${provider}`);
   redirect(data.url);
 }
 
-export async function loginWithGoogle() {
-  await oauthLogin("google");
+export async function loginWithGoogle(formData: FormData) {
+  await oauthLogin("google", formData.get("redirect") as string | null);
 }
 
 export async function logout() {
