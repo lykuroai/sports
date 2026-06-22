@@ -45,14 +45,35 @@ function LoginForm() {
 
       <div className="mt-3 space-y-2">
         <form action={loginWithGoogle}>
+          <input type="hidden" name="redirect" value={redirectTo} />
           <button type="submit" className="btn-outline w-full">Googleでログイン</button>
         </form>
-        <a href="/auth/line" className="btn-outline block w-full text-center">LINEでログイン</a>
-        <Link href="/phone" className="btn-outline block w-full text-center">電話番号でログイン</Link>
+        <a
+          href={`/auth/line${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
+          className="btn-outline block w-full text-center"
+        >
+          LINEでログイン
+        </a>
+        <Link
+          href={`/phone${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
+          className="btn-outline block w-full text-center"
+        >
+          電話番号でログイン
+        </Link>
       </div>
 
       <p className="mt-3 text-center text-xs text-slate-400">
         すべて共通アカウントに集約され、全種目で同じ user_id を利用します。
+      </p>
+
+      <p className="mt-4 text-center text-sm text-slate-600">
+        アカウントをお持ちでない方は{" "}
+        <Link
+          href={`/register${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
+          className="text-brand hover:underline"
+        >
+          会員登録
+        </Link>
       </p>
     </>
   );
@@ -65,10 +86,6 @@ export default function LoginPage() {
       <Suspense fallback={<div className="card p-6 text-sm text-slate-400">読み込み中...</div>}>
         <LoginForm />
       </Suspense>
-      <p className="mt-4 text-center text-sm text-slate-600">
-        アカウントをお持ちでない方は{" "}
-        <Link href="/register" className="text-brand hover:underline">会員登録</Link>
-      </p>
     </div>
   );
 }
