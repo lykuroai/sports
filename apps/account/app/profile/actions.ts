@@ -45,5 +45,30 @@ export async function updateProfile(
   if (error) return { error: error.message };
 
   revalidatePath("/profile");
+
+  // 登録直後など戻り先が指定されていれば、保存後にその画面（例: 募集作成）へ遷移する。
+  const dest = safeRedirect(formData.get("redirect") as string | null);
+  if (dest) redirect(dest);
+
   return { error: null, ok: true };
+}
+
+/**
+ * 保存後の戻り先を安全に解決する。相対パス、または account と同じ apex の絶対URLのみ許可し、
+ * 外部URL（オープンリダイレクト）は null を返す。種目アプリ（同一 apex のサブドメイン）へ戻す用途。
+ */
+function safeRedirect(next: string | null): string | null {
+  if (!next) return null;
+  if (next.startsWith("/") && !next.startsWith("//")) return next;
+  try {
+    const u = new URL(next);
+    const acc = new URL(process.env.NEXT_PUBLIC_ACCOUNT_URL || "http://localhost");
+    const apex = (h: string) => h.split(".").slice(-2).join(".");
+    if (u.hostname === acc.hostname || apex(u.hostname) === apex(acc.hostname)) {
+      return u.toString();
+    }
+  } catch {
+    // 解析不能は破棄
+  }
+  return null;
 }
