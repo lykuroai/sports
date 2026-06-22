@@ -28,7 +28,15 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 COPY . .
-RUN pnpm install --frozen-lockfile
+# pnpm ストアを BuildKit キャッシュに永続化し、ネットワーク不調（ERR_SOCKET_TIMEOUT）への
+# 耐性と再ビルドの高速化を得る（依存を毎回 registry から再取得しない）。fetch のリトライ／
+# タイムアウトも引き上げて初回の一過性タイムアウトに強くする。全 app ビルドで store を共有。
+ENV npm_config_fetch_retries=5 \
+    npm_config_fetch_retry_mintimeout=10000 \
+    npm_config_fetch_retry_maxtimeout=120000 \
+    npm_config_fetch_timeout=120000
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile --store-dir=/pnpm/store
 RUN pnpm turbo run build --filter=@spotomo/app-${APP}
 
 # ---- 実行（最小イメージ） ----
