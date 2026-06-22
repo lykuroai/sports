@@ -3,7 +3,9 @@ import { updateSession } from "@spotomo/auth-client/middleware";
 
 export async function proxy(request: NextRequest) {
   return await updateSession(request, {
-    protectedPrefixes: ["/mypage", "/events/new", "/profile", "/chat"],
+    // 施設運営者の専用領域。未ログインは facility 内の運営者ログインへ誘導する。
+    protectedPrefixes: ["/owner", "/submit"],
+    loginPath: "/login",
   });
 }
 

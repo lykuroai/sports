@@ -1,9 +1,22 @@
+import Stripe from "stripe";
 import { createAdminClient, SCHEMA } from "@spotomo/auth-client";
-import { getStripe } from "./stripe";
+
+let client: Stripe | null = null;
+
+/** サーバー専用の Stripe クライアント。STRIPE_SECRET_KEY は制限付きキー推奨。 */
+export function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY が設定されていません");
+  client ??= new Stripe(key);
+  return client;
+}
+
+export const accountOrigin = () =>
+  process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "http://localhost:3001";
 
 /**
  * 共通ユーザの Stripe 顧客 ID を取得（無ければ作成）。決済顧客は共通基盤
- * account.billing_customers が保持する（種目/施設をまたぐ）。サービスロールで書く。
+ * account.billing_customers が保持する（施設運営者サブスク等と共用）。サービスロールで書く。
  */
 export async function ensureBillingCustomer(userId: string, email: string | null): Promise<string> {
   const db = createAdminClient();

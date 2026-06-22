@@ -1,5 +1,9 @@
 # Phase A 詳細設計 — 施設運営者向け有料プラン（Stripe Billing）
 
+> **【廃止 / DEPRECATED — 2026-06-22】** 方針変更により施設運営者は**無料**となり、Phase A の
+> サブスク課金は廃止した（アプリ課金導線・DB テーブルを削除、`0025_drop_facility_billing.sql`）。
+> 本ドキュメントは履歴として残す。現行の方針は `docs/changelog/2026-06-22-spec-changes.md` を参照。
+
 > 収益ロードマップ Phase A。確認済み施設運営者（`facility_owners`）への月額サブスク
 > 課金で、上位表示・複数画像・リード分析などの機能を解放する。
 > **Connect（Phase C/D）前提**で構造を組むが、A 自体は Billing のみで完結し決済の

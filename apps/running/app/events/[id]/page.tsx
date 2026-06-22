@@ -63,7 +63,10 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
           <FavoriteButton eventId={ev.id} initial={fav} />
           {!isOrganizer && <FollowButton organizerId={ev.organizer_id} initial={following} />}
           {isOrganizer && (
-            <a href={`/events/${ev.id}/participants`} className="btn-outline">参加者管理</a>
+            <>
+              <a href={`/events/${ev.id}/participants`} className="btn-outline">参加者管理</a>
+              <a href={`/events/${ev.id}/edit`} className="btn-outline">募集を修正</a>
+            </>
           )}
           {isMember && isPast && (
             <a href={`/events/${ev.id}/review`} className="btn-outline">相互評価する</a>

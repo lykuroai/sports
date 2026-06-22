@@ -8,14 +8,17 @@ import {
 } from "@spotomo/shared-types";
 import type { EventGolfDetails, GolfCourse, GolfPlan, GolfReservationStatus } from "@spotomo/shared-types";
 import { createServerClient, getUser, loginUrlFor } from "@spotomo/auth-client";
-import { isFavorited, isFollowing } from "@spotomo/domain-common";
+import { isFavorited, isFollowing, fetchEventMembers } from "@spotomo/domain-common";
 import { fetchEventDetail, isApplyable } from "../../../lib/events";
 import { applyToEvent, updateReservationStatus } from "../actions";
 import { FavoriteButton } from "../favorite-button";
 import { FollowButton } from "../follow-button";
+import { EventMembers } from "./event-members";
 import { cancelAction } from "./participants/actions";
 
 const SCHEMA = "golf";
+
+const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
 
 const STATUS_OPTIONS: GolfReservationStatus[] = [
   "planning",
@@ -72,6 +75,9 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
   const isMember = isOrganizer || partStatus === "approved";
   const canCancel = partStatus === "applied" || partStatus === "approved" || partStatus === "waitlist";
 
+  // メンバー一覧は承認済みメンバー（発起者・承認済み参加者）にのみ表示する。
+  const members = isMember && user ? await fetchEventMembers(supabase, SCHEMA, ev.id) : [];
+
   return (
     <article className="mx-auto max-w-2xl space-y-6">
       <header className="space-y-2">
@@ -92,7 +98,10 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
           <FavoriteButton eventId={ev.id} initial={fav} />
           {!isOrganizer && <FollowButton organizerId={ev.organizer_id} initial={following} />}
           {isOrganizer && (
-            <a href={`/events/${ev.id}/participants`} className="btn-outline">参加者管理</a>
+            <>
+              <a href={`/events/${ev.id}/participants`} className="btn-outline">参加者管理</a>
+              <a href={`/events/${ev.id}/edit`} className="btn-outline">募集を修正</a>
+            </>
           )}
           {isMember && isPast && (
             <a href={`/events/${ev.id}/review`} className="btn-outline">相互評価する</a>
@@ -186,6 +195,10 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
             予約確定は楽天GORAの予約ページで行ってください。キャンセル規定は楽天GORAおよびゴルフ場の条件に従います。
           </p>
         </section>
+      )}
+
+      {isMember && user && (
+        <EventMembers members={members} viewerId={user.id} accountUrl={ACCOUNT_URL} />
       )}
 
       {isOrganizer ? (

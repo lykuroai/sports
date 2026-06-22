@@ -33,6 +33,7 @@ export type AttendanceStatus = "unknown" | "present" | "absent";
 export type CategoryType = "sports" | "outdoor";
 export type UserStatus = "active" | "suspended" | "banned" | "withdrawn";
 export type UserRole = "user" | "organizer" | "facility_owner" | "admin";
+export type OwnerStatus = "pending" | "verified" | "rejected" | "revoked";
 
 /** 種目ドメインの識別子。新種目追加時にここへ追加する。 */
 export type SportDomain = "golf" | "running" | "outdoor";

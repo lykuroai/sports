@@ -8,6 +8,7 @@ import {
   writeAuditLog,
   SCHEMA,
 } from "@spotomo/auth-client";
+import { notifyUser } from "@spotomo/domain-common";
 
 // 管理操作は必ず getAdminUser() で検証し、サービスロールで RLS をバイパスして実行、
 // core.audit_logs に記録する（CLAUDE.md / 仕様 §11.1）。
@@ -71,4 +72,59 @@ export async function reviewFacilitySubmission(formData: FormData): Promise<void
     .eq("id", submissionId);
   await writeAuditLog(admin.id, `facility_submission_${decision}`, "facility_submission", submissionId, "facility");
   revalidatePath("/facility-submissions");
+}
+
+export async function reviewFacilityOwner(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const facilityId = String(formData.get("facility_id"));
+  const userId = String(formData.get("user_id"));
+  const decision = String(formData.get("decision")); // 'verified' | 'rejected'
+  const now = new Date().toISOString();
+
+  const db = createAdminClient();
+
+  // 承認・却下を facility_owners に記録（複合主キー facility_id+user_id で特定）。
+  await db
+    .schema(SCHEMA.facility)
+    .from("facility_owners")
+    .update({
+      status: decision,
+      verified_at: decision === "verified" ? now : null,
+      reviewed_by: admin.id,
+      reviewed_at: now,
+    })
+    .eq("facility_id", facilityId)
+    .eq("user_id", userId);
+
+  // 承認時は大区分ロール facility_owner を付与（既にあれば無視）。
+  if (decision === "verified") {
+    await db
+      .schema(SCHEMA.account)
+      .from("user_roles")
+      .upsert({ user_id: userId, role: "facility_owner" }, { onConflict: "user_id,role" });
+  }
+
+  const { data: fac } = await db
+    .schema(SCHEMA.facility)
+    .from("facilities")
+    .select("name")
+    .eq("id", facilityId)
+    .maybeSingle();
+  const facName = (fac as { name: string } | null)?.name ?? "施設";
+
+  await notifyUser({
+    userId,
+    type: decision === "verified" ? "facility_owner_approved" : "facility_owner_rejected",
+    title: decision === "verified" ? "施設運営者申請が承認されました" : "施設運営者申請の結果",
+    body:
+      decision === "verified"
+        ? `「${facName}」の運営者として承認されました。施設情報を編集できます。`
+        : `「${facName}」の運営者申請は今回は見送りとなりました。`,
+    relatedType: "facility",
+    relatedId: facilityId,
+  });
+
+  await writeAuditLog(admin.id, `facility_owner_${decision}`, "facility_owner", `${facilityId}:${userId}`, "facility");
+  revalidatePath("/facility-owners");
 }

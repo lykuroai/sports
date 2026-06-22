@@ -42,6 +42,7 @@ function RegisterForm() {
       </form>
 
       <form action={loginWithGoogle} className="mt-3">
+        <input type="hidden" name="redirect" value={redirectTo} />
         <button type="submit" className="btn-outline w-full">Googleで登録</button>
       </form>
 

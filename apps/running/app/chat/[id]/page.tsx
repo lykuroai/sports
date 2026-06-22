@@ -26,7 +26,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     .order("created_at", { ascending: true })
     .limit(200);
 
-  async function send(text: string): Promise<{ error: string | null }> {
+  async function send(text: string): Promise<{ error: string | null; message?: ChatMessageView }> {
     "use server";
     const s = await createServerClient();
     const {

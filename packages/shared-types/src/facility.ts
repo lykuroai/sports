@@ -42,42 +42,6 @@ export interface FacilityReview {
   created_at: string;
 }
 
-// ---- 収益化 Phase A: 施設運営者サブスク ----
-
-export interface FacilityEntitlements {
-  promotion_rank: number;
-  max_images: number;
-  analytics: boolean;
-}
-
-export interface SubscriptionPlan {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  stripe_price_id: string | null;
-  amount: number;
-  billing_interval: "month" | "year";
-  entitlements: FacilityEntitlements;
-  is_active: boolean;
-  display_order: number;
-}
-
-export type SubscriptionStatus =
-  | "incomplete"
-  | "trialing"
-  | "active"
-  | "past_due"
-  | "canceled"
-  | "unpaid";
-
-export interface FacilitySubscription {
-  id: string;
-  facility_id: string;
-  owner_user_id: string;
-  plan_id: string | null;
-  stripe_subscription_id: string | null;
-  status: SubscriptionStatus;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean;
-}
+// 収益化 Phase A（施設運営者サブスク）は廃止＝施設運営者は無料。関連の型・DB オブジェクトは
+// 削除済み（`0025_drop_facility_billing.sql`）。決済顧客 account.billing_customers と
+// core.stripe_events はプレミアム会員(Phase B)と共用のため残置。

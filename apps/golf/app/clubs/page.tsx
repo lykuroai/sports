@@ -20,16 +20,41 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
 export default async function GolfCourseSearch({
   searchParams,
 }: {
-  searchParams: Promise<{ keyword?: string; pref?: string; sort?: string; date?: string }>;
+  searchParams: Promise<{ keyword?: string; pref?: string; sort?: string; date?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const hasQuery = Boolean(sp.keyword || sp.pref);
+  const page = Math.max(1, Number(sp.page) || 1);
   const result = hasQuery
-    ? await searchCourses({ keyword: sp.keyword, prefecture: sp.pref, sort: sp.sort })
-    : { configured: isGoraConfigured(), items: [] };
+    ? await searchCourses({ keyword: sp.keyword, prefecture: sp.pref, sort: sp.sort, page })
+    : { configured: isGoraConfigured(), items: [], pageInfo: undefined };
 
-  // プレー日は詳細ページのプラン検索へ引き継ぐ。
-  const detailQuery = sp.date ? `?date=${encodeURIComponent(sp.date)}` : "";
+  // ページ移動リンク（キーワード等の検索条件を維持して page だけ差し替える）。
+  const pageHref = (p: number) => {
+    const q = new URLSearchParams();
+    if (sp.keyword) q.set("keyword", sp.keyword);
+    if (sp.pref) q.set("pref", sp.pref);
+    if (sp.sort) q.set("sort", sp.sort);
+    if (sp.date) q.set("date", sp.date);
+    if (p > 1) q.set("page", String(p));
+    const qs = q.toString();
+    return qs ? `/clubs?${qs}` : "/clubs";
+  };
+  const pageInfo = result.pageInfo;
+
+  // クリックしたコース情報を詳細へ引き継ぐ（API の ID 取得が空でも正しい倶楽部を表示するため）。
+  const courseHref = (c: (typeof result.items)[number]) => {
+    const q = new URLSearchParams();
+    if (sp.date) q.set("date", sp.date);
+    q.set("name", c.name);
+    if (c.prefecture) q.set("pref", c.prefecture);
+    if (c.address) q.set("addr", c.address);
+    if (c.highway) q.set("hw", c.highway);
+    if (c.imageUrl) q.set("img", c.imageUrl);
+    if (c.rating != null) q.set("rating", String(c.rating));
+    if (c.detailUrl) q.set("url", c.detailUrl);
+    return `/clubs/${c.courseId}?${q.toString()}`;
+  };
 
   // 上位コースの最安料金（コース検索は料金を返さないためプラン検索で補完）。
   const priced = result.items.slice(0, PRICE_FETCH_LIMIT);
@@ -114,11 +139,15 @@ export default async function GolfCourseSearch({
 
       {result.items.length > 0 && (
         <>
-          <p className="text-sm text-slate-500">{result.items.length}件のゴルフ場</p>
+          <p className="text-sm text-slate-500">
+            {pageInfo && pageInfo.count > 0
+              ? `${pageInfo.count.toLocaleString()}件のゴルフ場（${pageInfo.page} / ${pageInfo.pageCount}ページ）`
+              : `${result.items.length}件のゴルフ場`}
+          </p>
           <ul className="space-y-3">
             {result.items.map((c) => (
               <li key={c.courseId}>
-                <Link href={`/clubs/${c.courseId}${detailQuery}`} className="card flex gap-3 overflow-hidden p-0 hover:shadow">
+                <Link href={courseHref(c)} className="card flex gap-3 overflow-hidden p-0 hover:shadow">
                   <div className="relative h-28 w-36 shrink-0 bg-slate-100">
                     {c.imageUrl ? (
                       <CourseImage src={c.imageUrl} alt={c.name} sizes="144px" />
@@ -147,6 +176,22 @@ export default async function GolfCourseSearch({
               </li>
             ))}
           </ul>
+
+          {pageInfo && pageInfo.pageCount > 1 && (
+            <nav className="flex items-center justify-between gap-2 pt-2" aria-label="ページ送り">
+              {page > 1 ? (
+                <Link href={pageHref(page - 1)} className="btn-outline">← 前へ</Link>
+              ) : (
+                <span className="btn-outline pointer-events-none opacity-40">← 前へ</span>
+              )}
+              <span className="text-sm text-slate-500">{pageInfo.page} / {pageInfo.pageCount}</span>
+              {page < pageInfo.pageCount ? (
+                <Link href={pageHref(page + 1)} className="btn-outline">次へ →</Link>
+              ) : (
+                <span className="btn-outline pointer-events-none opacity-40">次へ →</span>
+              )}
+            </nav>
+          )}
         </>
       )}
 

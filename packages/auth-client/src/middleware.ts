@@ -6,6 +6,11 @@ import { loginUrl } from "./env";
 export interface SessionOptions {
   /** ログイン必須のパス接頭辞。未ログインならログインへ誘導する。 */
   protectedPrefixes?: string[];
+  /**
+   * 自前のログイン画面パス（例: facility の施設運営者ログイン "/login"）。
+   * 指定時は account サブドメインの共通ログインではなく、この app 内の画面へ誘導する。
+   */
+  loginPath?: string;
 }
 
 /**
@@ -44,6 +49,13 @@ export async function updateSession(
   const path = request.nextUrl.pathname;
   const prefixes = options.protectedPrefixes ?? [];
   if (!user && prefixes.some((p) => path.startsWith(p))) {
+    // 自前ログイン画面を持つ app（facility 運営者）は account 共通ログインに飛ばさない。
+    if (options.loginPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = options.loginPath;
+      url.searchParams.set("redirect", path);
+      return NextResponse.redirect(url);
+    }
     // リバースプロキシ（Caddy）越しでは request.nextUrl が内部アドレス（0.0.0.0:3000）に
     // なり、戻り先がブラウザから到達不能になる。X-Forwarded-Host/Proto（無ければ Host）から
     // 公開URLを組み立てて戻り先にする。

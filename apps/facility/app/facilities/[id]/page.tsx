@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { createServerClient, getUser, SCHEMA } from "@spotomo/auth-client";
-import { formatDateTime } from "@spotomo/shared-types";
+import { formatDateTime, OWNER_STATUS_LABEL } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
 import { submitFacilityReview } from "./review-actions";
+import { applyForOwnership, withdrawOwnership } from "./owner-actions";
 
 export default async function FacilityDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,6 +34,17 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
 
   const user = await getUser();
 
+  const { data: ownership } = user
+    ? await supabase
+        .schema(SCHEMA.facility)
+        .from("facility_owners")
+        .select("status")
+        .eq("facility_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null };
+  const ownerStatus = (ownership as { status: string } | null)?.status ?? null;
+
   return (
     <article className="mx-auto max-w-2xl space-y-6">
       <header>
@@ -55,6 +67,38 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
             </span>
           ))}
         </div>
+      )}
+
+      {user && (
+        <section className="card space-y-2 p-4">
+          <h2 className="font-semibold">この施設の運営者ですか？</h2>
+          {ownerStatus === "verified" ? (
+            <p className="text-sm text-emerald-700">あなたはこの施設の承認済み運営者です。施設情報を編集できます。</p>
+          ) : ownerStatus === "pending" ? (
+            <div className="space-y-2">
+              <p className="text-sm text-slate-600">運営者申請は{OWNER_STATUS_LABEL.pending}です。管理者の承認をお待ちください。</p>
+              <form action={withdrawOwnership}>
+                <input type="hidden" name="facility_id" value={f.id} />
+                <button className="btn-outline" type="submit">申請を取り下げる</button>
+              </form>
+            </div>
+          ) : ownerStatus === "rejected" || ownerStatus === "revoked" ? (
+            <p className="text-sm text-slate-500">運営者申請は{OWNER_STATUS_LABEL[ownerStatus]}されています。再申請は運営にお問い合わせください。</p>
+          ) : (
+            <form action={applyForOwnership} className="space-y-2">
+              <input type="hidden" name="facility_id" value={f.id} />
+              <p className="text-sm text-slate-600">
+                施設の公式運営者として情報を管理できます。本人性・施設との関係を確認するため、根拠URL（公式サイト等）の入力にご協力ください。
+              </p>
+              <div>
+                <label className="label" htmlFor="evidence_url">根拠URL（任意）</label>
+                <input id="evidence_url" name="evidence_url" type="url" className="input" placeholder="https://example.com/about" />
+              </div>
+              <textarea name="note" className="input" rows={2} placeholder="補足（任意：役職・連絡可能なことなど）" />
+              <button className="btn-primary" type="submit">運営者として申請する</button>
+            </form>
+          )}
+        </section>
       )}
 
       <section className="space-y-3">

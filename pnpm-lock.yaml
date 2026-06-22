@@ -41,6 +41,9 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      stripe:
+        specifier: ^22.2.2
+        version: 22.2.2(@types/node@20.19.43)
       zod:
         specifier: ^3.23.8
         version: 3.25.76

@@ -9,6 +9,7 @@
 //   GoraPlanSearch:       https://webservice.rakuten.co.jp/documentation/gora-plan-search
 // ※ GORA は applicationId に加え accessKey が必須。
 import https from "node:https";
+import { PREFECTURE_AREA_CODE } from "./areas";
 
 const BASE = () =>
   process.env.RAKUTEN_GORA_API_BASE_URL ?? "https://openapi.rakuten.co.jp/engine/api";
@@ -68,11 +69,22 @@ export interface GoraPlan {
   raw: unknown;
 }
 
+export interface GoraPageInfo {
+  count: number; // 条件に合致した総件数
+  page: number; // 現在ページ（1始まり）
+  pageCount: number; // 総ページ数
+  hits: number; // 1ページあたり件数
+}
+
 export interface GoraResult<T> {
   configured: boolean;
   items: T[];
+  pageInfo?: GoraPageInfo;
   error?: string;
 }
+
+// コース検索の1ページあたり件数（楽天GORA の hits は 1〜30）。
+export const COURSE_HITS = 20;
 
 export interface CourseSearchParams {
   keyword?: string;
@@ -128,6 +140,16 @@ function asRows(v: unknown, wrapKey?: string): Row[] {
 function topItems(json: unknown): Row[] {
   const root = json as { items?: unknown; Items?: unknown };
   return asRows(root?.items ?? root?.Items, "item");
+}
+
+/** ルートのページング情報（count/page/pageCount/hits）。欠損時は items 数から補完。 */
+function pageInfoOf(json: unknown, fallbackHits: number, itemCount: number): GoraPageInfo {
+  const root = json as Record<string, unknown>;
+  const count = num(root?.count) ?? itemCount;
+  const hits = num(root?.hits) ?? fallbackHits;
+  const page = num(root?.page) ?? 1;
+  const pageCount = num(root?.pageCount) ?? (hits > 0 ? Math.max(1, Math.ceil(count / hits)) : 1);
+  return { count, page, pageCount, hits };
 }
 
 /** 住所の先頭から都道府県を推定（コース検索は prefecture を返さないため）。 */
@@ -238,39 +260,74 @@ function mapCourse(r: Row): GoraCourse | null {
 export async function searchCourses(params: CourseSearchParams): Promise<GoraResult<GoraCourse>> {
   if (!isGoraConfigured()) return { configured: false, items: [] };
   try {
+    // 都道府県は GORA のエリアコードでサーバー側絞り込みする（keyword 送出だと
+    // コース名に都道府県名を含むものしか拾えず取りこぼすため）。コード未解決時のみ
+    // keyword＋住所絞り込みにフォールバック。
+    const areaCode =
+      params.areaCode ?? (params.prefecture ? PREFECTURE_AREA_CODE[params.prefecture] : undefined);
+    const usePrefKeyword = !areaCode && Boolean(params.prefecture);
     const json = await callGora(
       COURSE_SEARCH_PATH,
       {
-        // GORA は keyword / areaCode / 緯度経度 のいずれか必須。都道府県のみ指定時は
-        // 都道府県名を keyword として送る（結果は下の prefecture で住所絞り込みも行う）。
-        keyword: params.keyword || params.prefecture || "",
-        areaCode: params.areaCode ?? "",
+        // GORA は keyword / areaCode / 緯度経度 のいずれか必須。
+        keyword: params.keyword || (usePrefKeyword ? params.prefecture! : "") || "",
+        areaCode: areaCode != null ? String(areaCode) : "",
         latitude: params.latitude ?? "",
         longitude: params.longitude ?? "",
         sort: params.sort ?? "",
-        page: params.page ? String(params.page) : "",
+        hits: String(COURSE_HITS),
+        page: params.page ? String(params.page) : "1",
       },
       86_400, // ゴルフ場基本情報は1日キャッシュ
     );
     let items = topItems(json).map(mapCourse).filter((c): c is GoraCourse => c !== null);
-    // 都道府県は API で直接絞れないため住所ベースでクライアント側絞り込み。
-    if (params.prefecture) {
+    const pageInfo = pageInfoOf(json, COURSE_HITS, items.length);
+    // エリアコードで絞れない場合のみ住所ベースのフォールバック絞り込み。
+    if (usePrefKeyword && params.prefecture) {
       const kw = params.prefecture;
       items = items.filter((c) => (c.address ?? "").includes(kw) || (c.prefecture ?? "").includes(kw));
     }
-    return { configured: true, items };
+    return { configured: true, items, pageInfo };
   } catch (e) {
     console.error("[gora] searchCourses failed:", e instanceof Error ? e.message : e);
     return { configured: true, items: [], error: e instanceof Error ? e.message : "GORA API error" };
   }
 }
 
-export async function getCourse(courseId: string): Promise<GoraCourse | null> {
+/**
+ * プラン検索レスポンスのコース階層を GoraCourse にマッピング。
+ * GoraGolfCourseSearch は golfCourseId での絞り込みに非対応のため、ID 指定の単一コース取得は
+ * golfCourseId を受け付ける GoraPlanSearch を使う（住所・緯度経度は返らないため null）。
+ */
+function mapPlanCourse(r: Row): GoraCourse | null {
+  const courseId = str(r.golfCourseId);
+  const name = str(r.golfCourseName);
+  if (!courseId || !name) return null;
+  const reserveUrl = str(r.reserveCalUrlPC) ?? str(r.reserveCalUrlMobile);
+  return {
+    courseId,
+    name,
+    prefecture: str(r.prefecture),
+    address: null,
+    latitude: null,
+    longitude: null,
+    rating: num(r.evaluation),
+    imageUrl: str(r.golfCourseImageUrl),
+    detailUrl: reserveUrl,
+    reserveUrl,
+    highway: str(r.highway),
+    caption: str(r.golfCourseCaption),
+  };
+}
+
+export async function getCourse(courseId: string, playDate?: string): Promise<GoraCourse | null> {
   if (!isGoraConfigured()) return null;
+  const date = playDate ?? new Date().toISOString().slice(0, 10);
   try {
-    const json = await callGora(COURSE_SEARCH_PATH, { golfCourseId: courseId }, 86_400);
-    const items = topItems(json).map(mapCourse).filter((c): c is GoraCourse => c !== null);
-    return items.find((c) => c.courseId === courseId) ?? items[0] ?? null;
+    const json = await callGora(PLAN_SEARCH_PATH, { golfCourseId: courseId, playDate: date }, 900);
+    const items = topItems(json).map(mapPlanCourse).filter((c): c is GoraCourse => c !== null);
+    // golfCourseId 指定なので該当コースのみ返る。取り違え防止のため id 一致のみ採用。
+    return items.find((c) => c.courseId === courseId) ?? null;
   } catch {
     return null;
   }

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@spotomo/auth-client";
 import { notifyUser } from "./notify";
 
 type Client = SupabaseClient;
@@ -14,6 +15,14 @@ export interface CreateEventInput {
   participation_fee: number;
   beginner_allowed: boolean;
   approval_type: "approval" | "first_come";
+  /**
+   * 参加者条件（プレミアム会員のみ有効。非会員の値は DB トリガー
+   * enforce_event_premium が無効化する）。未指定なら条件なし。
+   */
+  gender_condition?: "male" | "female" | "other" | "unspecified";
+  skill_level?: "beginner" | "intermediate" | "advanced" | "any";
+  condition_prefectures?: string[];
+  condition_sport_ids?: string[];
   /** 種目固有の追加列（golf: tee_time 等 / running: target_pace / outdoor: activity_type）。 */
   extra?: Record<string, unknown>;
 }
@@ -36,14 +45,17 @@ export async function createSportEvent(
     .single();
   if (error) return { error: error.message };
 
-  const { data: room } = await supabase
+  // chat_rooms / chat_room_members には INSERT 用 RLS が無いため、ルーム作成と
+  // 主催者のメンバー登録はサービスロールで行う（approveParticipant と同じ方針）。
+  const admin = createAdminClient();
+  const { data: room } = await admin
     .schema(schema)
     .from("chat_rooms")
     .insert({ event_id: data.id })
     .select("id")
     .single();
   if (room) {
-    await supabase
+    await admin
       .schema(schema)
       .from("chat_room_members")
       .insert({ chat_room_id: room.id, user_id: input.organizer_id, role: "organizer" });
