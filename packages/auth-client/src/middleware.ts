@@ -44,7 +44,16 @@ export async function updateSession(
   const path = request.nextUrl.pathname;
   const prefixes = options.protectedPrefixes ?? [];
   if (!user && prefixes.some((p) => path.startsWith(p))) {
-    const target = loginUrl(request.nextUrl.href);
+    // リバースプロキシ（Caddy）越しでは request.nextUrl が内部アドレス（0.0.0.0:3000）に
+    // なり、戻り先がブラウザから到達不能になる。X-Forwarded-Host/Proto（無ければ Host）から
+    // 公開URLを組み立てて戻り先にする。
+    const fwdHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+    const fwdProto =
+      request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+    const publicHref = fwdHost
+      ? `${fwdProto}://${fwdHost}${path}${request.nextUrl.search}`
+      : request.nextUrl.href;
+    const target = loginUrl(publicHref);
     // ACCOUNT_URL 未設定（単一オリジン運用）なら自オリジンの /login に倒す
     if (target.startsWith("http")) return NextResponse.redirect(target);
     const url = request.nextUrl.clone();
