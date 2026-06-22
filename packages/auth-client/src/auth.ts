@@ -33,8 +33,10 @@ export async function getUser(): Promise<User | null> {
  */
 export async function loginUrlFor(path: string): Promise<string> {
   const h = await headers();
+  // リバースプロキシ（Caddy）越しでは Host が内部アドレス（0.0.0.0:3000）になり得るため、
+  // X-Forwarded-Host/Proto を優先して公開URLを組み立てる。
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("host") ?? "";
   return loginUrl(`${proto}://${host}${path}`);
 }
 
