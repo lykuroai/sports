@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createServerClient } from "@spotomo/auth-client";
+import { createServerClient, loginUrlFor } from "@spotomo/auth-client";
 import { applyToSportEvent, createSportEvent } from "@spotomo/domain-common";
 
 const SCHEMA = "running";
@@ -64,7 +64,8 @@ export async function applyToEvent(formData: FormData): Promise<void> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // 種目アプリには /login が無いため、account 共通ログインへ誘導し認証後この募集詳細へ戻す。
+  if (!user) redirect(await loginUrlFor(`/events/${String(formData.get("event_id") ?? "")}`));
 
   const parsed = applySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;
