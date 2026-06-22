@@ -33,12 +33,38 @@ export default async function CourseDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{
+    date?: string;
+    name?: string;
+    pref?: string;
+    addr?: string;
+    hw?: string;
+    img?: string;
+    rating?: string;
+    url?: string;
+  }>;
 }) {
   const { id } = await params;
-  const { date } = await searchParams;
+  const sp = await searchParams;
+  const { date } = sp;
 
-  const course = await getCourse(id);
+  // 一覧から引き継いだコース情報を優先（取り違え防止）。直リンク等で無い場合は API から取得。
+  const course: GoraCourse | null = sp.name
+    ? {
+        courseId: id,
+        name: sp.name,
+        prefecture: sp.pref ?? null,
+        address: sp.addr ?? null,
+        latitude: null,
+        longitude: null,
+        rating: sp.rating != null && sp.rating !== "" ? Number(sp.rating) : null,
+        imageUrl: sp.img ?? null,
+        detailUrl: sp.url ?? null,
+        reserveUrl: sp.url ?? null,
+        highway: sp.hw ?? null,
+        caption: null,
+      }
+    : await getCourse(id, date);
   if (!course) notFound();
   const plans = await searchPlans({ courseId: id, playDate: date });
 
@@ -63,6 +89,14 @@ export default async function CourseDetail({
       )}
 
       <form className="card flex flex-wrap items-end gap-2 p-4" action={`/clubs/${id}`}>
+        {/* コース情報をプレー日変更後も引き継ぐ（取り違え防止）。 */}
+        {sp.name && <input type="hidden" name="name" value={sp.name} />}
+        {sp.pref && <input type="hidden" name="pref" value={sp.pref} />}
+        {sp.addr && <input type="hidden" name="addr" value={sp.addr} />}
+        {sp.hw && <input type="hidden" name="hw" value={sp.hw} />}
+        {sp.img && <input type="hidden" name="img" value={sp.img} />}
+        {sp.rating && <input type="hidden" name="rating" value={sp.rating} />}
+        {sp.url && <input type="hidden" name="url" value={sp.url} />}
         <label className="text-sm">
           <span className="label">プレー日</span>
           <input name="date" type="date" defaultValue={date ?? ""} className="input max-w-[12rem]" />

@@ -1,6 +1,15 @@
-import type { CategoryType } from "./enums";
+import type { CategoryType, SkillLevel } from "./enums";
 
 // ===== core スキーマ（種目横断の共通機能） =====
+
+/** core.user_sports — 利用者が取り組む種目と自己申告レベル（種目横断の共通プロフィール）。 */
+export interface UserSport {
+  user_id: string;
+  sport_id: string;
+  skill_level: SkillLevel;
+  experience_years: number | null;
+  is_favorite: boolean;
+}
 
 export interface Sport {
   id: string;

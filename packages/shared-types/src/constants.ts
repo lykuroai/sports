@@ -23,11 +23,36 @@ export const SKILL_LEVEL_LABEL: Record<SkillLevel, string> = {
   any: "レベル不問",
 };
 
+/** 利用者が自分の種目レベルとして選べる値（'any' は募集側専用なので除外）。 */
+export const USER_SKILL_LEVELS: SkillLevel[] = ["beginner", "intermediate", "advanced"];
+
+/** 施設運営者の申請・承認状態のラベル（facility.facility_owners.status）。 */
+export const OWNER_STATUS_LABEL: Record<string, string> = {
+  pending: "承認待ち",
+  verified: "承認済み",
+  rejected: "却下",
+  revoked: "取消",
+};
+
 export const GENDER_LABEL: Record<Gender, string> = {
   male: "男性",
   female: "女性",
   other: "その他",
   unspecified: "指定なし",
+};
+
+/** 年代の選択肢。account.profiles.age_range は text 列にこの値をそのまま格納する。 */
+export const AGE_RANGE_OPTIONS = [
+  "10代", "20代", "30代", "40代", "50代", "60代以上",
+] as const;
+export type AgeRange = (typeof AGE_RANGE_OPTIONS)[number];
+
+/** 本人確認状態のバッジ表示。account.profiles.verification_status に対応。 */
+export const VERIFICATION_STATUS_LABEL: Record<string, string> = {
+  unverified: "未確認",
+  pending: "確認中",
+  verified: "本人確認済み",
+  rejected: "未確認",
 };
 
 export const APPROVAL_TYPE_LABEL: Record<ApprovalType, string> = {

@@ -83,6 +83,86 @@ export async function requireFacilityOwner(facilityId: string): Promise<User> {
   return user;
 }
 
+export type AccountType = "general" | "facility_owner";
+
+/** 現在ログイン中ユーザのアカウント種別（未ログインなら null）。 */
+export async function getAccountType(): Promise<AccountType | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .schema(SCHEMA.account)
+    .from("users")
+    .select("account_type")
+    .eq("id", user.id)
+    .maybeSingle();
+  const t = (data as { account_type?: string } | null)?.account_type;
+  return t === "facility_owner" ? "facility_owner" : "general";
+}
+
+/**
+ * 施設運営者アカウント（種別が facility_owner、または既存の verified オーナー）なら User を返す。
+ * 既存オーナー（種別 general のまま）も施設機能を使えるよう facility_owners も見る（移行期の互換）。
+ */
+export async function getOwnerAccount(): Promise<User | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: row } = await supabase
+    .schema(SCHEMA.account)
+    .from("users")
+    .select("account_type")
+    .eq("id", user.id)
+    .maybeSingle();
+  if ((row as { account_type?: string } | null)?.account_type === "facility_owner") return user;
+
+  const { data: owns } = await supabase
+    .schema(SCHEMA.facility)
+    .from("facility_owners")
+    .select("status")
+    .eq("user_id", user.id)
+    .eq("status", "verified")
+    .limit(1)
+    .maybeSingle();
+  return owns ? user : null;
+}
+
+/** 施設運営者アカウントでなければトップへリダイレクト。 */
+export async function requireOwnerAccount(): Promise<User> {
+  const user = await getOwnerAccount();
+  if (!user) redirect("/");
+  return user;
+}
+
+/**
+ * 一般会員向けページのガード。施設運営者アカウントは一般機能（プロフィール・募集参加等）を
+ * 持たないため、facility アプリへ誘導する。未ログインは引数の戻り先付きでログインへ。
+ */
+export async function requireGeneralAccount(redirectTo = "/"): Promise<User> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/login?redirect=${encodeURIComponent(redirectTo)}`);
+
+  const { data } = await supabase
+    .schema(SCHEMA.account)
+    .from("users")
+    .select("account_type")
+    .eq("id", user.id)
+    .maybeSingle();
+  if ((data as { account_type?: string } | null)?.account_type === "facility_owner") {
+    const facilityUrl = process.env.NEXT_PUBLIC_FACILITY_URL;
+    redirect(facilityUrl ? `${facilityUrl}/owner` : "/");
+  }
+  return user;
+}
+
 /** 監査ログ記録（core.audit_logs、サービスロール）。 */
 export async function writeAuditLog(
   actorId: string,

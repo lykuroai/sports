@@ -17,8 +17,8 @@ export interface ChatPanelProps {
   roomId: string;
   userId: string;
   initialMessages: ChatMessageView[];
-  /** 送信用 Server Action（呼び出し側でメンバー検証）。 */
-  sendAction: (text: string) => Promise<{ error: string | null }>;
+  /** 送信用 Server Action（呼び出し側でメンバー検証）。挿入したメッセージを返すと即時反映する。 */
+  sendAction: (text: string) => Promise<{ error: string | null; message?: ChatMessageView }>;
   /** 送信者ID→表示名のマップ（公開ニックネーム）。発言者名の表示に使う。 */
   memberNames?: Record<string, string>;
 }
@@ -70,8 +70,16 @@ export function ChatPanel({
     setError(null);
     startTransition(async () => {
       const res = await sendAction(text);
-      if (res.error) setError(res.error);
-      else if (inputRef.current) inputRef.current.value = "";
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      // Realtime を待たず送信したメッセージを即時反映（id で重複排除）。
+      if (res.message) {
+        const m = res.message;
+        setMessages((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m]));
+      }
+      if (inputRef.current) inputRef.current.value = "";
     });
   }
 

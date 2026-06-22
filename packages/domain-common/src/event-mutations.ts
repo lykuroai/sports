@@ -15,6 +15,14 @@ export interface CreateEventInput {
   participation_fee: number;
   beginner_allowed: boolean;
   approval_type: "approval" | "first_come";
+  /**
+   * 参加者条件（プレミアム会員のみ有効。非会員の値は DB トリガー
+   * enforce_event_premium が無効化する）。未指定なら条件なし。
+   */
+  gender_condition?: "male" | "female" | "other" | "unspecified";
+  skill_level?: "beginner" | "intermediate" | "advanced" | "any";
+  condition_prefectures?: string[];
+  condition_sport_ids?: string[];
   /** 種目固有の追加列（golf: tee_time 等 / running: target_pace / outdoor: activity_type）。 */
   extra?: Record<string, unknown>;
 }

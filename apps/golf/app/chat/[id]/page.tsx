@@ -35,7 +35,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     members.filter((m) => m.nickname).map((m) => [m.user_id, m.nickname as string]),
   );
 
-  async function send(text: string): Promise<{ error: string | null }> {
+  async function send(text: string): Promise<{ error: string | null; message?: ChatMessageView }> {
     "use server";
     const s = await createServerClient();
     const {

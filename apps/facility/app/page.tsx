@@ -42,8 +42,7 @@ export default async function FacilityHome({
       )}
 
       <p className="text-xs text-slate-400">
-        施設運営者の方は <Link href="/owner" className="text-brand hover:underline">運営者ダッシュボード</Link> から自施設を管理し、
-        <Link href="/plans" className="text-brand hover:underline">運営者プラン</Link> を契約できます。
+        施設運営者の方は <Link href="/owner" className="text-brand hover:underline">運営者ダッシュボード</Link> から自施設を無料で管理できます。
       </p>
     </div>
   );

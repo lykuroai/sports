@@ -25,5 +25,8 @@ export async function GET(request: Request) {
   const res = NextResponse.redirect(authUrl.toString());
   // CSRF 対策に state を HttpOnly Cookie で保持し、callback で照合
   res.cookies.set("line_oauth_state", state, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
+  // 元ページ（redirect）を callback まで持ち回す。
+  const next = new URL(request.url).searchParams.get("redirect");
+  if (next) res.cookies.set("line_next", next, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
   return res;
 }
