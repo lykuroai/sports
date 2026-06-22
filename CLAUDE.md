@@ -64,6 +64,22 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   検証後にサービスロールでユーザ作成/更新＋使い捨てパスワードで `signInWithPassword` して
   Supabase セッションを発行する（`apps/account/app/phone/actions.ts`）。Supabase 組み込みの
   phone OTP は使わない。
+- **ログイン後の戻り先（redirect）**: 未ログインで保護ページ（募集作成・参加申請・編集等）へ
+  進んだら、ログイン/新規登録を経て**元のページへ戻す**。仕組みは全ログイン手段で `redirect` を
+  一貫して引き継ぐこと。要点:
+  - 種目アプリ（golf/running/outdoor）には `/login` ルートが無い（ログインは account 集約）。
+    未ログイン誘導は必ず account 共通ログインの**絶対URL**へ。`packages/auth-client` の
+    `loginUrlFor(path)`（リクエストの自オリジン＋ACCOUNT_URL から生成）と `updateSession`
+    （proxy）を使う。相対 `/login` に飛ばすと種目アプリ側で 404 になる。
+  - リバースプロキシ（Caddy）越しでは `request.nextUrl`/`Host` が内部アドレス
+    `0.0.0.0:3000` になる。戻り先URLは **`X-Forwarded-Host`/`X-Forwarded-Proto`**
+    （無ければ Host）から公開URLを組み立てる（middleware・`loginUrlFor`）。
+  - ログイン後の遷移先は `resolvePostLogin()` で検証（相対パス or 同一 apex の絶対URLのみ許可、
+    外部URLは `/profile` フォールバック＝オープンリダイレクト対策）。
+  - 戻り先は全手段で保持: メール（hidden input）/ Google（`oauth_next` Cookie。Supabase OAuth は
+    `redirectTo` のクエリを許可リスト次第で落とすため Cookie で持ち回す）/ LINE（`line_next`
+    Cookie）/ 電話（hidden input）。新規登録は `/profile?redirect=…` を挟み、プロフィール保存後に
+    元ページへ戻す。
 - ブロックの双方向判定は RLS で他者の行が読めないため RPC `is_blocked_between(a,b)`
   （`0005_blocks.sql`）を使う。現在地周辺検索は RPC `nearby_facilities(lat,lng,radius_m,lim)`
   （`0006_geo.sql`、PostGIS `ST_DWithin`/`ST_Distance`）。地図タイル描画は未実装。

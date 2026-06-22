@@ -85,6 +85,39 @@ Supabase プロジェクト）へ適用済み。型チェック・lint は全パ
 
 ---
 
+## 5. 未ログイン導線とログイン後リダイレクトの整備
+
+コードのみ（DB 変更なし）。`apps/account`・`apps/golf|running|outdoor`・`packages/auth-client`。
+未ログインで保護操作へ進んだら、ログイン/新規登録を経て**元のページへ戻す**フローを全体整備した。
+
+### 仕様
+1. 募集を作成 → ログイン画面 → ログイン後 → **募集作成へ戻る**。
+2. 募集を作成 → 新規登録 → プロフィール画面で保存 → **募集作成へ戻る**（登録時はプロフィール設定を挟む）。
+3. 上記は**参加申請・イベント編集**など他の保護操作でも同様。**全ログイン手段**（メール／Google／
+   LINE／電話）で戻り先を保持する。
+
+### 実装の要点（多重）
+| テーマ | 内容 |
+|---|---|
+| 種目アプリに `/login` 無し | golf/running/outdoor はログイン画面を持たない（account 集約）。未ログイン誘導は `loginUrlFor(path)`（`packages/auth-client`）で **account 共通ログインの絶対URL**を生成。相対 `/login` は種目アプリで 404 になるため禁止（参加申請ボタンの 404 を解消） |
+| リバプロ越しの内部アドレス | Caddy 越しでは `request.nextUrl`/`Host` が `0.0.0.0:3000` になる。戻り先は **`X-Forwarded-Host`/`X-Forwarded-Proto`**（無ければ Host）から公開URLを組み立てる（middleware・`loginUrlFor`） |
+| オープンリダイレクト対策 | `resolvePostLogin()`：相対パス or 同一 apex の絶対URLのみ許可、外部URLは `/profile` フォールバック |
+| 戻り先の保持手段 | メール=hidden input、**Google=`oauth_next` Cookie**（Supabase OAuth は `redirectTo` のクエリを許可リスト次第で落とすため Cookie で持ち回す）、LINE=`line_next` Cookie、電話=hidden input。新規登録は `/profile?redirect=…` を挟みプロフィール保存後に戻す |
+
+### ビルド/デプロイの整備
+- `docker/Dockerfile`：`pnpm install` を BuildKit の cache mount（`--store-dir=/pnpm/store`）化し、
+  ネットワーク不調（`ERR_SOCKET_TIMEOUT`）耐性と再ビルド高速化を得る。fetch リトライ/タイムアウトも強化。
+- **デプロイ時の注意**：`docker compose up -d --build` のレイヤキャッシュで古いアプリコードが
+  出ることがあるため、変更アプリは `docker compose build --no-cache <app>` してから `up`。本番は
+  CAPTCHA・外部OAuth のため、`curl` での非対話チェック＋実機確認で検証する。
+
+### 本番反映状況
+- 全項目を本番（同一サーバの docker compose）へデプロイ・検証済み。`/events/new` の戻り先が
+  公開URLになること、未ログイン募集詳細が「ログインして参加申請する」を出すこと、login が全手段で
+  `redirect` を保持すること、Google ログイン後に募集作成へ戻ることを確認。
+
+---
+
 ## 課金体系の最終形
 
 - **施設運営者：無料**
@@ -94,7 +127,9 @@ Supabase プロジェクト）へ適用済み。型チェック・lint は全パ
 
 ## ドキュメント更新
 
-- `CLAUDE.md`：上記 2〜4 の方針（運営者の別アカウント体系・Phase A 廃止・Phase B 実装＋料金）を追記。
+- `CLAUDE.md`：上記 2〜4 の方針（運営者の別アカウント体系・Phase A 廃止・Phase B 実装＋料金）に加え、
+  **5.（ログイン後リダイレクト／`loginUrlFor`／`resolvePostLogin`／X-Forwarded-Host／OAuth Cookie）**
+  を実装メモへ追記。
 - `docs/monetization/phase-a-facility-owner-billing.md`：Phase A は廃止（このファイル冒頭に注記）。
 
 ---
@@ -106,3 +141,6 @@ Supabase プロジェクト）へ適用済み。型チェック・lint は全パ
 - プレミアム会員の実地テスト（実購読 → `account.user_subscriptions` に `active` 反映の確認）、および
   account アプリの `STRIPE_WEBHOOK_SECRET` が当該エンドポイントの secret と一致しているかの最終確認。
 - 既存施設オーナー（`general` のまま dual-use）の `facility_owner` への種別変換アクション（任意）。
+- イベント編集ページ（`apps/*/app/events/[id]/edit`）の**未ログイン redirect が種目アプリの相対
+  `/login`（不在）を指す**ため、未ログインで編集URLに直接来ると 404 になる（参加申請の #6 と同パターン）。
+  主催者がログイン状態で編集する正規フローは正常。`loginUrlFor` 化で解消可能（未対応）。
