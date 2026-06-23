@@ -21,7 +21,7 @@ export default function HomePage() {
       />
       <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/75 via-black/30 to-transparent p-4 sm:p-8">
         <h1 className="text-4xl font-bold text-white drop-shadow sm:text-6xl">スポともパーク</h1>
-        <p className="mt-3 max-w-2xl text-base font-medium text-white/95 drop-shadow sm:text-xl">
+        <p className="mt-3 max-w-3xl text-lg font-medium text-white/95 drop-shadow sm:text-2xl">
           ゴルフ・ランニング・アウトドアなど、さまざまなスポーツ・レジャーの仲間募集に参加できます。
         </p>
         <div className="mt-4 grid grid-cols-1 gap-2 sm:mt-6 sm:grid-cols-3 sm:gap-3">
