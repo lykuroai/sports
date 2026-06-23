@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
+import { PREFECTURES } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
 
 export const metadata = { title: "施設を探す" };
@@ -52,7 +53,10 @@ export default async function FacilitySearch({
 
       <form className="card flex flex-wrap items-center gap-2 p-4" action="/facilities">
         <input name="q" defaultValue={sp.q ?? ""} placeholder="施設名キーワード" className="input max-w-xs" />
-        <input name="pref" defaultValue={sp.pref ?? ""} placeholder="都道府県" className="input max-w-[10rem]" />
+        <select name="pref" defaultValue={sp.pref ?? ""} className="input max-w-[10rem]">
+          <option value="">都道府県</option>
+          {PREFECTURES.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
         <select name="type" defaultValue={sp.type ?? ""} className="input max-w-[12rem]">
           <option value="">すべての種別</option>
           <option value="陸上競技場・トラック">陸上競技場・トラック</option>
