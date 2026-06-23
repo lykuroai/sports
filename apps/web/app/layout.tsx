@@ -21,7 +21,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
           <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-slate-400">© スポともパーク</span>
+            <span className="text-slate-400">© 2026 株式会社eビジネスソリューション</span>
             <LegalLinks />
           </div>
         </footer>
