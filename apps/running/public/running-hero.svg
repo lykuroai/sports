@@ -43,9 +43,9 @@
         fill="none" stroke="#1b6e3b" stroke-width="2" stroke-dasharray="2 18" stroke-linecap="round" opacity="0.45"/>
 
   <!-- multiple runners, different colours, staggered for depth -->
-  <use href="#runner" x="0" y="0" width="160" height="160" transform="translate(380,96)" fill="#1b6e3b"/>
-  <use href="#runner" x="0" y="0" width="148" height="148" transform="translate(545,116)" fill="#ef7d00"/>
-  <use href="#runner" x="0" y="0" width="172" height="172" transform="translate(700,80)" fill="#2b7bbd"/>
-  <use href="#runner" x="0" y="0" width="140" height="140" transform="translate(875,124)" fill="#d6336c"/>
-  <use href="#runner" x="0" y="0" width="156" height="156" transform="translate(1030,100)" fill="#7a3ea8"/>
+  <use href="#runner" x="0" y="0" width="320" height="320" transform="translate(470,-18)" fill="#1b6e3b"/>
+  <use href="#runner" x="0" y="0" width="296" height="296" transform="translate(625,2)" fill="#ef7d00"/>
+  <use href="#runner" x="0" y="0" width="344" height="344" transform="translate(770,-42)" fill="#2b7bbd"/>
+  <use href="#runner" x="0" y="0" width="280" height="280" transform="translate(940,18)" fill="#d6336c"/>
+  <use href="#runner" x="0" y="0" width="312" height="312" transform="translate(1080,-10)" fill="#7a3ea8"/>
 </svg>
