@@ -56,6 +56,16 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   **必ず `facilities` のカラム名に一致**させる。管理者承認時に `reviewFacilitySubmission`
   がそのまま `facilities` へ insert/update するため。新規キーを足す際は両方を合わせること。
   CSV取り込み（`src/app/admin/facilities/import/`）の許可カラムも同様。
+- **【重要・スキーマ実態】`facilities` は `0001_init.sql` ではなく `0009_schema_split.sql` の定義が
+  本番の実態**（`0001` は `public.facilities` を drop して `facility` スキーマに作り直している）。
+  実カラムは `id, name, facility_type, description, postal_code, prefecture, city, address,
+  latitude, longitude, geog, source, status, created_at, updated_at`。
+  - 取り込み元（出所）は **`source`**（enum `facility_source`、`source_type`/`source_id` は無い）。
+  - 位置情報は **`geog`**（`geography(Point,4326)`、`geom` は無い）。緯度経度から
+    `'SRID=4326;POINT(lng lat)'`（EWKT）で投入すれば現在地周辺検索 `nearby_facilities` が効く。
+  - `status` は enum `verification_status`（既定 `verified`）。`0001` 由来の
+    `nearest_station`/`phone`/`website_url`/`verification_status`/`source_id` 等のカラムは
+    本番には**存在しない**。CSV/`submitted_data` のキーは上記実カラムに合わせること。
 - **通知作成は必ず `notifyUser()`（`src/lib/notify.ts`）経由**。notifications には INSERT
   用 RLS ポリシーが無く、セッションクライアントからの他ユーザー宛 insert は失敗する。
   `notifyUser` はサービスロールで insert し、`users.email` 宛にメール送信
