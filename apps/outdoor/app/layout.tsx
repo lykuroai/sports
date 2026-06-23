@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { SiteHeader } from "@spotomo/shared-ui";
+import { SiteHeader, LegalLinks } from "@spotomo/shared-ui";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 import { NotificationBell } from "@spotomo/shared-ui/notification-bell";
 import { selfOrigin, getUser, loginUrlFor } from "@spotomo/auth-client";
 
@@ -20,7 +22,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SiteHeader appName="アウトドア" accountUrl={accountUrl} currentOrigin={currentOrigin} myPageHref="/mypage" loggedIn={!!user} loginHref={loginHref} actions={<NotificationBell accountUrl={accountUrl} />} />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-8 text-sm text-slate-500">
+          <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
+            <LegalLinks baseUrl={SITE_URL} />
             <p>スポともパーク — 共通ユーザ基盤 + 種目別ドメイン構成</p>
           </div>
         </footer>

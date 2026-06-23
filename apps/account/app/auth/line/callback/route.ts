@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { ACCOUNT_URL, createAdminClient, createServerClient, resolvePostLogin } from "@spotomo/auth-client";
+import { ACCOUNT_URL, createAdminClient, createServerClient, resolvePostLogin, SCHEMA } from "@spotomo/auth-client";
 
 export const runtime = "nodejs";
 
@@ -51,16 +51,43 @@ export async function GET(request: Request) {
   const lineUserId = String(claims.sub ?? "");
   if (!lineUserId) return fail("line_sub");
   const name = (claims.name as string | undefined) ?? "LINEユーザー";
-  // email スコープ未許可ならメール無し → 決定論的な合成メールで一意化
-  const email = (claims.email as string | undefined) ?? `line_${lineUserId}@line.spotomo.local`;
+  // LINE がメールを返すのは「メールアドレス取得権限」が承認済み＋ユーザー同意時のみ。
+  // 取得できなければ決定論的な合成メールで一意化する（後で実メール登録を促す）。
+  const realEmail = (claims.email as string | undefined)?.trim() || undefined;
+  const syntheticEmail = `line_${lineUserId}@line.spotomo.local`;
+  const metadata = { nickname: name, line_user_id: lineUserId, provider: "line" };
 
-  // 3. Supabase に find-or-create（既存なら 422 を無視）
+  // 3. Supabase に find-or-create。実メールが取れた場合は、過去のメール無しログインで
+  //    作られた合成メールアカウントを実メールへ移行する（同一 LINE ユーザーの一貫性）。
   const admin = createAdminClient();
-  await admin.auth.admin.createUser({
-    email,
-    email_confirm: true,
-    user_metadata: { nickname: name, line_user_id: lineUserId, provider: "line" },
-  });
+  let email = realEmail ?? syntheticEmail;
+
+  if (realEmail) {
+    const { data: existing } = await admin
+      .schema(SCHEMA.account)
+      .from("users")
+      .select("id")
+      .eq("email", syntheticEmail)
+      .maybeSingle();
+    if (existing?.id) {
+      // 既存の合成メールアカウントを実メールへ更新。実メールが他アカウントで使用中等で
+      // 更新できない場合は合成のまま継続（既存アカウントとデータを保持）。
+      const { error: migErr } = await admin.auth.admin.updateUserById((existing as { id: string }).id, {
+        email: realEmail,
+        email_confirm: true,
+        user_metadata: metadata,
+      });
+      if (migErr) {
+        console.error("line email migrate error", migErr);
+        email = syntheticEmail;
+      }
+    } else {
+      // 実メールのアカウントを find-or-create（既存なら 422 を無視＝メールでのアカウント統合）。
+      await admin.auth.admin.createUser({ email: realEmail, email_confirm: true, user_metadata: metadata });
+    }
+  } else {
+    await admin.auth.admin.createUser({ email: syntheticEmail, email_confirm: true, user_metadata: metadata });
+  }
 
   // 4. magiclink トークンを生成し、session を確立（メール送信はせずトークンを直接検証）
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({ type: "magiclink", email });

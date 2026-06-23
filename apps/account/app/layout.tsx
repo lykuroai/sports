@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { SiteHeader } from "@spotomo/shared-ui";
+import { SiteHeader, LegalLinks } from "@spotomo/shared-ui";
 import { NotificationBell } from "@spotomo/shared-ui/notification-bell";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
 export const metadata: Metadata = {
   title: { default: "共通アカウント｜スポともパーク", template: "%s｜スポともパーク" },
@@ -16,7 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader appName="共通アカウント" accountUrl={accountUrl} actions={<NotificationBell accountUrl={accountUrl} />} />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-8 text-sm text-slate-500">
+          <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
+            <LegalLinks baseUrl={SITE_URL} />
             <p>スポともパーク — 共通ユーザ基盤 + 種目別ドメイン構成</p>
           </div>
         </footer>
