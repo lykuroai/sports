@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "特定商取引法に基づく表記" };
 
-// 各項目は事業者の実態に合わせて確定すること。【 】は要記入のプレースホルダ。
+// 事業者情報は運用会社（株式会社eビジネスソリューション）の実態に基づく。価格・解約条件は
+// 提供サービスの実態に合わせて確定すること。
 const ROWS: { label: string; value: React.ReactNode }[] = [
   { label: "販売事業者", value: "株式会社eビジネスソリューション（EBS）" },
   { label: "運営統括責任者", value: "代表取締役社長 郭 亮" },
   { label: "所在地", value: "〒135-0043 東京都江東区塩浜2-13-9" },
   { label: "電話番号", value: "03-6666-3425" },
-  { label: "お問い合わせ", value: "【お問い合わせ用メールアドレス】" },
+  { label: "お問い合わせ", value: "support@lykuro.ai" },
   {
     label: "販売価格",
     value: (
@@ -69,8 +70,7 @@ export default function LegalPage() {
       </dl>
 
       <p className="text-xs text-slate-400">
-        ※ お問い合わせ用メールアドレス・価格・解約条件等を確定し、正式公開前に専門家の確認を受けて
-        ください。
+        ※ 価格・解約条件等を確定し、正式公開前に専門家の確認を受けてください。
       </p>
     </article>
   );

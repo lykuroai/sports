@@ -116,12 +116,12 @@ export default function PrivacyPage() {
           株式会社eビジネスソリューション（EBS）<br />
           〒135-0043 東京都江東区塩浜2-13-9<br />
           TEL：03-6666-3425<br />
-          メールアドレス：【お問い合わせ用メールアドレス】
+          メールアドレス：support@lykuro.ai
         </p>
       </Section>
 
       <p className="text-xs text-slate-400">
-        ※ お問い合わせ用メールアドレスを確定し、正式公開前に専門家の確認を受けてください。
+        ※ 正式公開前に専門家の確認を受けてください。
       </p>
     </article>
   );
