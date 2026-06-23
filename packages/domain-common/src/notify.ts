@@ -45,7 +45,17 @@ export async function notifyUser({
     .eq("id", userId)
     .maybeSingle();
 
-  if (data?.email && data.status === "active") {
+  // ユーザーの通知設定（account.notification_settings.email_enabled）を尊重する。
+  // 行が無い場合は既定 true（受信する）。アプリ内通知は設定に関わらず常に作成する。
+  const { data: settings } = await db
+    .schema(SCHEMA.account)
+    .from("notification_settings")
+    .select("email_enabled")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const emailEnabled = (settings as { email_enabled?: boolean } | null)?.email_enabled ?? true;
+
+  if (emailEnabled && data?.email && data.status === "active") {
     await sendEmail({ to: data.email, subject: title, text: body ?? title });
   }
 }
