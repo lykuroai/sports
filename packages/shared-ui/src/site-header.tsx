@@ -92,15 +92,20 @@ export function SiteHeader({
           ))}
         {showLogin ? (
           <a href={loginHref} className="hover:text-brand">
-            ログイン（新規登録）
+            ログイン
           </a>
-        ) : (
+        ) : myPageHref ? (
+          // ログイン済み（種目アプリ）。プロフィールはマイページ画面側に置くため、
+          // ヘッダは「マイページ」単独リンク（アカウント表記は廃止）。
           <>
-            {myPageHref && (
-              <a href={myPageHref} className="hover:text-brand">
-                マイページ
-              </a>
-            )}
+            <a href={myPageHref} className="hover:text-brand">
+              マイページ
+            </a>
+            {actions}
+          </>
+        ) : (
+          // myPageHref を渡さないアプリ（account 等）は従来どおり「アカウント」を表示。
+          <>
             <a href={accountHref} className="hover:text-brand">
               アカウント
             </a>

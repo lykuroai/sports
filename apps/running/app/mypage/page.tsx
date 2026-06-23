@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { createServerClient } from "@spotomo/auth-client";
+import { createServerClient, selfOrigin } from "@spotomo/auth-client";
 import { fetchMypageCounts } from "@spotomo/domain-common";
 import { StatCard } from "@spotomo/shared-ui";
 
 const DOMAIN = "running";
+const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
 
 export default async function MyPage() {
   const supabase = await createServerClient();
@@ -11,6 +12,11 @@ export default async function MyPage() {
   if (!user) redirect("/login?redirect=/mypage");
 
   const counts = await fetchMypageCounts(supabase, DOMAIN, user.id);
+  // 共通プロフィール（account）への導線。編集後はこの種目アプリへ戻す。
+  const origin = await selfOrigin();
+  const profileHref = ACCOUNT_URL
+    ? `${ACCOUNT_URL}/profile?redirect=${encodeURIComponent(origin)}`
+    : "/profile";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -22,6 +28,13 @@ export default async function MyPage() {
         <StatCard href="/mypage/following" label="フォロー" count={counts.following} />
         <StatCard href="/mypage/followers" label="フォロワー" count={counts.followers} />
       </div>
+      <a
+        href={profileHref}
+        className="card flex items-center justify-between p-4 transition-shadow hover:shadow-md"
+      >
+        <span className="font-medium">プロフィール</span>
+        <span className="text-sm text-slate-400">編集する →</span>
+      </a>
     </div>
   );
 }
