@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { SPORT_DOMAINS } from "@spotomo/shared-types";
-import heroImage from "../public/park-hero.png";
+import heroImage from "../public/park-hero.webp";
 
 export default function HomePage() {
   return (
