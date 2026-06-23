@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { SCHEMA } from "@spotomo/auth-client";
+import { SCHEMA, createAdminClient } from "@spotomo/auth-client";
 import {
   APPLYABLE_EVENT_STATUSES,
   VISIBLE_EVENT_STATUSES,
@@ -88,14 +88,23 @@ export function makeEventRepo(schema: string) {
 }
 
 /** 主催者プロフィール(account)・施設名(facility)・承認済み人数(種目) を付与。 */
+export async function decorateEvents(supabase: Client, schema: string, rows: DecoratedEvent[]) {
+  return decorate(supabase, schema, rows);
+}
+
 async function decorate(supabase: Client, schema: string, rows: DecoratedEvent[]) {
   if (rows.length === 0) return;
   const ids = rows.map((r) => r.id);
   const organizerIds = [...new Set(rows.map((r) => r.organizer_id))];
   const facilityIds = [...new Set(rows.map((r) => r.facility_id).filter(Boolean))] as string[];
 
+  // 承認済み人数の集計はサービスロールで行う。event_participants の SELECT 用 RLS は
+  // 「本人 or 主催者 or 管理者」しか読めないため、一般の閲覧者がセッションクライアントで
+  // 数えると自分の行しか見えず n が 0 や過少になる（定員 n/m の表示崩れ）。承認済み人数は
+  // 元々公開情報なのでサービスロールで集計してよい。
+  const admin = createAdminClient();
   const [{ data: parts }, { data: profiles }, { data: facilities }] = await Promise.all([
-    supabase.schema(schema).from("event_participants").select("event_id").in("event_id", ids).eq("status", "approved"),
+    admin.schema(schema).from("event_participants").select("event_id").in("event_id", ids).eq("status", "approved"),
     supabase.schema(SCHEMA.account).from("profiles").select("user_id, nickname, rating").in("user_id", organizerIds),
     facilityIds.length
       ? supabase.schema(SCHEMA.facility).from("facilities").select("id, name").in("id", facilityIds)

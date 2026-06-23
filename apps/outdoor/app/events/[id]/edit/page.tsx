@@ -28,7 +28,7 @@ export default async function EditEventPage({
     .schema(SCHEMA)
     .from("events")
     .select(
-      "id, organizer_id, title, description, prefecture, city, event_start_at, capacity, participation_fee, beginner_allowed, approval_type, gender_condition, skill_level, condition_prefectures, condition_sport_ids, activity_type, deleted_at",
+      "id, organizer_id, title, description, prefecture, city, event_start_at, application_deadline, capacity, participation_fee, beginner_allowed, approval_type, gender_condition, skill_level, condition_prefectures, condition_sport_ids, activity_type, deleted_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -54,6 +54,7 @@ export default async function EditEventPage({
     prefecture: ev.prefecture,
     city: ev.city,
     event_start_at_local: toLocalInput(ev.event_start_at),
+    application_deadline_local: ev.application_deadline ? toLocalInput(ev.application_deadline) : "",
     capacity: ev.capacity,
     participation_fee: ev.participation_fee,
     beginner_allowed: ev.beginner_allowed,

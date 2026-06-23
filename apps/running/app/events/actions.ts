@@ -15,6 +15,7 @@ const createSchema = z.object({
   prefecture: z.string().optional(),
   city: z.string().optional(),
   event_start_at: z.string().min(1, "開催日時を入力してください"),
+  application_deadline: z.string().optional(),
   capacity: z.coerce.number().int().min(1).max(200),
   participation_fee: z.coerce.number().int().min(0),
   approval_type: z.enum(["approval", "first_come"]),
@@ -47,6 +48,7 @@ export async function createEvent(_prev: CreateState, formData: FormData): Promi
     prefecture: v.prefecture || null,
     city: v.city || null,
     event_start_at: new Date(v.event_start_at).toISOString(),
+    application_deadline: v.application_deadline ? new Date(v.application_deadline).toISOString() : null,
     capacity: v.capacity,
     participation_fee: v.participation_fee,
     // チェックボックスは未チェック時に送信されないため、値の有無で判定する。
@@ -91,6 +93,7 @@ export async function updateEvent(_prev: CreateState, formData: FormData): Promi
       prefecture: v.prefecture || null,
       city: v.city || null,
       event_start_at: new Date(v.event_start_at).toISOString(),
+      application_deadline: v.application_deadline ? new Date(v.application_deadline).toISOString() : null,
       capacity: v.capacity,
       participation_fee: v.participation_fee,
       beginner_allowed: formData.get("beginner_allowed") === "true",
@@ -160,7 +163,7 @@ export async function applyToEvent(formData: FormData): Promise<void> {
   const parsed = applySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;
 
-  await applyToSportEvent(supabase, SCHEMA, {
+  const result = await applyToSportEvent(supabase, SCHEMA, {
     eventId: parsed.data.event_id,
     userId: user.id,
     message: parsed.data.application_message,
@@ -168,4 +171,7 @@ export async function applyToEvent(formData: FormData): Promise<void> {
   });
 
   revalidatePath(`/events/${parsed.data.event_id}`);
+  if (result === "closed") {
+    redirect(`/events/${parsed.data.event_id}?error=${encodeURIComponent("申請の締切日を過ぎているため参加申請できません。")}`);
+  }
 }
