@@ -24,7 +24,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SiteHeader
           appName=""
           brand="ゴルフとも"
-          portalUrl={SITE_URL}
           logo={
             <Image
               src="/golf-logo.svg"
@@ -51,6 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
           <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
+            <a href={SITE_URL} className="font-medium text-brand hover:underline">← スポともパーク</a>
             <LegalLinks baseUrl={SITE_URL} />
           </div>
         </footer>

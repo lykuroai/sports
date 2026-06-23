@@ -15,10 +15,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja">
       <body className="min-h-screen">
-        <SiteHeader appName="共通アカウント" portalUrl={SITE_URL} accountUrl={accountUrl} actions={<NotificationBell accountUrl={accountUrl} />} />
+        <SiteHeader appName="共通アカウント" accountUrl={accountUrl} actions={<NotificationBell accountUrl={accountUrl} />} />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
           <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
+            <a href={SITE_URL} className="font-medium text-brand hover:underline">← スポともパーク</a>
             <LegalLinks baseUrl={SITE_URL} />
           </div>
         </footer>
