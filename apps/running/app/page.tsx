@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createServerClient } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../lib/events";
-import heroImage from "../public/running-hero.jpg";
+import heroImage from "../public/running-hero.svg";
 
 export default async function Home({
   searchParams,
