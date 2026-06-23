@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createServerClient } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../lib/events";
-import heroImage from "../public/golf-hero.png";
+import heroImage from "../public/golf-hero.webp";
 
 export default async function GolfHome({
   searchParams,
