@@ -1,5 +1,6 @@
 export { sendEmail } from "./email";
-export { sendVerification, checkVerification } from "./sms";
+export { sendVerification, checkVerification, lookupPhone } from "./sms";
+export type { PhoneLookupResult } from "./sms";
 export { verifyTurnstile } from "./captcha";
 export { notifyUser } from "./notify";
 export { makeEventRepo, isApplyable, decorateEvents } from "./events";

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerClient, createAdminClient, resolvePostLogin, SCHEMA } from "@spotomo/auth-client";
-import { syncUserSports, sendVerification, checkVerification, verifyTurnstile } from "@spotomo/domain-common";
+import { syncUserSports, sendVerification, checkVerification, verifyTurnstile, lookupPhone, type PhoneLookupResult } from "@spotomo/domain-common";
 
 const VALID_LEVELS = new Set(["beginner", "intermediate", "advanced"]);
 
@@ -148,6 +148,11 @@ export async function requestPhoneOtp(
   }
 
   const phone = toE164(parsed.data);
+
+  // SMS を送る前に番号の実在・有効性をチェック（不存在/無効な番号への送信と課金を防ぐ）。
+  const invalid = await checkPhoneExists(phone);
+  if (invalid) return { step: "request", phone: "", error: invalid };
+
   try {
     await sendVerification(phone);
   } catch (e) {
@@ -155,6 +160,26 @@ export async function requestPhoneOtp(
     return { step: "request", phone, error: "認証コードの送信に失敗しました。時間をおいて再度お試しください。" };
   }
   return { step: "verify", phone, error: null };
+}
+
+/**
+ * 番号の実在チェック（Twilio Lookup）。問題があればエラーメッセージ文字列を、
+ * 問題なければ null を返す。Lookup 自体が失敗（認証情報未設定・障害）した場合は
+ * フェイルオープン（null）にして OTP 送信を妨げない。
+ */
+async function checkPhoneExists(phone: string): Promise<string | null> {
+  let lookup: PhoneLookupResult | null = null;
+  try {
+    lookup = await lookupPhone(phone);
+  } catch (e) {
+    console.error("twilio lookup error", e);
+    return null;
+  }
+  if (!lookup.valid) return "この電話番号は存在しないか無効です。番号をご確認ください。";
+  if (lookup.lineType && lookup.lineType !== "mobile") {
+    return "携帯電話番号を入力してください（固定電話・IP電話は利用できません）。";
+  }
+  return null;
 }
 
 /**
