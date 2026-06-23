@@ -5,3 +5,4 @@ export type { EventCardProps } from "./event-card";
 export { ChatPanel } from "./chat-panel";
 export type { ChatPanelProps, ChatMessageView } from "./chat-panel";
 export { Turnstile } from "./turnstile";
+export { StatCard, UserCard } from "./mypage-cards";

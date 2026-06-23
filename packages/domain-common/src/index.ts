@@ -2,8 +2,16 @@ export { sendEmail } from "./email";
 export { sendVerification, checkVerification } from "./sms";
 export { verifyTurnstile } from "./captcha";
 export { notifyUser } from "./notify";
-export { makeEventRepo, isApplyable } from "./events";
+export { makeEventRepo, isApplyable, decorateEvents } from "./events";
 export type { DecoratedEvent, EventFilter } from "./events";
+export {
+  fetchMypageCounts,
+  fetchMyOrganizedEvents,
+  fetchMyParticipatingEvents,
+  fetchFavoriteEvents,
+  fetchFollows,
+} from "./mypage";
+export type { MypageCounts, FollowUser } from "./mypage";
 export { createSportEvent, applyToSportEvent } from "./event-mutations";
 export type { CreateEventInput } from "./event-mutations";
 export { sendChatMessage } from "./chat";
