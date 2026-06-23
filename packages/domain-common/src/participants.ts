@@ -332,3 +332,60 @@ export async function cancelParticipation(
   }
   return { error: null };
 }
+
+/**
+ * 参加者から主催者への手動メッセージ送信。アプリ内通知＋主催者宛メール（notifyUser 経由）。
+ * プライバシー方針に従い、送信者の連絡先（メール・本名）は主催者に渡さず、公開情報の
+ * ニックネームのみ添える（§15.6）。送信できるのは当該募集の参加者（申請中/承認済み/
+ * キャンセル待ち）のみ。主催者自身は対象外。
+ */
+export async function messageEventOrganizer(
+  supabase: Client,
+  schema: string,
+  opts: { eventId: string; fromUserId: string; message: string; sportLabel: string },
+): Promise<{ error: string | null }> {
+  const { eventId, fromUserId, message, sportLabel } = opts;
+  const text = message.trim();
+  if (!text) return { error: "メッセージを入力してください。" };
+
+  const { data: ev } = await supabase
+    .schema(schema)
+    .from("events")
+    .select("organizer_id, title")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (!ev) return { error: "募集が見つかりません。" };
+  if (ev.organizer_id === fromUserId) return { error: "主催者自身は送信できません。" };
+
+  // 送信者が当該募集の参加者であることを確認（自分の行は RLS で読める）。
+  const { data: part } = await supabase
+    .schema(schema)
+    .from("event_participants")
+    .select("status")
+    .eq("event_id", eventId)
+    .eq("user_id", fromUserId)
+    .maybeSingle();
+  const status = (part as { status?: string } | null)?.status;
+  if (!status || !["applied", "approved", "waitlist"].includes(status)) {
+    return { error: "この募集の参加者のみメッセージを送れます。" };
+  }
+
+  // 送信者の公開ニックネーム（連絡先は渡さない）。
+  const { data: prof } = await supabase
+    .schema(SCHEMA.account)
+    .from("profiles")
+    .select("nickname")
+    .eq("user_id", fromUserId)
+    .maybeSingle();
+  const nickname = (prof as { nickname?: string } | null)?.nickname ?? "参加者";
+
+  await notifyUser({
+    userId: ev.organizer_id,
+    type: "event_message",
+    title: `「${ev.title}」に参加者からメッセージ`,
+    body: `${sportLabel}の「${ev.title}」について、${nickname} さんからメッセージが届きました:\n\n${text}`,
+    relatedType: `${schema}_event`,
+    relatedId: eventId,
+  });
+  return { error: null };
+}

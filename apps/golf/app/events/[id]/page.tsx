@@ -10,7 +10,7 @@ import type { EventGolfDetails, GolfCourse, GolfPlan, GolfReservationStatus } fr
 import { createServerClient, getUser, loginUrlFor } from "@spotomo/auth-client";
 import { isFavorited, isFollowing, fetchEventMembers } from "@spotomo/domain-common";
 import { fetchEventDetail, isApplyable } from "../../../lib/events";
-import { applyToEvent, updateReservationStatus } from "../actions";
+import { applyToEvent, updateReservationStatus, messageOrganizer } from "../actions";
 import { FavoriteButton } from "../favorite-button";
 import { FollowButton } from "../follow-button";
 import { EventMembers } from "./event-members";
@@ -33,10 +33,10 @@ export default async function EventDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; sent?: string }>;
 }) {
   const { id } = await params;
-  const { error: errorMessage } = await searchParams;
+  const { error: errorMessage, sent } = await searchParams;
   const supabase = await createServerClient();
   const ev = await fetchEventDetail(supabase, id);
   if (!ev) notFound();
@@ -104,6 +104,9 @@ export default async function EventDetail({
 
       {errorMessage && (
         <p className="rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{errorMessage}</p>
+      )}
+      {sent && (
+        <p className="rounded-md bg-emerald-50 px-4 py-2 text-sm text-emerald-700">主催者にメッセージを送信しました。</p>
       )}
 
       {user && (
@@ -237,6 +240,14 @@ export default async function EventDetail({
           <form action={cancelAction}>
             <input type="hidden" name="event_id" value={ev.id} />
             <button className="btn-outline" type="submit">参加をキャンセル</button>
+          </form>
+          <form action={messageOrganizer} className="space-y-2 border-t border-slate-100 pt-3">
+            <label className="label" htmlFor="org-msg">主催者へメッセージ</label>
+            <textarea id="org-msg" name="message" className="input" rows={3} maxLength={2000} required
+              placeholder="集合場所の確認など、主催者への連絡に使えます。" />
+            <input type="hidden" name="event_id" value={ev.id} />
+            <button className="btn-primary" type="submit">送信</button>
+            <p className="text-xs text-slate-400">あなたの連絡先（メール・電話・本名）は主催者に公開されません。</p>
           </form>
         </div>
       ) : deadlinePassed ? (

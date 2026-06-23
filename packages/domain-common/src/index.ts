@@ -33,6 +33,7 @@ export {
   approveParticipant,
   rejectParticipant,
   cancelParticipation,
+  messageEventOrganizer,
 } from "./participants";
 export type { ParticipantRow, EventConditions, EventMember } from "./participants";
 export { isPremium } from "./membership";

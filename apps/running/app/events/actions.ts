@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerClient, loginUrlFor } from "@spotomo/auth-client";
-import { applyToSportEvent, createSportEvent } from "@spotomo/domain-common";
+import { applyToSportEvent, createSportEvent, messageEventOrganizer } from "@spotomo/domain-common";
 
 const SCHEMA = "running";
 const SPORT_LABEL = "ランニング";
@@ -174,4 +174,35 @@ export async function applyToEvent(formData: FormData): Promise<void> {
   if (result === "closed") {
     redirect(`/events/${parsed.data.event_id}?error=${encodeURIComponent("申請の締切日を過ぎているため参加申請できません。")}`);
   }
+}
+
+const messageSchema = z.object({
+  event_id: z.string().uuid(),
+  message: z.string().min(1, "メッセージを入力してください").max(2000),
+});
+
+/** 参加者から発起人（主催者）へ手動メッセージを送る。主催者へ通知＋メール。 */
+export async function messageOrganizer(formData: FormData): Promise<void> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const eventId = String(formData.get("event_id") ?? "");
+  if (!user) redirect(await loginUrlFor(`/events/${eventId}`));
+
+  const parsed = messageSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    redirect(`/events/${eventId}?error=${encodeURIComponent(parsed.error.errors[0].message)}`);
+  }
+
+  const { error } = await messageEventOrganizer(supabase, SCHEMA, {
+    eventId: parsed.data.event_id,
+    fromUserId: user.id,
+    message: parsed.data.message,
+    sportLabel: SPORT_LABEL,
+  });
+  revalidatePath(`/events/${parsed.data.event_id}`);
+  redirect(
+    `/events/${parsed.data.event_id}?${error ? `error=${encodeURIComponent(error)}` : "sent=1"}`,
+  );
 }

@@ -146,11 +146,26 @@ export async function applyToSportEvent(
     }
   }
 
+  // 主催者へ通知（新規申請）。
   await notifyUser({
     userId: ev.organizer_id,
     type: "event_apply",
     title: "新しい参加申請があります",
     body: `${sportLabel}の「${ev.title}」に参加申請がありました。`,
+    relatedType: `${schema}_event`,
+    relatedId: eventId,
+  });
+
+  // 申請者本人へも確定状態に応じた確認メール／通知を送る。
+  const selfMessage =
+    status === "approved"
+      ? { type: "event_apply_confirmed", title: "参加が確定しました", body: `${sportLabel}の「${ev.title}」への参加が確定しました。` }
+      : status === "waitlist"
+        ? { type: "event_apply_waitlist", title: "キャンセル待ちに登録しました", body: `${sportLabel}の「${ev.title}」は満員のためキャンセル待ちに登録しました。空きが出ると参加できる場合があります。` }
+        : { type: "event_apply_received", title: "参加申請を受け付けました", body: `${sportLabel}の「${ev.title}」への参加申請を受け付けました。主催者の承認をお待ちください。` };
+  await notifyUser({
+    userId,
+    ...selfMessage,
     relatedType: `${schema}_event`,
     relatedId: eventId,
   });
