@@ -104,7 +104,7 @@ def prefecture_by_categories(titles):
     都道府県名が直接出ればそれを採用。無ければ市区町村名を集め、Wikidata で
     市区町村 -> 都道府県 を一括解決する（'つくば市' -> 茨城県 等）。
     """
-    pref, page_city = {}, {}
+    pref, page_city, discontinued = {}, {}, set()
     for i in range(0, len(titles), 50):
         batch = titles[i:i + 50]
         d = wp_api({"action": "query", "prop": "categories", "cllimit": "max",
@@ -112,6 +112,9 @@ def prefecture_by_categories(titles):
         for pg in d["query"]["pages"]:
             cats = [c["title"].split(":", 1)[-1] for c in pg.get("categories", [])]
             joined = " ".join(cats)
+            # 終了/廃止された大会（「現存しない…」「○○年終了のスポーツイベント」）。
+            if "現存しない" in joined or "終了のスポーツイベント" in joined:
+                discontinued.add(pg["title"])
             hit = next((p for p in PREFECTURES if p in joined), None)
             if hit:
                 pref[pg["title"]] = hit
@@ -141,7 +144,7 @@ def prefecture_by_categories(titles):
     for page, city in page_city.items():
         if city in city_pref:
             pref[page] = city_pref[city]
-    return pref
+    return pref, discontinued
 
 
 def wikidata_ids(titles):
@@ -208,8 +211,8 @@ def main():
     titles = [t for t in titles if KEEP.search(t) and not DROP.search(t)]
     print(f"running-race pages: {len(titles)}")
 
-    cat_pref = prefecture_by_categories(titles)
-    print(f"prefecture from categories: {len(cat_pref)}")
+    cat_pref, discontinued = prefecture_by_categories(titles)
+    print(f"prefecture from categories: {len(cat_pref)} / discontinued: {len(discontinued)}")
     qmap = wikidata_ids(titles)
     print(f"with wikidata id: {len(qmap)}")
     info = enrich(sorted(set(qmap.values())))
@@ -229,6 +232,7 @@ def main():
             "source": "wikipedia",
             "source_id": qid or "",
             "wikipedia_title": title,
+            "discontinued": "1" if title in discontinued else "0",
         })
 
     out = "running_races_japan.csv"

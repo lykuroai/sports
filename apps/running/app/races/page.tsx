@@ -13,6 +13,7 @@ type Race = {
   city: string | null;
   website_url: string | null;
   wikipedia_title: string | null;
+  discontinued: boolean;
 };
 
 // マラソン・駅伝・ロードレース等の競技大会カタログ。キーワード/都道府県が主条件。
@@ -30,7 +31,7 @@ export default async function RaceSearch({
   let query = supabase
     .schema(SCHEMA.running)
     .from("races")
-    .select("id, name, prefecture, city, website_url, wikipedia_title", { count: "exact" })
+    .select("id, name, prefecture, city, website_url, wikipedia_title, discontinued", { count: "exact" })
     .order("prefecture", { ascending: true, nullsFirst: false })
     .order("name", { ascending: true })
     .range(from, from + PER_PAGE - 1);
@@ -79,7 +80,12 @@ export default async function RaceSearch({
           {races.map((r) => (
             <div key={r.id} className="card flex items-start justify-between gap-3 p-4">
               <div>
-                <div className="font-medium">{r.name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{r.name}</span>
+                  {r.discontinued && (
+                    <span className="rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">終了</span>
+                  )}
+                </div>
                 <div className="text-sm text-slate-500">
                   {[r.prefecture, r.city].filter(Boolean).join("") || "開催地は各大会の公式情報をご確認ください"}
                 </div>
@@ -101,12 +107,22 @@ export default async function RaceSearch({
                   )}
                 </div>
               </div>
-              <Link
-                href={`/events/new?race=${encodeURIComponent(r.name)}${r.prefecture ? `&pref=${encodeURIComponent(r.prefecture)}` : ""}`}
-                className="btn-outline shrink-0 whitespace-nowrap text-sm"
-              >
-                仲間を募集
-              </Link>
+              {r.discontinued ? (
+                <span
+                  className="btn-outline pointer-events-none shrink-0 cursor-not-allowed whitespace-nowrap text-sm opacity-40"
+                  aria-disabled="true"
+                  title="終了した大会のため募集できません"
+                >
+                  仲間を募集
+                </span>
+              ) : (
+                <Link
+                  href={`/events/new?race=${encodeURIComponent(r.name)}${r.prefecture ? `&pref=${encodeURIComponent(r.prefecture)}` : ""}`}
+                  className="btn-outline shrink-0 whitespace-nowrap text-sm"
+                >
+                  仲間を募集
+                </Link>
+              )}
             </div>
           ))}
         </div>
