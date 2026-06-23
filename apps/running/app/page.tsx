@@ -38,10 +38,7 @@ export default async function Home({
         </div>
       </section>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">ランニングの仲間募集</h1>
-        <Link href="/events/new" className="btn-primary">募集を作成</Link>
-      </div>
+      <h1 className="text-2xl font-bold">ランニングの仲間募集</h1>
 
       <form className="card flex flex-wrap gap-2 p-4" action="/">
         <input name="q" defaultValue={sp.q ?? ""} placeholder="キーワード" className="input max-w-xs" />
