@@ -29,8 +29,11 @@ export default async function Home({
           className="h-auto w-full"
         />
         <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-2 bg-gradient-to-t from-black/50 to-transparent p-4 sm:p-6">
-          <Link href="/facilities" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">
-            ランニング施設を探す
+          <Link href="/races" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">
+            大会を探す
+          </Link>
+          <Link href="/facilities" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
+            施設を探す
           </Link>
           <Link href="/events/new" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
             募集を作成

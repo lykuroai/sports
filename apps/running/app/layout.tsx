@@ -41,6 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           loginHref={loginHref}
           nav={
             <>
+              <Link href="/races" className="hover:text-brand">大会を探す</Link>
               <Link href="/facilities" className="hover:text-brand">施設を探す</Link>
               <Link href="/events/new" className="hover:text-brand">募集を作成</Link>
             </>

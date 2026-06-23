@@ -26,15 +26,19 @@ export default function NewEventForm({
   premium,
   sports,
   initialFacility = null,
+  initialTitle = "",
+  initialPrefecture = "",
 }: {
   premium: boolean;
   sports: SportOption[];
   initialFacility?: PickedFacility | null;
+  initialTitle?: string;
+  initialPrefecture?: string;
 }) {
   const [state, formAction, pending] = useActionState(createEvent, initial);
   const [facility, setFacility] = useState<PickedFacility | null>(initialFacility);
   // 施設を選ぶと開催地（都道府県・市区町村）を初期補完する。手入力での上書きも可。
-  const [prefecture, setPrefecture] = useState(initialFacility?.prefecture ?? "");
+  const [prefecture, setPrefecture] = useState(initialFacility?.prefecture ?? initialPrefecture);
   const [city, setCity] = useState(initialFacility?.city ?? "");
 
   function handlePick(f: PickedFacility | null) {
@@ -54,7 +58,7 @@ export default function NewEventForm({
 
         <div>
           <label className="label" htmlFor="title">タイトル</label>
-          <input id="title" name="title" className="input" required maxLength={120} />
+          <input id="title" name="title" className="input" required maxLength={120} defaultValue={initialTitle} />
         </div>
         <div>
           <label className="label" htmlFor="description">説明</label>

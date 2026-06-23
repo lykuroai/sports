@@ -8,9 +8,9 @@ import { VerifyNotice } from "../verify-notice";
 export default async function NewEventPage({
   searchParams,
 }: {
-  searchParams: Promise<{ facility?: string }>;
+  searchParams: Promise<{ facility?: string; race?: string; pref?: string }>;
 }) {
-  const { facility: facilityId } = await searchParams;
+  const { facility: facilityId, race, pref } = await searchParams;
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -44,7 +44,13 @@ export default async function NewEventPage({
       {!eligibility.eligible && (
         <VerifyNotice emailVerified={eligibility.emailVerified} phoneVerified={eligibility.phoneVerified} />
       )}
-      <NewEventForm premium={premium} sports={sports} initialFacility={initialFacility} />
+      <NewEventForm
+        premium={premium}
+        sports={sports}
+        initialFacility={initialFacility}
+        initialTitle={race ? `${race} に一緒に出よう` : ""}
+        initialPrefecture={pref ?? ""}
+      />
     </>
   );
 }
