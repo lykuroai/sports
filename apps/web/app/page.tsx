@@ -1,13 +1,24 @@
+import Image from "next/image";
 import { SPORT_DOMAINS } from "@spotomo/shared-types";
+import heroImage from "../public/park-hero.png";
 
 export default function HomePage() {
   return (
     <div className="space-y-8">
-      <section className="rounded-lg bg-brand/10 p-8">
-        <h1 className="text-2xl font-bold text-brand-dark">スポともパーク</h1>
-        <p className="mt-2 text-slate-700">
-          ひとつのアカウントで、ゴルフ・ランニング・アウトドアなど複数の種目の仲間募集に参加できます。
-        </p>
+      {/* ヒーロー（総合トップのメインビジュアル）。 */}
+      <section className="relative overflow-hidden rounded-2xl">
+        <Image
+          src={heroImage}
+          alt="スポともパーク"
+          priority
+          className="h-auto w-full"
+        />
+        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/55 to-transparent p-6 sm:p-8">
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">スポともパーク</h1>
+          <p className="mt-2 max-w-xl text-sm text-white/90 sm:text-base">
+            ひとつのアカウントで、ゴルフ・ランニング・アウトドアなど複数の種目の仲間募集に参加できます。
+          </p>
+        </div>
       </section>
 
       <section>
