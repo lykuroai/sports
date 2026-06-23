@@ -23,12 +23,14 @@ export async function fetchMypageCounts(
   schema: string,
   userId: string,
 ): Promise<MypageCounts> {
-  const [organized, participating, favorites, following, followers] = await Promise.all([
+  const [organized, partRows, favorites, following, followers] = await Promise.all([
     supabase.schema(schema).from("events")
       .select("id", { count: "exact", head: true })
       .eq("organizer_id", userId).is("deleted_at", null),
+    // 参加は「私の参加」一覧と一致させる必要があるため、参加行の event_id を取得し、
+    // 削除されていない募集だけを数える（一覧は deleted_at is null で絞っているため）。
     supabase.schema(schema).from("event_participants")
-      .select("event_id", { count: "exact", head: true })
+      .select("event_id")
       .eq("user_id", userId).in("status", ACTIVE_PARTICIPANT_STATUSES),
     supabase.schema(SCHEMA.core).from("favorites")
       .select("target_id", { count: "exact", head: true })
@@ -40,9 +42,21 @@ export async function fetchMypageCounts(
       .select("follower_id", { count: "exact", head: true })
       .eq("followee_id", userId),
   ]);
+
+  // 参加中の募集のうち、削除されていないものだけを数える。
+  const partIds = [...new Set((partRows.data ?? []).map((p: { event_id: string }) => p.event_id))];
+  let participating = 0;
+  if (partIds.length > 0) {
+    const { count } = await supabase
+      .schema(schema).from("events")
+      .select("id", { count: "exact", head: true })
+      .in("id", partIds).is("deleted_at", null);
+    participating = count ?? 0;
+  }
+
   return {
     organized: organized.count ?? 0,
-    participating: participating.count ?? 0,
+    participating,
     favorites: favorites.count ?? 0,
     following: following.count ?? 0,
     followers: followers.count ?? 0,
