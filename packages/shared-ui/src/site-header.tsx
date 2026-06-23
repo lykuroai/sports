@@ -19,6 +19,18 @@ export interface SiteHeaderProps {
   /** account サブドメインのベース URL。 */
   accountUrl?: string;
   /**
+   * 「マイページ」リンクの遷移先。指定された種目アプリのみヘッダに表示する
+   * （account アプリには /mypage が無いため未指定で非表示）。
+   */
+  myPageHref?: string;
+  /**
+   * ログイン状態。`false` かつ `loginHref` 指定時は「アカウント／マイページ」の代わりに
+   * 「ログイン（新規登録）」を表示する。未指定（undefined）なら従来どおりアカウントを表示。
+   */
+  loggedIn?: boolean;
+  /** 未ログイン時の「ログイン（新規登録）」リンク先（account 共通ログインの絶対URL）。 */
+  loginHref?: string;
+  /**
    * このアプリの公開オリジン（例: https://golf-spotomo.lykuro.ai）。指定があり、かつ
    * accountUrl と別オリジンなら「アカウント」リンクに redirect を付け、共通プロフィール
    * 編集後に元の種目アプリへ戻す。サーバー（layout）で selfOrigin() から渡す。
@@ -39,8 +51,14 @@ export function SiteHeader({
   nav,
   accountUrl = "",
   currentOrigin = "",
+  myPageHref,
+  loggedIn,
+  loginHref,
   actions,
 }: SiteHeaderProps) {
+  // 未ログイン（loggedIn === false）かつログイン先がある場合は、アカウント／マイページの
+  // 代わりに「ログイン（新規登録）」を表示する。
+  const showLogin = loggedIn === false && !!loginHref;
   // 種目アプリから「アカウント」へ移動して共通プロフィールを編集した後、元の種目アプリへ
   // 戻れるよう redirect（自オリジンの絶対URL）を付ける。account 側の resolvePostLogin が
   // 同一 apex のみ許可して検証する。account アプリ自身（同一オリジン）では付けない。
@@ -72,10 +90,23 @@ export function SiteHeader({
               {d.name}
             </a>
           ))}
-        <a href={accountHref} className="hover:text-brand">
-          アカウント
-        </a>
-        {actions}
+        {showLogin ? (
+          <a href={loginHref} className="hover:text-brand">
+            ログイン（新規登録）
+          </a>
+        ) : (
+          <>
+            {myPageHref && (
+              <a href={myPageHref} className="hover:text-brand">
+                マイページ
+              </a>
+            )}
+            <a href={accountHref} className="hover:text-brand">
+              アカウント
+            </a>
+            {actions}
+          </>
+        )}
       </nav>
     </header>
   );

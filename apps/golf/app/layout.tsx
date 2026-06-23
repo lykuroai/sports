@@ -4,7 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 import { SiteHeader } from "@spotomo/shared-ui";
 import { NotificationBell } from "@spotomo/shared-ui/notification-bell";
-import { selfOrigin } from "@spotomo/auth-client";
+import { selfOrigin, getUser, loginUrlFor } from "@spotomo/auth-client";
 
 export const metadata: Metadata = {
   title: { default: "ゴルフ｜スポともパーク", template: "%s｜スポともパーク" },
@@ -14,6 +14,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const accountUrl = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
   const currentOrigin = await selfOrigin();
+  const user = await getUser();
+  const loginHref = await loginUrlFor("/");
   return (
     <html lang="ja">
       <body className="min-h-screen">
@@ -32,6 +34,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }
           accountUrl={accountUrl}
           currentOrigin={currentOrigin}
+          myPageHref="/mypage"
+          loggedIn={!!user}
+          loginHref={loginHref}
           nav={
             <>
               <Link href="/clubs" className="hover:text-brand">ゴルフ場を探す</Link>
