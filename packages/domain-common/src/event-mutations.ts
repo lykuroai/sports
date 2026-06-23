@@ -65,33 +65,16 @@ export async function createSportEvent(
   return { id: data.id as string };
 }
 
-/** 承認済み参加者数を数える（任意で指定ユーザーを除外）。定員判定に使う。 */
-async function countApproved(
-  supabase: Client,
-  schema: string,
-  eventId: string,
-  excludeUserId?: string,
-): Promise<number> {
-  let q = supabase
-    .schema(schema)
-    .from("event_participants")
-    .select("user_id", { count: "exact", head: true })
-    .eq("event_id", eventId)
-    .eq("status", "approved");
-  if (excludeUserId) q = q.neq("user_id", excludeUserId);
-  const { count } = await q;
-  return count ?? 0;
-}
-
 /**
- * 参加申請。先着順は定員に空きがあれば即承認、満員ならキャンセル待ち。承認制は申請中。
- * 主催者へ通知（共通 notifyUser 経由）。戻り値で確定した参加ステータスを返す。
+ * 参加申請。空きがあれば先着順は即承認・承認制は申請中。申請中＋承認済みで定員に達して
+ * いれば満員として締め切る（"full"）。主催者へ通知（共通 notifyUser 経由）。
+ * 戻り値で確定した参加ステータス（または "full"/"closed"）を返す。
  */
 export async function applyToSportEvent(
   supabase: Client,
   schema: string,
   opts: { eventId: string; userId: string; message?: string | null; sportLabel: string },
-): Promise<"applied" | "approved" | "waitlist" | "closed" | null> {
+): Promise<"applied" | "approved" | "full" | "closed" | null> {
   const { eventId, userId, message, sportLabel } = opts;
 
   const { data: ev } = await supabase
@@ -107,15 +90,21 @@ export async function applyToSportEvent(
     return "closed";
   }
 
-  let status: "applied" | "approved" | "waitlist";
-  if (ev.approval_type === "first_come") {
-    // 先着順は即承認だが、定員を超えないようキャンセル待ちへ振り分ける。
-    // 自分の既存承認行は除外して数える（再申請の二重計上を防ぐ）。
-    const approved = await countApproved(supabase, schema, eventId, userId);
-    status = approved >= (ev.capacity ?? 0) ? "waitlist" : "approved";
-  } else {
-    status = "applied";
-  }
+  // 定員チェック。申請中＋承認済み（＋キャンセル待ち）で定員を占有しているとみなし、
+  // 達していれば新規申請を締め切る（満員）。申請者のセッションは RLS で他人の参加行を
+  // 読めないため、サービスロールで数える（自分の既存行は除外）。
+  const admin = createAdminClient();
+  const { count: activeCount } = await admin
+    .schema(schema)
+    .from("event_participants")
+    .select("user_id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .in("status", ["applied", "approved", "waitlist"])
+    .neq("user_id", userId);
+  if ((activeCount ?? 0) >= (ev.capacity ?? 0)) return "full";
+
+  // 先着順は即承認、承認制は申請中。
+  const status: "applied" | "approved" = ev.approval_type === "first_come" ? "approved" : "applied";
 
   const { error } = await supabase
     .schema(schema)
@@ -131,7 +120,6 @@ export async function applyToSportEvent(
 
   // 即承認ならチャットに参加させる（承認制の approveParticipant と同じ扱い）。
   if (status === "approved") {
-    const admin = createAdminClient();
     const { data: room } = await admin
       .schema(schema)
       .from("chat_rooms")
@@ -160,9 +148,7 @@ export async function applyToSportEvent(
   const selfMessage =
     status === "approved"
       ? { type: "event_apply_confirmed", title: "参加が確定しました", body: `${sportLabel}の「${ev.title}」への参加が確定しました。` }
-      : status === "waitlist"
-        ? { type: "event_apply_waitlist", title: "キャンセル待ちに登録しました", body: `${sportLabel}の「${ev.title}」は満員のためキャンセル待ちに登録しました。空きが出ると参加できる場合があります。` }
-        : { type: "event_apply_received", title: "参加申請を受け付けました", body: `${sportLabel}の「${ev.title}」への参加申請を受け付けました。主催者の承認をお待ちください。` };
+      : { type: "event_apply_received", title: "参加申請を受け付けました", body: `${sportLabel}の「${ev.title}」への参加申請を受け付けました。主催者の承認をお待ちください。` };
   await notifyUser({
     userId,
     ...selfMessage,

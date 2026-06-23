@@ -53,7 +53,7 @@ export function EventCard({ event: r, sportLabel, hrefBase = "/events" }: EventC
         </div>
         <div className="flex gap-4">
           <span><span className="text-slate-400">参加費 </span>{formatFee(r.participation_fee)}</span>
-          <span><span className="text-slate-400">定員 </span>{r.approved_count}/{r.capacity}人</span>
+          <span><span className="text-slate-400">募集人数 </span>{r.active_count}/{r.capacity}人</span>
           <span><span className="text-slate-400">レベル </span>{SKILL_LEVEL_LABEL[r.skill_level]}</span>
         </div>
       </dl>

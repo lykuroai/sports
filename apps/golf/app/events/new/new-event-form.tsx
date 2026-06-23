@@ -132,7 +132,7 @@ export default function NewEventForm({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label" htmlFor="capacity">定員</label>
+            <label className="label" htmlFor="capacity">募集人数</label>
             <input id="capacity" name="capacity" type="number" min={1} defaultValue={4} className="input" required />
           </div>
           <div>

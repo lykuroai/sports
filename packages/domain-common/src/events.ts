@@ -16,6 +16,8 @@ export interface DecoratedEvent extends SportEventBase {
   organizer_rating: number | null;
   facility_name: string | null;
   approved_count: number;
+  /** 定員を占有している人数（申請中＋承認済み＋キャンセル待ち）。満員判定に使う。 */
+  active_count: number;
 }
 
 export interface EventFilter {
@@ -104,16 +106,21 @@ async function decorate(supabase: Client, schema: string, rows: DecoratedEvent[]
   // 元々公開情報なのでサービスロールで集計してよい。
   const admin = createAdminClient();
   const [{ data: parts }, { data: profiles }, { data: facilities }] = await Promise.all([
-    admin.schema(schema).from("event_participants").select("event_id").in("event_id", ids).eq("status", "approved"),
+    admin.schema(schema).from("event_participants").select("event_id, status").in("event_id", ids)
+      .in("status", ["applied", "approved", "waitlist"]),
     supabase.schema(SCHEMA.account).from("profiles").select("user_id, nickname, rating").in("user_id", organizerIds),
     facilityIds.length
       ? supabase.schema(SCHEMA.facility).from("facilities").select("id, name").in("id", facilityIds)
       : Promise.resolve({ data: [] as { id: string; name: string }[] }),
   ]);
 
+  // 承認済み人数（approved_count）と、定員を占有する人数（active_count = 申請中＋承認済み＋
+  // キャンセル待ち）を別々に集計する。
   const counts = new Map<string, number>();
-  for (const p of (parts ?? []) as { event_id: string }[]) {
-    counts.set(p.event_id, (counts.get(p.event_id) ?? 0) + 1);
+  const activeCounts = new Map<string, number>();
+  for (const p of (parts ?? []) as { event_id: string; status: string }[]) {
+    activeCounts.set(p.event_id, (activeCounts.get(p.event_id) ?? 0) + 1);
+    if (p.status === "approved") counts.set(p.event_id, (counts.get(p.event_id) ?? 0) + 1);
   }
   const profMap = new Map(
     (profiles ?? []).map((p: { user_id: string; nickname: string; rating: number }) => [p.user_id, p]),
@@ -122,6 +129,7 @@ async function decorate(supabase: Client, schema: string, rows: DecoratedEvent[]
 
   for (const r of rows) {
     r.approved_count = counts.get(r.id) ?? 0;
+    r.active_count = activeCounts.get(r.id) ?? 0;
     const prof = profMap.get(r.organizer_id);
     r.organizer_nickname = prof?.nickname ?? null;
     r.organizer_rating = prof?.rating ?? null;

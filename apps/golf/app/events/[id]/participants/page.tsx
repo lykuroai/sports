@@ -143,7 +143,7 @@ export default async function ParticipantsPage({
                   <form action={approveAction}>
                     <input type="hidden" name="event_id" value={id} />
                     <input type="hidden" name="applicant_id" value={p.user_id} />
-                    <button className="btn-primary" type="submit" disabled={isFull} title={isFull ? "定員に達しています" : undefined}>承認</button>
+                    <button className="btn-primary" type="submit" disabled={isFull} title={isFull ? "募集人数に達しています" : undefined}>承認</button>
                   </form>
                   <form action={rejectAction}>
                     <input type="hidden" name="event_id" value={id} />

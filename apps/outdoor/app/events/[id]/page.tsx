@@ -36,6 +36,8 @@ export default async function EventDetail({
   const isPast = ev.status === "finished" || new Date(ev.event_start_at) < new Date();
   // 申請締切を過ぎたら参加申請を締め切る。
   const deadlinePassed = !!ev.application_deadline && new Date(ev.application_deadline) < new Date();
+  // 申請中＋承認済みで定員に達したら満員（新規申請不可）。
+  const isFull = ev.active_count >= ev.capacity;
 
   let fav = false;
   let following = false;
@@ -107,7 +109,7 @@ export default async function EventDetail({
         <dt className="text-slate-400">場所</dt>
         <dd>{ev.prefecture}{ev.city}{ev.facility_name ? `・${ev.facility_name}` : "・施設未定"}</dd>
         <dt className="text-slate-400">参加費</dt><dd>{formatFee(ev.participation_fee)}</dd>
-        <dt className="text-slate-400">定員</dt><dd>{ev.approved_count}/{ev.capacity}人</dd>
+        <dt className="text-slate-400">募集人数</dt><dd>{ev.active_count}/{ev.capacity}人{isFull && <span className="ml-2 badge bg-slate-200 text-slate-600">満員</span>}</dd>
         <dt className="text-slate-400">レベル</dt><dd>{SKILL_LEVEL_LABEL[ev.skill_level]}</dd>
       </dl>
 
@@ -139,6 +141,8 @@ export default async function EventDetail({
         </div>
       ) : deadlinePassed ? (
         <p className="text-sm text-slate-500">申請の締切日を過ぎたため、この募集は参加申請を受け付けていません。</p>
+      ) : isFull ? (
+        <p className="text-sm text-slate-500">募集人数に達したため、この募集は満員です。</p>
       ) : isApplyable(ev.status) ? (
         user ? (
           eligibility && !eligibility.eligible ? (

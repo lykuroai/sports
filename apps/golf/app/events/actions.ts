@@ -316,6 +316,9 @@ export async function applyToEvent(formData: FormData): Promise<void> {
   if (result === "closed") {
     redirect(`/events/${parsed.data.event_id}?error=${encodeURIComponent("申請の締切日を過ぎているため参加申請できません。")}`);
   }
+  if (result === "full") {
+    redirect(`/events/${parsed.data.event_id}?error=${encodeURIComponent("募集人数に達したため参加申請を締め切りました。")}`);
+  }
 }
 
 const messageSchema = z.object({
