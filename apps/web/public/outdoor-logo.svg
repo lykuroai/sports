@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 133" role="img" aria-label="アウトドアとも">
+  <rect width="200" height="133" fill="#ffffff"/>
+  <path d="M24 100 Q92 74 176 98" fill="none" stroke="#1b6e3b" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="148" cy="34" r="11" fill="none" stroke="#1b6e3b" stroke-width="4"/>
+  <g fill="#1b6e3b" transform="translate(40,18) scale(4.3)">
+    <path d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22L14 6z"/>
+  </g>
+</svg>
