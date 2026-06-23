@@ -38,6 +38,11 @@ export interface SiteHeaderProps {
   currentOrigin?: string;
   /** 右側に差し込む追加要素（ログイン状態など）。 */
   actions?: ReactNode;
+  /**
+   * ログイン済みで myPageHref を渡さないアプリの、アカウント導線のラベル（既定: "アカウント"）。
+   * 総合ポータルのように共通プロフィールへ直接飛ばす場合は "プロフィール" 等に差し替える。
+   */
+  accountLabel?: string;
 }
 
 /**
@@ -55,6 +60,7 @@ export function SiteHeader({
   loggedIn,
   loginHref,
   actions,
+  accountLabel = "アカウント",
 }: SiteHeaderProps) {
   // 未ログイン（loggedIn === false）かつログイン先がある場合は、アカウント／マイページの
   // 代わりに「ログイン（新規登録）」を表示する。
@@ -107,7 +113,7 @@ export function SiteHeader({
           // myPageHref を渡さないアプリ（account 等）は従来どおり「アカウント」を表示。
           <>
             <a href={accountHref} className="hover:text-brand">
-              アカウント
+              {accountLabel}
             </a>
             {actions}
           </>

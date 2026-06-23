@@ -14,13 +14,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const currentOrigin = await selfOrigin();
   const user = await getUser();
   const loginHref = await loginUrlFor("/");
-  // 総合ポータルには個人ページが無いため、マイページは共通アカウントの
-  // プロフィールへ（編集後は総合トップへ戻す）。
-  const myPageHref = `${accountUrl}/profile?redirect=${encodeURIComponent(currentOrigin)}`;
   return (
     <html lang="ja">
       <body className="min-h-screen">
-        <SiteHeader appName="" accountUrl={accountUrl} currentOrigin={currentOrigin} myPageHref={myPageHref} loggedIn={!!user} loginHref={loginHref} actions={<NotificationBell accountUrl={accountUrl} />} />
+        <SiteHeader appName="" accountUrl={accountUrl} currentOrigin={currentOrigin} accountLabel="プロフィール" loggedIn={!!user} loginHref={loginHref} actions={<NotificationBell accountUrl={accountUrl} />} />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
           <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
