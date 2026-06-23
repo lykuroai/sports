@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createServerClient, resolvePostLogin, SCHEMA } from "@spotomo/auth-client";
-import { syncUserSports } from "@spotomo/domain-common";
+import { createServerClient, createAdminClient, resolvePostLogin, SCHEMA } from "@spotomo/auth-client";
+import { syncUserSports, sendVerification, checkVerification, verifyTurnstile } from "@spotomo/domain-common";
 
 const VALID_LEVELS = new Set(["beginner", "intermediate", "advanced"]);
 
@@ -82,4 +82,110 @@ export async function updateProfile(
   if (redirectTo) redirect(resolvePostLogin(redirectTo));
 
   return { error: null, ok: true };
+}
+
+// ============================================================
+// メールアドレス変更（Supabase 確認メール方式）
+// ============================================================
+export type EmailState = { error: string | null; ok?: boolean };
+
+const emailSchema = z.string().email("メールアドレスの形式が正しくありません");
+
+/**
+ * メールアドレス変更。新アドレスへ確認リンクを送る（supabase.auth.updateUser）。
+ * リンク確定までは変更は未反映。確定時に auth.users が更新され、0015 トリガーが
+ * account.users.email / email_verified_at を同期する。
+ */
+export async function requestEmailChange(
+  _prev: EmailState,
+  formData: FormData,
+): Promise<EmailState> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const parsed = emailSchema.safeParse(String(formData.get("email") ?? "").trim());
+  if (!parsed.success) return { error: parsed.error.errors[0].message };
+  if (parsed.data === user.email) return { error: "現在のメールアドレスと同じです。" };
+
+  const emailRedirectTo = `${process.env.NEXT_PUBLIC_ACCOUNT_URL ?? ""}/auth/callback`;
+  const { error } = await supabase.auth.updateUser(
+    { email: parsed.data },
+    { emailRedirectTo },
+  );
+  if (error) return { error: error.message };
+  return { error: null, ok: true };
+}
+
+// ============================================================
+// 携帯番号 追加/変更（Twilio Verify で OTP 認証）
+// ============================================================
+export type PhoneVerifyState = { step: "request" | "verify"; phone: string; error: string | null; ok?: boolean };
+
+const phoneSchema = z.string().min(8, "電話番号を入力してください").max(20);
+
+/** 日本の 0始まり番号を E.164（+81…）へ。+ 始まりはそのまま（apps/account/app/phone/actions.ts と同じ）。 */
+function toE164(raw: string): string {
+  const t = raw.replace(/[\s-]/g, "");
+  if (t.startsWith("+")) return t;
+  if (t.startsWith("0")) return "+81" + t.slice(1);
+  return "+" + t;
+}
+
+/** OTP 送信（CAPTCHA 検証つき）。ログイン済みユーザーの番号登録/変更用。 */
+export async function requestPhoneOtp(
+  _prev: PhoneVerifyState,
+  formData: FormData,
+): Promise<PhoneVerifyState> {
+  const parsed = phoneSchema.safeParse(formData.get("phone"));
+  if (!parsed.success) return { step: "request", phone: "", error: parsed.error.errors[0].message };
+
+  const captcha = await verifyTurnstile(formData.get("cf-turnstile-response") as string | null);
+  if (!captcha) {
+    return { step: "request", phone: "", error: "認証（CAPTCHA）に失敗しました。もう一度お試しください。" };
+  }
+
+  const phone = toE164(parsed.data);
+  try {
+    await sendVerification(phone);
+  } catch (e) {
+    console.error("twilio verify send error", e);
+    return { step: "request", phone, error: "認証コードの送信に失敗しました。時間をおいて再度お試しください。" };
+  }
+  return { step: "verify", phone, error: null };
+}
+
+/**
+ * OTP 検証後、ログイン中ユーザーの携帯番号を確定する。Supabase の電話 OTP は使わず、
+ * Twilio で検証 → サービスロールで auth.users を更新（phone_confirm:true）。0015 トリガーが
+ * account.users.phone / phone_verified_at を同期する。セッションは張り替えない。
+ */
+export async function confirmPhoneOtp(
+  _prev: PhoneVerifyState,
+  formData: FormData,
+): Promise<PhoneVerifyState> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const phone = String(formData.get("phone"));
+  const token = String(formData.get("token"));
+
+  const approved = await checkVerification(phone, token);
+  if (!approved) return { step: "verify", phone, error: "認証コードが正しくありません" };
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(user.id, { phone, phone_confirm: true });
+  if (error) {
+    console.error("admin updateUser phone error", error);
+    // 一意制約（他アカウントで使用中）などのケース。
+    return { step: "verify", phone, error: "この番号は登録できませんでした。別の番号をお試しください。" };
+  }
+
+  revalidatePath("/profile");
+  return { step: "verify", phone, error: null, ok: true };
 }

@@ -98,14 +98,11 @@ export function ProfileForm({
   profile,
   sports,
   userSports,
-  email,
   redirectTo = "",
 }: {
   profile: Partial<Profile>;
   sports: SportOption[];
   userSports: UserSportRow[];
-  /** ログイン中ユーザのメールアドレス（認証データ。本人のみ表示・読み取り専用）。 */
-  email?: string;
   /** 保存後に戻る先（例: 登録直後の募集作成）。指定時は保存成功でその画面へ遷移する。 */
   redirectTo?: string;
 }) {
@@ -122,21 +119,6 @@ export function ProfileForm({
       )}
       {state.error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{state.error}</p>}
       {state.ok && <p className="rounded bg-green-50 p-2 text-sm text-green-700">保存しました</p>}
-
-      <div>
-        <label className="label" htmlFor="email">メールアドレス</label>
-        <input
-          id="email"
-          type="email"
-          className="input bg-slate-50"
-          value={email ?? ""}
-          readOnly
-          disabled
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          ログインに使うメールアドレスです。他の利用者には公開されません。
-        </p>
-      </div>
 
       <div className="flex items-center gap-4">
         {preview ? (

@@ -3,6 +3,7 @@ import { fetchPublishedSports, fetchUserSports } from "@spotomo/domain-common";
 import type { Profile } from "@spotomo/shared-types";
 import { logout } from "../actions";
 import { ProfileForm } from "./profile-form";
+import { ContactSection } from "./contact-section";
 
 export default async function ProfilePage({
   searchParams,
@@ -17,16 +18,29 @@ export default async function ProfilePage({
   const sp = await searchParams;
   const redirectTo = Array.isArray(sp.redirect) ? sp.redirect[0] : sp.redirect ?? "";
 
-  const [{ data }, sports, userSports] = await Promise.all([
+  const [{ data }, { data: account }, sports, userSports] = await Promise.all([
     supabase
       .schema(SCHEMA.account)
       .from("profiles")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle(),
+    supabase
+      .schema(SCHEMA.account)
+      .from("users")
+      .select("email, phone, email_verified_at, phone_verified_at")
+      .eq("id", user.id)
+      .maybeSingle(),
     fetchPublishedSports(supabase),
     fetchUserSports(supabase, user.id),
   ]);
+
+  const acc = (account ?? {}) as {
+    email?: string | null;
+    phone?: string | null;
+    email_verified_at?: string | null;
+    phone_verified_at?: string | null;
+  };
 
   const profile = (data as Profile | null) ?? {
     nickname: (user.user_metadata?.nickname as string) ?? "",
@@ -47,7 +61,14 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      <ProfileForm profile={profile} sports={sports} userSports={userSports} email={user.email} redirectTo={redirectTo} />
+      <ContactSection
+        email={acc.email ?? user.email ?? ""}
+        emailVerified={!!acc.email_verified_at}
+        phone={acc.phone ?? ""}
+        phoneVerified={!!acc.phone_verified_at}
+      />
+
+      <ProfileForm profile={profile} sports={sports} userSports={userSports} redirectTo={redirectTo} />
 
       <nav className="card divide-y p-2 text-sm">
         <a className="block px-3 py-2 hover:bg-slate-50" href="/notifications">通知一覧</a>
