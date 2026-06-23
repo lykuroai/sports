@@ -26,7 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           brand="ゴルフとも"
           logo={
             <Image
-              src="/golf-logo.png"
+              src="/golf-logo.svg"
               alt="ゴルフとも"
               width={72}
               height={48}
