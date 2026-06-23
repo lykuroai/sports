@@ -20,7 +20,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SiteHeader appName="" accountUrl={accountUrl} currentOrigin={currentOrigin} accountLabel="プロフィール" loggedIn={!!user} loginHref={loginHref} actions={<NotificationBell accountUrl={accountUrl} />} />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
-          <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
+          <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-slate-400">© スポともパーク</span>
             <LegalLinks />
           </div>
         </footer>

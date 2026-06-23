@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader appName="共通アカウント" accountUrl={accountUrl} actions={<NotificationBell accountUrl={accountUrl} />} />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
-          <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
+          <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
             <a href={SITE_URL} className="font-medium text-brand hover:underline">← スポともパーク</a>
             <LegalLinks baseUrl={SITE_URL} />
           </div>
