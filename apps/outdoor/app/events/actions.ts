@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerClient, loginUrlFor } from "@spotomo/auth-client";
-import { applyToSportEvent, createSportEvent, messageEventOrganizer } from "@spotomo/domain-common";
+import { applyToSportEvent, createSportEvent, messageEventOrganizer, fetchActivityEligibility } from "@spotomo/domain-common";
+
+const VERIFY_REQUIRED_MSG = "募集の作成・参加にはメールアドレスと携帯番号の認証が必要です。プロフィールから認証してください。";
 
 const SCHEMA = "outdoor";
 const SPORT_LABEL = "アウトドア";
@@ -33,6 +35,10 @@ export async function createEvent(_prev: CreateState, formData: FormData): Promi
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?redirect=/events/new");
+
+  // 連絡先（メール・携帯）の認証が揃っていないと募集を作成できない。
+  const eligibility = await fetchActivityEligibility(supabase, user.id);
+  if (!eligibility.eligible) return { error: VERIFY_REQUIRED_MSG };
 
   const parsed = createSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.errors[0].message };
@@ -162,6 +168,12 @@ export async function applyToEvent(formData: FormData): Promise<void> {
 
   const parsed = applySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;
+
+  // 連絡先（メール・携帯）の認証が揃っていないと参加申請できない。
+  const eligibility = await fetchActivityEligibility(supabase, user.id);
+  if (!eligibility.eligible) {
+    redirect(`/events/${parsed.data.event_id}?error=${encodeURIComponent(VERIFY_REQUIRED_MSG)}`);
+  }
 
   const result = await applyToSportEvent(supabase, SCHEMA, {
     eventId: parsed.data.event_id,

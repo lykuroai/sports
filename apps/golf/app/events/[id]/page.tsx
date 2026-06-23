@@ -8,7 +8,8 @@ import {
 } from "@spotomo/shared-types";
 import type { EventGolfDetails, GolfCourse, GolfPlan, GolfReservationStatus } from "@spotomo/shared-types";
 import { createServerClient, getUser, loginUrlFor } from "@spotomo/auth-client";
-import { isFavorited, isFollowing, fetchEventMembers } from "@spotomo/domain-common";
+import { isFavorited, isFollowing, fetchEventMembers, fetchActivityEligibility } from "@spotomo/domain-common";
+import { VerifyNotice } from "../verify-notice";
 import { fetchEventDetail, isApplyable } from "../../../lib/events";
 import { applyToEvent, updateReservationStatus, messageOrganizer } from "../actions";
 import { FavoriteButton } from "../favorite-button";
@@ -71,6 +72,7 @@ export default async function EventDetail({
   let fav = false;
   let following = false;
   let partStatus: string | null = null;
+  let eligibility: { emailVerified: boolean; phoneVerified: boolean; eligible: boolean } | null = null;
   if (user) {
     fav = await isFavorited(supabase, { userId: user.id, targetType: "recruitment", targetId: ev.id });
     if (!isOrganizer) {
@@ -79,6 +81,7 @@ export default async function EventDetail({
         .schema(SCHEMA).from("event_participants")
         .select("status").eq("event_id", ev.id).eq("user_id", user.id).maybeSingle();
       partStatus = (part?.status as string | undefined) ?? null;
+      eligibility = await fetchActivityEligibility(supabase, user.id);
     }
   }
   const isMember = isOrganizer || partStatus === "approved";
@@ -254,15 +257,19 @@ export default async function EventDetail({
         <p className="text-sm text-slate-500">申請の締切日を過ぎたため、この募集は参加申請を受け付けていません。</p>
       ) : isApplyable(ev.status) ? (
         user ? (
-          <form action={applyToEvent} className="card space-y-3 p-4">
-            <input type="hidden" name="event_id" value={ev.id} />
-            <label className="label" htmlFor="msg">参加メッセージ（任意）</label>
-            <textarea id="msg" name="application_message" className="input" rows={3} />
-            <button className="btn-primary" type="submit">この募集に参加申請する</button>
-            <p className="text-xs text-slate-400">
-              連絡先（メール・電話・本名）は主催者にも公開されません。
-            </p>
-          </form>
+          eligibility && !eligibility.eligible ? (
+            <VerifyNotice emailVerified={eligibility.emailVerified} phoneVerified={eligibility.phoneVerified} />
+          ) : (
+            <form action={applyToEvent} className="card space-y-3 p-4">
+              <input type="hidden" name="event_id" value={ev.id} />
+              <label className="label" htmlFor="msg">参加メッセージ（任意）</label>
+              <textarea id="msg" name="application_message" className="input" rows={3} />
+              <button className="btn-primary" type="submit">この募集に参加申請する</button>
+              <p className="text-xs text-slate-400">
+                連絡先（メール・電話・本名）は主催者にも公開されません。
+              </p>
+            </form>
+          )
         ) : (
           <a href={loginHref} className="btn-primary block text-center">
             ログインして参加申請する

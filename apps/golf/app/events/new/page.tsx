@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@spotomo/auth-client";
-import { isPremium, fetchPublishedSports } from "@spotomo/domain-common";
+import { isPremium, fetchPublishedSports, fetchActivityEligibility } from "@spotomo/domain-common";
 import NewEventForm, { type GoraPrefill } from "./new-event-form";
+import { VerifyNotice } from "../verify-notice";
 
 // /clubs（楽天GORA）からの「このプランで募集する」遷移時は、クエリのGORA情報を引き継ぐ。
 export default async function NewEventPage({
@@ -16,9 +17,10 @@ export default async function NewEventPage({
   if (!user) redirect("/login?redirect=/events/new");
 
   // プレミアム会員のみ参加者条件・承認制を指定できる。
-  const [premium, sports] = await Promise.all([
+  const [premium, sports, eligibility] = await Promise.all([
     isPremium(supabase, user.id),
     fetchPublishedSports(supabase),
+    fetchActivityEligibility(supabase, user.id),
   ]);
 
   const sp = await searchParams;
@@ -50,5 +52,12 @@ export default async function NewEventPage({
         }
       : null;
 
-  return <NewEventForm gora={gora} premium={premium} sports={sports} />;
+  return (
+    <>
+      {!eligibility.eligible && (
+        <VerifyNotice emailVerified={eligibility.emailVerified} phoneVerified={eligibility.phoneVerified} />
+      )}
+      <NewEventForm gora={gora} premium={premium} sports={sports} />
+    </>
+  );
 }
