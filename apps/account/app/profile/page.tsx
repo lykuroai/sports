@@ -47,7 +47,7 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      <ProfileForm profile={profile} sports={sports} userSports={userSports} redirectTo={redirectTo} />
+      <ProfileForm profile={profile} sports={sports} userSports={userSports} email={user.email} redirectTo={redirectTo} />
 
       <nav className="card divide-y p-2 text-sm">
         <a className="block px-3 py-2 hover:bg-slate-50" href="/notifications">通知一覧</a>
