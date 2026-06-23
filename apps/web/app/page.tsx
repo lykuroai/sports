@@ -4,7 +4,7 @@ import heroImage from "../public/park-hero.webp";
 
 // 種目ごとの表示メタ（ブランド名・ロゴ）。host は SPORT_DOMAINS と対応。
 const SPORT_META: Record<string, { label: string; logo: string }> = {
-  golf: { label: "ゴルフとも", logo: "/golf-logo.png" },
+  golf: { label: "ゴルフとも", logo: "/golf-logo.svg" },
   running: { label: "ランニング", logo: "/running-logo.svg" },
   outdoor: { label: "アウトドア", logo: "/outdoor-logo.svg" },
 };
