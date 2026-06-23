@@ -20,10 +20,7 @@ export default async function Home({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">ランニングの仲間募集</h1>
-        <div className="flex gap-2">
-          <Link href="/facilities" className="btn-outline">施設を探す</Link>
-          <Link href="/events/new" className="btn-primary">募集を作成</Link>
-        </div>
+        <Link href="/events/new" className="btn-primary">募集を作成</Link>
       </div>
 
       <form className="card flex flex-wrap gap-2 p-4" action="/">
