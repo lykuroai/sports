@@ -6,11 +6,12 @@ export default async function AdminDashboard() {
   await requireAdmin();
   const supabase = await createServerClient();
 
-  const [users, reports, submissions, owners] = await Promise.all([
+  const [users, reports, submissions, owners, verifications] = await Promise.all([
     supabase.schema(SCHEMA.account).from("users").select("id", { count: "exact", head: true }),
     supabase.schema(SCHEMA.core).from("reports").select("id", { count: "exact", head: true }).eq("status", "open"),
     supabase.schema(SCHEMA.facility).from("facility_submissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.schema(SCHEMA.facility).from("facility_owners").select("facility_id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.schema(SCHEMA.account).from("verifications").select("id", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
   const cards = [
@@ -18,6 +19,7 @@ export default async function AdminDashboard() {
     { label: "未対応の通報", value: reports.count ?? 0, href: "/reports" },
     { label: "施設申請（保留）", value: submissions.count ?? 0, href: "/facility-submissions" },
     { label: "運営者申請（保留）", value: owners.count ?? 0, href: "/facility-owners" },
+    { label: "本人確認（保留）", value: verifications.count ?? 0, href: "/verifications" },
   ];
 
   return (
@@ -36,6 +38,7 @@ export default async function AdminDashboard() {
         <a className="text-brand hover:underline" href="/reports">通報対応</a>
         <a className="text-brand hover:underline" href="/facility-submissions">施設登録申請</a>
         <a className="text-brand hover:underline" href="/facility-owners">施設運営者申請</a>
+        <a className="text-brand hover:underline" href="/verifications">本人確認 審査</a>
         <a className="text-brand hover:underline" href="/sports">カテゴリ管理</a>
         <a className="text-brand hover:underline" href="/facilities/import">施設CSV取り込み</a>
       </nav>

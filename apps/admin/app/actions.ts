@@ -25,6 +25,45 @@ export async function suspendUser(formData: FormData): Promise<void> {
   revalidatePath("/users");
 }
 
+export async function reviewVerification(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const verificationId = String(formData.get("verification_id"));
+  const userId = String(formData.get("user_id"));
+  const decision = String(formData.get("decision")) === "approved" ? "verified" : "rejected";
+
+  const db = createAdminClient();
+  await db
+    .schema(SCHEMA.account)
+    .from("verifications")
+    .update({ status: decision, reviewed_at: new Date().toISOString() })
+    .eq("id", verificationId);
+
+  // 承認時は本人確認済みフラグ（identity_verified_at）を記録する。
+  if (decision === "verified") {
+    await db
+      .schema(SCHEMA.account)
+      .from("users")
+      .update({ identity_verified_at: new Date().toISOString() })
+      .eq("id", userId);
+  }
+
+  await notifyUser({
+    userId,
+    type: decision === "verified" ? "identity_verified" : "identity_rejected",
+    title: decision === "verified" ? "本人確認が承認されました" : "本人確認の結果",
+    body:
+      decision === "verified"
+        ? "本人確認が承認されました。"
+        : "本人確認は承認されませんでした。書類を確認のうえ再申請してください。",
+    relatedType: "account_verification",
+    relatedId: verificationId,
+  });
+
+  await writeAuditLog(admin.id, `verification_${decision}`, "verification", verificationId, "account");
+  revalidatePath("/verifications");
+}
+
 export async function resolveReport(formData: FormData): Promise<void> {
   const admin = await getAdminUser();
   if (!admin) redirect("/");
