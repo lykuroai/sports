@@ -24,6 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SiteHeader
           appName=""
           brand="ゴルフとも"
+          portalUrl={SITE_URL}
           logo={
             <Image
               src="/golf-logo.svg"

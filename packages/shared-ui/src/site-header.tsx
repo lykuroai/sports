@@ -43,6 +43,11 @@ export interface SiteHeaderProps {
    * 総合ポータルのように共通プロフィールへ直接飛ばす場合は "プロフィール" 等に差し替える。
    */
   accountLabel?: string;
+  /**
+   * 総合ポータル（スポともパーク）の URL。指定があればナビ先頭に「スポともパーク」への
+   * 戻り導線を表示する。総合アプリ自身では指定しない。
+   */
+  portalUrl?: string;
 }
 
 /**
@@ -61,6 +66,7 @@ export function SiteHeader({
   loginHref,
   actions,
   accountLabel = "アカウント",
+  portalUrl,
 }: SiteHeaderProps) {
   // 未ログイン（loggedIn === false）かつログイン先がある場合は、アカウント／マイページの
   // 代わりに「ログイン（新規登録）」を表示する。
@@ -90,6 +96,11 @@ export function SiteHeader({
       </div>
 
       <nav className="flex items-center gap-3 text-sm">
+        {portalUrl && (
+          <a href={portalUrl} className="font-medium text-brand hover:underline">
+            ← スポともパーク
+          </a>
+        )}
         {nav ??
           SPORT_DOMAINS.map((d) => (
             <a key={d.slug} href={`//${d.host}`} className="hover:text-brand">
