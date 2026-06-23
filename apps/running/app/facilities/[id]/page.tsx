@@ -69,7 +69,7 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
       )}
 
       <div className="flex flex-wrap gap-2">
-        <Link href="/events/new" className="btn-primary">この施設で募集を作成</Link>
+        <Link href={`/events/new?facility=${f.id}`} className="btn-primary">この施設で募集を作成</Link>
         {mapHref && (
           <a href={mapHref} target="_blank" rel="noopener noreferrer" className="btn-outline">地図で見る</a>
         )}

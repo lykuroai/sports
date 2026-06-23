@@ -14,6 +14,8 @@ const SPORT_LABEL = "ランニング";
 const createSchema = z.object({
   title: z.string().min(1, "タイトルを入力してください").max(120),
   description: z.string().max(4000).optional(),
+  // 開催施設（任意）。空文字は未選択として扱う。
+  facility_id: z.string().uuid().optional().or(z.literal("")),
   prefecture: z.string().optional(),
   city: z.string().optional(),
   event_start_at: z.string().min(1, "開催日時を入力してください"),
@@ -51,6 +53,7 @@ export async function createEvent(_prev: CreateState, formData: FormData): Promi
     organizer_id: user.id,
     title: v.title,
     description: v.description || null,
+    facility_id: v.facility_id || null,
     prefecture: v.prefecture || null,
     city: v.city || null,
     event_start_at: new Date(v.event_start_at).toISOString(),

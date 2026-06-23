@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { APPROVAL_TYPE_LABEL, PREFECTURES } from "@spotomo/shared-types";
 import type { SportOption } from "@spotomo/domain-common";
 import { createEvent, type CreateState } from "../actions";
+import FacilityPicker, { type PickedFacility } from "./facility-picker";
 
 const initial: CreateState = { error: null };
 
@@ -24,11 +25,25 @@ const SKILL_OPTIONS: { value: string; label: string }[] = [
 export default function NewEventForm({
   premium,
   sports,
+  initialFacility = null,
 }: {
   premium: boolean;
   sports: SportOption[];
+  initialFacility?: PickedFacility | null;
 }) {
   const [state, formAction, pending] = useActionState(createEvent, initial);
+  const [facility, setFacility] = useState<PickedFacility | null>(initialFacility);
+  // 施設を選ぶと開催地（都道府県・市区町村）を初期補完する。手入力での上書きも可。
+  const [prefecture, setPrefecture] = useState(initialFacility?.prefecture ?? "");
+  const [city, setCity] = useState(initialFacility?.city ?? "");
+
+  function handlePick(f: PickedFacility | null) {
+    setFacility(f);
+    if (f) {
+      if (f.prefecture) setPrefecture(f.prefecture);
+      if (f.city) setCity(f.city);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
@@ -45,17 +60,24 @@ export default function NewEventForm({
           <label className="label" htmlFor="description">説明</label>
           <textarea id="description" name="description" className="input" rows={4} />
         </div>
+
+        <div>
+          <span className="label">開催施設（任意）</span>
+          <input type="hidden" name="facility_id" value={facility?.id ?? ""} />
+          <FacilityPicker value={facility} onPick={handlePick} />
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label" htmlFor="prefecture">都道府県</label>
-            <select id="prefecture" name="prefecture" className="input" defaultValue="">
+            <select id="prefecture" name="prefecture" className="input" value={prefecture} onChange={(e) => setPrefecture(e.target.value)}>
               <option value="">指定なし</option>
               {PREFECTURES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
             <label className="label" htmlFor="city">市区町村</label>
-            <input id="city" name="city" className="input" />
+            <input id="city" name="city" className="input" value={city} onChange={(e) => setCity(e.target.value)} />
           </div>
         </div>
         <div>

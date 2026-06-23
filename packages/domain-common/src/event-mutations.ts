@@ -8,6 +8,8 @@ export interface CreateEventInput {
   organizer_id: string;
   title: string;
   description?: string | null;
+  /** 開催施設（任意。施設未定の募集もある）。facility.facilities.id を参照。 */
+  facility_id?: string | null;
   prefecture?: string | null;
   city?: string | null;
   event_start_at: string; // ISO
