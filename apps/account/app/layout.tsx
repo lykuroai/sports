@@ -20,7 +20,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="mt-16 border-t border-slate-200 bg-white">
           <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
             <LegalLinks baseUrl={SITE_URL} />
-            <p>スポともパーク — 共通ユーザ基盤 + 種目別ドメイン構成</p>
           </div>
         </footer>
       </body>

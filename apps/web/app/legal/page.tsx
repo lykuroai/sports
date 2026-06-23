@@ -69,9 +69,6 @@ export default function LegalPage() {
         ))}
       </dl>
 
-      <p className="text-xs text-slate-400">
-        ※ 価格・解約条件等を確定し、正式公開前に専門家の確認を受けてください。
-      </p>
     </article>
   );
 }

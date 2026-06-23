@@ -129,9 +129,6 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <p className="text-xs text-slate-400">
-        ※ 正式公開前に専門家の確認を受けてください。
-      </p>
     </article>
   );
 }
