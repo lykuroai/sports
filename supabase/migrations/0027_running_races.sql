@@ -6,7 +6,7 @@
 -- =============================================================
 
 create table running.races (
-  id              uuid primary key default uuid_generate_v4(),
+  id              uuid primary key default gen_random_uuid(),
   name            text not null,
   prefecture      text,
   city            text,
