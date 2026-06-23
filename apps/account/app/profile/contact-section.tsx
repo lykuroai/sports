@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Turnstile } from "@spotomo/shared-ui";
+import { isPlaceholderEmail } from "@spotomo/shared-types";
 import {
   requestEmailChange,
   requestPhoneOtp,
@@ -39,6 +40,9 @@ export function ContactSection({
 }) {
   const [emailState, emailAction, emailPending] = useActionState(requestEmailChange, emailInit);
   const [editEmail, setEditEmail] = useState(false);
+  // LINE 等でメール未取得時の合成アドレスは「未設定」として扱い、実メールの登録を促す。
+  const emailIsPlaceholder = isPlaceholderEmail(email);
+  const emailVerifiedReal = emailVerified && !emailIsPlaceholder;
 
   const [reqState, reqAction, reqPending] = useActionState(requestPhoneOtp, reqInit);
   const [verState, verAction, verPending] = useActionState(confirmPhoneOtp, verInit);
@@ -57,14 +61,18 @@ export function ContactSection({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <span className="label !mb-0">メールアドレス</span>
-          <Badge verified={emailVerified} />
+          <Badge verified={emailVerifiedReal} />
         </div>
-        <p className="text-sm text-slate-700">{email || "未設定"}</p>
-        <p className="text-xs text-slate-400">ログインに使うメールアドレスです。他の利用者には公開されません。</p>
+        <p className="text-sm text-slate-700">{emailIsPlaceholder ? "未設定" : email || "未設定"}</p>
+        <p className="text-xs text-slate-400">
+          {emailIsPlaceholder
+            ? "LINE ログインのためメールが未登録です。募集作成・参加申請にはメールの登録が必要です。"
+            : "ログインに使うメールアドレスです。他の利用者には公開されません。"}
+        </p>
 
         {!editEmail ? (
           <button type="button" className="btn-outline text-sm" onClick={() => setEditEmail(true)}>
-            メールを変更
+            {emailIsPlaceholder ? "メールを登録" : "メールを変更"}
           </button>
         ) : emailState.ok ? (
           <p className="rounded bg-emerald-50 p-2 text-sm text-emerald-700">

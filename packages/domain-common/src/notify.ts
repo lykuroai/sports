@@ -1,4 +1,5 @@
 import { createAdminClient, SCHEMA } from "@spotomo/auth-client";
+import { isPlaceholderEmail } from "@spotomo/shared-types";
 import { sendEmail } from "./email";
 
 /**
@@ -55,7 +56,8 @@ export async function notifyUser({
     .maybeSingle();
   const emailEnabled = (settings as { email_enabled?: boolean } | null)?.email_enabled ?? true;
 
-  if (emailEnabled && data?.email && data.status === "active") {
+  // 合成メール（プレースホルダ）には送らない（実在せずバウンスするため）。
+  if (emailEnabled && data?.email && data.status === "active" && !isPlaceholderEmail(data.email)) {
     await sendEmail({ to: data.email, subject: title, text: body ?? title });
   }
 }

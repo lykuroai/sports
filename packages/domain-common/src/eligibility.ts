@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SCHEMA } from "@spotomo/auth-client";
+import { isPlaceholderEmail } from "@spotomo/shared-types";
 
 type Client = SupabaseClient;
 
@@ -22,11 +23,12 @@ export async function fetchActivityEligibility(
   const { data } = await supabase
     .schema(SCHEMA.account)
     .from("users")
-    .select("email_verified_at, phone_verified_at")
+    .select("email, email_verified_at, phone_verified_at")
     .eq("id", userId)
     .maybeSingle();
-  const row = (data ?? {}) as { email_verified_at?: string | null; phone_verified_at?: string | null };
-  const emailVerified = !!row.email_verified_at;
+  const row = (data ?? {}) as { email?: string | null; email_verified_at?: string | null; phone_verified_at?: string | null };
+  // 合成メール（LINE 等でメール未取得時のプレースホルダ）は実在しないため認証済みとみなさない。
+  const emailVerified = !!row.email_verified_at && !isPlaceholderEmail(row.email);
   const phoneVerified = !!row.phone_verified_at;
   return { emailVerified, phoneVerified, eligible: emailVerified && phoneVerified };
 }
