@@ -11,6 +11,7 @@ type Race = {
   name: string;
   prefecture: string | null;
   city: string | null;
+  event_date: string | null;
   website_url: string | null;
   wikipedia_title: string | null;
   discontinued: boolean;
@@ -31,7 +32,7 @@ export default async function RaceSearch({
   let query = supabase
     .schema(SCHEMA.running)
     .from("races")
-    .select("id, name, prefecture, city, website_url, wikipedia_title, discontinued", { count: "exact" })
+    .select("id, name, prefecture, city, event_date, website_url, wikipedia_title, discontinued", { count: "exact" })
     .order("prefecture", { ascending: true, nullsFirst: false })
     .order("name", { ascending: true })
     .range(from, from + PER_PAGE - 1);
@@ -89,6 +90,11 @@ export default async function RaceSearch({
                 <div className="text-sm text-slate-500">
                   {[r.prefecture, r.city].filter(Boolean).join("") || "開催地は各大会の公式情報をご確認ください"}
                 </div>
+                {r.event_date && (
+                  <div className="mt-0.5 text-sm font-medium text-brand">
+                    開催日 {r.event_date}
+                  </div>
+                )}
                 <div className="mt-2 flex flex-wrap gap-3 text-sm">
                   {r.website_url && (
                     <a href={r.website_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
