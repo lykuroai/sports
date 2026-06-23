@@ -125,6 +125,11 @@ export default function NewEventForm({
           <label className="label" htmlFor="event_start_at">開催日時</label>
           <input id="event_start_at" name="event_start_at" type="datetime-local" className="input" required defaultValue={defaultStart} />
         </div>
+        <div>
+          <label className="label" htmlFor="application_deadline">申請締切日時（任意）</label>
+          <input id="application_deadline" name="application_deadline" type="datetime-local" className="input" />
+          <p className="mt-1 text-xs text-slate-400">締切を過ぎると参加申請を受け付けません。未入力なら締切なし。</p>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label" htmlFor="capacity">定員</label>

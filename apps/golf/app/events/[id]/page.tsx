@@ -28,8 +28,15 @@ const STATUS_OPTIONS: GolfReservationStatus[] = [
   "unknown",
 ];
 
-export default async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function EventDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { id } = await params;
+  const { error: errorMessage } = await searchParams;
   const supabase = await createServerClient();
   const ev = await fetchEventDetail(supabase, id);
   if (!ev) notFound();
@@ -58,6 +65,8 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
     golfCourse = (courseRow as GolfCourse | null) ?? null;
   }
   const isPast = ev.status === "finished" || new Date(ev.event_start_at) < new Date();
+  // 申請締切を過ぎたら参加申請を締め切る。
+  const deadlinePassed = !!ev.application_deadline && new Date(ev.application_deadline) < new Date();
 
   let fav = false;
   let following = false;
@@ -93,6 +102,10 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
         )}
       </header>
 
+      {errorMessage && (
+        <p className="rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{errorMessage}</p>
+      )}
+
       {user && (
         <div className="flex flex-wrap gap-2">
           <FavoriteButton eventId={ev.id} initial={fav} />
@@ -111,6 +124,15 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
 
       <dl className="card grid grid-cols-[6rem_1fr] gap-y-3 p-5 text-sm">
         <dt className="text-slate-400">日時</dt><dd>{formatDateTime(ev.event_start_at)}</dd>
+        {ev.application_deadline && (
+          <>
+            <dt className="text-slate-400">申請締切</dt>
+            <dd className={deadlinePassed ? "text-red-600" : ""}>
+              {formatDateTime(ev.application_deadline)}
+              {deadlinePassed && <span className="ml-2 badge bg-red-100 text-red-700">締切済み</span>}
+            </dd>
+          </>
+        )}
         <dt className="text-slate-400">場所</dt>
         <dd>{ev.prefecture}{ev.city}{ev.facility_name ? `・${ev.facility_name}` : "・施設未定"}</dd>
         <dt className="text-slate-400">参加費</dt><dd>{formatFee(ev.participation_fee)}</dd>
@@ -208,7 +230,7 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
         </div>
       ) : canCancel ? (
         <div className="card space-y-2 p-4 text-sm">
-          <p>現在のステータス: <span className="font-medium">{partStatus === "approved" ? "参加承認済み" : "申請中"}</span></p>
+          <p>現在のステータス: <span className="font-medium">{partStatus === "approved" ? "参加承認済み" : partStatus === "waitlist" ? "キャンセル待ち（満員）" : "申請中"}</span></p>
           {partStatus === "approved" && (
             <a href={`/chat/${ev.id}`} className="text-brand hover:underline">グループチャットを開く</a>
           )}
@@ -217,6 +239,8 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
             <button className="btn-outline" type="submit">参加をキャンセル</button>
           </form>
         </div>
+      ) : deadlinePassed ? (
+        <p className="text-sm text-slate-500">申請の締切日を過ぎたため、この募集は参加申請を受け付けていません。</p>
       ) : isApplyable(ev.status) ? (
         user ? (
           <form action={applyToEvent} className="card space-y-3 p-4">

@@ -11,6 +11,8 @@ export interface CreateEventInput {
   prefecture?: string | null;
   city?: string | null;
   event_start_at: string; // ISO
+  /** 申請締切日時（ISO）。この日時を過ぎると参加申請できない。未指定なら締切なし。 */
+  application_deadline?: string | null;
   capacity: number;
   participation_fee: number;
   beginner_allowed: boolean;
@@ -63,25 +65,58 @@ export async function createSportEvent(
   return { id: data.id as string };
 }
 
+/** 承認済み参加者数を数える（任意で指定ユーザーを除外）。定員判定に使う。 */
+async function countApproved(
+  supabase: Client,
+  schema: string,
+  eventId: string,
+  excludeUserId?: string,
+): Promise<number> {
+  let q = supabase
+    .schema(schema)
+    .from("event_participants")
+    .select("user_id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .eq("status", "approved");
+  if (excludeUserId) q = q.neq("user_id", excludeUserId);
+  const { count } = await q;
+  return count ?? 0;
+}
+
 /**
- * 参加申請。先着順なら即承認、それ以外は申請中。主催者へ通知（共通 notifyUser 経由）。
+ * 参加申請。先着順は定員に空きがあれば即承認、満員ならキャンセル待ち。承認制は申請中。
+ * 主催者へ通知（共通 notifyUser 経由）。戻り値で確定した参加ステータスを返す。
  */
 export async function applyToSportEvent(
   supabase: Client,
   schema: string,
   opts: { eventId: string; userId: string; message?: string | null; sportLabel: string },
-): Promise<void> {
+): Promise<"applied" | "approved" | "waitlist" | "closed" | null> {
   const { eventId, userId, message, sportLabel } = opts;
 
   const { data: ev } = await supabase
     .schema(schema)
     .from("events")
-    .select("organizer_id, approval_type, title")
+    .select("organizer_id, approval_type, title, capacity, application_deadline")
     .eq("id", eventId)
     .maybeSingle();
-  if (!ev) return;
+  if (!ev) return null;
 
-  const status = ev.approval_type === "first_come" ? "approved" : "applied";
+  // 締切日時を過ぎた募集には申請できない。
+  if (ev.application_deadline && new Date(ev.application_deadline) < new Date()) {
+    return "closed";
+  }
+
+  let status: "applied" | "approved" | "waitlist";
+  if (ev.approval_type === "first_come") {
+    // 先着順は即承認だが、定員を超えないようキャンセル待ちへ振り分ける。
+    // 自分の既存承認行は除外して数える（再申請の二重計上を防ぐ）。
+    const approved = await countApproved(supabase, schema, eventId, userId);
+    status = approved >= (ev.capacity ?? 0) ? "waitlist" : "approved";
+  } else {
+    status = "applied";
+  }
+
   const { error } = await supabase
     .schema(schema)
     .from("event_participants")
@@ -92,7 +127,24 @@ export async function applyToSportEvent(
       application_message: message || null,
       approved_at: status === "approved" ? new Date().toISOString() : null,
     });
-  if (error) return;
+  if (error) return null;
+
+  // 即承認ならチャットに参加させる（承認制の approveParticipant と同じ扱い）。
+  if (status === "approved") {
+    const admin = createAdminClient();
+    const { data: room } = await admin
+      .schema(schema)
+      .from("chat_rooms")
+      .select("id")
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (room) {
+      await admin
+        .schema(schema)
+        .from("chat_room_members")
+        .upsert({ chat_room_id: room.id, user_id: userId, role: "participant" });
+    }
+  }
 
   await notifyUser({
     userId: ev.organizer_id,

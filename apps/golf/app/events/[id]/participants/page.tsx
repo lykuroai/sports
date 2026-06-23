@@ -13,8 +13,15 @@ const GENDER_LABEL: Record<string, string> = {
   unspecified: "未指定",
 };
 
-export default async function ParticipantsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ParticipantsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { id } = await params;
+  const { error: errorMessage } = await searchParams;
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?redirect=/events/${id}/participants`);
@@ -29,6 +36,7 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ i
     fetchEventConditions(supabase, SCHEMA, id),
   ]);
   const approved = participants.filter((p) => p.status === "approved").length;
+  const isFull = approved >= ev.capacity;
 
   // 申請者の公開特性が募集条件に合致するかを判定（承認の判断材料）。
   const sportIdSet = new Set(conditions.condition_sport_ids);
@@ -44,7 +52,14 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ i
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-2xl font-bold">参加者管理（ゴルフ）</h1>
-      <p className="text-sm text-slate-500">{ev.title}｜承認 {approved}/{ev.capacity}人</p>
+      <p className="text-sm text-slate-500">
+        {ev.title}｜承認 {approved}/{ev.capacity}人
+        {isFull && <span className="ml-2 badge bg-amber-100 text-amber-700">満員</span>}
+      </p>
+
+      {errorMessage && (
+        <p className="rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{errorMessage}</p>
+      )}
 
       {conditions.hasConditions && (
         <div className="card space-y-1 p-4 text-sm">
@@ -128,7 +143,7 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ i
                   <form action={approveAction}>
                     <input type="hidden" name="event_id" value={id} />
                     <input type="hidden" name="applicant_id" value={p.user_id} />
-                    <button className="btn-primary" type="submit">承認</button>
+                    <button className="btn-primary" type="submit" disabled={isFull} title={isFull ? "定員に達しています" : undefined}>承認</button>
                   </form>
                   <form action={rejectAction}>
                     <input type="hidden" name="event_id" value={id} />

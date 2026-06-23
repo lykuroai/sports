@@ -203,6 +203,27 @@ export async function approveParticipant(
   opts: { eventId: string; applicantId: string; sportLabel: string; eventTitle: string },
 ): Promise<{ error: string | null }> {
   const { eventId, applicantId, sportLabel, eventTitle } = opts;
+
+  // 定員チェック。承認済み人数が定員に達していたら承認しない（定員オーバー防止）。
+  // 申請者自身が既に承認済みの場合は除外して数える（再承認の二重計上を防ぐ）。
+  const { data: ev } = await supabase
+    .schema(schema)
+    .from("events")
+    .select("capacity")
+    .eq("id", eventId)
+    .maybeSingle();
+  const capacity = (ev as { capacity?: number } | null)?.capacity ?? 0;
+  const { count: approvedCount } = await supabase
+    .schema(schema)
+    .from("event_participants")
+    .select("user_id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .eq("status", "approved")
+    .neq("user_id", applicantId);
+  if ((approvedCount ?? 0) >= capacity) {
+    return { error: "定員に達しているため承認できません。" };
+  }
+
   const { error } = await supabase
     .schema(schema)
     .from("event_participants")

@@ -22,7 +22,11 @@ export async function approveAction(formData: FormData): Promise<void> {
   const applicantId = String(formData.get("applicant_id"));
   const { supabase, user, ev } = await organizerOf(eventId);
   if (!ev || ev.organizer_id !== user.id) return;
-  await approveParticipant(supabase, SCHEMA, { eventId, applicantId, sportLabel: SPORT_LABEL, eventTitle: ev.title });
+  const { error } = await approveParticipant(supabase, SCHEMA, { eventId, applicantId, sportLabel: SPORT_LABEL, eventTitle: ev.title });
+  if (error) {
+    // 定員オーバー等で承認できなかった場合は参加者管理画面にメッセージを表示する。
+    redirect(`/events/${eventId}/participants?error=${encodeURIComponent(error)}`);
+  }
   revalidatePath(`/events/${eventId}/participants`);
 }
 
