@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import "./globals.css";
 import { SiteHeader, LegalLinks } from "@spotomo/shared-ui";
 
@@ -19,7 +20,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ja">
       <body className="min-h-screen">
-        <SiteHeader appName="ランニング" accountUrl={accountUrl} currentOrigin={currentOrigin} myPageHref="/mypage" loggedIn={!!user} loginHref={loginHref} actions={<NotificationBell accountUrl={accountUrl} />} />
+        <SiteHeader appName="" brand="ランニングとも" logo={<Image src="/running-logo.svg" alt="ランニングとも" width={72} height={48} priority className="h-12 w-auto" />} accountUrl={accountUrl} currentOrigin={currentOrigin} myPageHref="/mypage" loggedIn={!!user} loginHref={loginHref} actions={<NotificationBell accountUrl={accountUrl} />} />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mt-16 border-t border-slate-200 bg-white">
           <div className="mx-auto max-w-5xl space-y-3 px-4 py-8 text-sm text-slate-500">
