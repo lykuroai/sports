@@ -131,6 +131,26 @@ export async function reviewImportedFacility(formData: FormData): Promise<void> 
   revalidatePath("/facilities");
 }
 
+// 取り込み施設をまとめて承認/却下する（承認運用の効率化）。チェックした施設、または
+// 「このページをすべて」のための hidden 群を facility_ids として受け取る。
+export async function bulkReviewImportedFacilities(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const decision = String(formData.get("decision")) === "approved" ? "verified" : "rejected";
+  const ids = formData.getAll("facility_ids").map(String).filter(Boolean);
+  if (ids.length === 0) return;
+
+  const db = createAdminClient();
+  await db
+    .schema(SCHEMA.facility)
+    .from("facilities")
+    .update({ status: decision, last_checked_at: new Date().toISOString() })
+    .in("id", ids)
+    .eq("status", "unverified"); // 取り込み未承認のみを対象に限定（誤操作防止）
+  await writeAuditLog(admin.id, `facility_import_bulk_${decision}`, "facility", `count:${ids.length}`, "facility", { count: ids.length });
+  revalidatePath("/facilities");
+}
+
 // 取り込み施設（source）を既存施設（target）へ統合する。出所・種目を target へ移し、
 // source を削除する。重複の自動統合はせず、管理者が候補を確認して実行する（仕様 §6.6）。
 export async function mergeImportedFacility(formData: FormData): Promise<void> {
