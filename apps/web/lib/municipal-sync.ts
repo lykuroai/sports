@@ -96,6 +96,10 @@ function findCol(headers: string[], candidates: string[]): number {
 // 全国地方公共団体コード等（数字のみ）を都道府県/市区町村名として扱わない。
 const nameOrNull = (v: string | null): string | null => (v && /^\d+$/.test(v) ? null : v);
 
+// 住所の先頭から都道府県名を抽出（列・既定が無いソースのフォールバック）。
+const PREF_RE = /(北海道|青森県|岩手県|宮城県|秋田県|山形県|福島県|茨城県|栃木県|群馬県|埼玉県|千葉県|東京都|神奈川県|新潟県|富山県|石川県|福井県|山梨県|長野県|岐阜県|静岡県|愛知県|三重県|滋賀県|京都府|大阪府|兵庫県|奈良県|和歌山県|鳥取県|島根県|岡山県|広島県|山口県|徳島県|香川県|愛媛県|高知県|福岡県|佐賀県|長崎県|熊本県|大分県|宮崎県|鹿児島県|沖縄県)/;
+const prefFromAddress = (addr: string | null): string | null => addr?.match(PREF_RE)?.[1] ?? null;
+
 // 施設名/種別から代表 sport slug を推定（一致しなければ null）。
 function inferSport(text: string): string | null {
   const t = text;
@@ -152,7 +156,8 @@ export function normalizeMunicipalCsv(text: string, prefDefault: string | null):
       facilityType: facilityType ?? "公共施設",
       sportSlug: inferSport(`${name} ${facilityType ?? ""}`),
       lat, lng,
-      prefecture: nameOrNull(idx.pref >= 0 ? toStr(cells[idx.pref]) : null) ?? prefDefault,
+      // 優先: 都道府県名列 > 指定既定(pref) > 住所先頭から抽出。
+      prefecture: nameOrNull(idx.pref >= 0 ? toStr(cells[idx.pref]) : null) ?? prefDefault ?? prefFromAddress(address),
       city: nameOrNull(idx.city >= 0 ? toStr(cells[idx.city]) : null),
       address,
       raw,
