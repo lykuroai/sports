@@ -15,7 +15,8 @@ import { createAdminClient, SCHEMA } from "@spotomo/auth-client";
 // contributors）が必要 — license 列に記録し、施設詳細での表示は別途。
 // =============================================================
 
-const OVERPASS_DEFAULT = "https://overpass-api.de/api/interpreter";
+// 既定は area DB 不要・到達性の良い OSM France 公式インスタンス（bbox クエリ前提）。
+const OVERPASS_DEFAULT = "https://overpass.openstreetmap.fr/api/interpreter";
 const OSM_LICENSE = "ODbL 1.0 (© OpenStreetMap contributors)";
 
 export type OsmElement = {
@@ -63,21 +64,44 @@ function classify(tags: Record<string, string>): { sportSlug: string; facilityTy
   return null;
 }
 
-/** Overpass のクエリ文字列を組み立てる。area は都道府県名（admin_level=4）。 */
-export function buildOverpassQuery(area: string): string {
+// 都道府県の境界ボックス（south,west,north,east）。Overpass の area 機能は
+// 一部ミラー（overpass.openstreetmap.fr 等）に area DB が無く使えないため、
+// area 名ではなく bbox で取得する（全インスタンスで動作）。離島は概ね除外。
+// 必要な都道府県のみ随時追加。未知の area は OSM_FETCH_BBOX で上書きするか東京既定。
+export type Bbox = readonly [number, number, number, number];
+export const PREFECTURE_BBOX: Record<string, Bbox> = {
+  "東京都": [35.50, 138.94, 35.90, 139.92],
+  "神奈川県": [35.13, 138.90, 35.67, 139.80],
+  "埼玉県": [35.75, 138.70, 36.28, 139.90],
+  "千葉県": [34.90, 139.74, 36.10, 140.87],
+  "大阪府": [34.27, 135.09, 34.85, 135.74],
+};
+
+/** area（都道府県名）から bbox を解決。OSM_FETCH_BBOX(csv) > マップ > 東京既定。 */
+export function resolveBbox(area: string): Bbox {
+  const csv = process.env.OSM_FETCH_BBOX;
+  if (csv) {
+    const p = csv.split(",").map((s) => Number(s.trim()));
+    if (p.length === 4 && p.every((n) => Number.isFinite(n))) return p as unknown as Bbox;
+  }
+  return PREFECTURE_BBOX[area] ?? PREFECTURE_BBOX["東京都"];
+}
+
+/** Overpass のクエリ文字列を組み立てる（bbox 指定。area DB に依存しない）。 */
+export function buildOverpassQuery(bbox: Bbox): string {
+  const b = `(${bbox[0]},${bbox[1]},${bbox[2]},${bbox[3]})`;
   return `[out:json][timeout:90];
-area["name"="${area}"]["admin_level"="4"]->.a;
 (
-  nwr["leisure"="track"](area.a);
-  nwr["leisure"="pitch"]["sport"~"running|athletics"](area.a);
-  nwr["leisure"="stadium"]["sport"~"running|athletics"](area.a);
-  nwr["leisure"="sports_centre"]["sport"~"running|athletics"](area.a);
-  nwr["leisure"="park"](area.a);
+  nwr["leisure"="track"]${b};
+  nwr["leisure"="pitch"]["sport"~"running|athletics"]${b};
+  nwr["leisure"="stadium"]["sport"~"running|athletics"]${b};
+  nwr["leisure"="sports_centre"]["sport"~"running|athletics"]${b};
+  nwr["leisure"="park"]${b};
 );
 out center tags;`;
 }
 
-/** Overpass を叩いて生要素を取得する。 */
+/** Overpass を叩いて生要素を取得する。area は都道府県名（bbox に解決）。 */
 export async function fetchOverpass(area: string): Promise<OsmElement[]> {
   const url = process.env.OSM_OVERPASS_URL || OVERPASS_DEFAULT;
   const res = await fetch(url, {
@@ -88,11 +112,15 @@ export async function fetchOverpass(area: string): Promise<OsmElement[]> {
       "User-Agent": process.env.OSM_USER_AGENT || "Spotomo/1.0 (+https://spotomo.lykuro.ai)",
       Accept: "application/json",
     },
-    body: "data=" + encodeURIComponent(buildOverpassQuery(area)),
+    body: "data=" + encodeURIComponent(buildOverpassQuery(resolveBbox(area))),
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Overpass 取得に失敗: HTTP ${res.status}`);
-  const json = (await res.json()) as { elements?: OsmElement[] };
+  const json = (await res.json()) as { elements?: OsmElement[]; remark?: string };
+  // Overpass はサーバ側エラー（タイムアウト等）を 200＋remark で返すことがある。
+  if ((!json.elements || json.elements.length === 0) && json.remark) {
+    throw new Error(`Overpass remark: ${json.remark}`);
+  }
   return json.elements ?? [];
 }
 
