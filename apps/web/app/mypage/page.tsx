@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createServerClient, selfOrigin, SCHEMA } from "@spotomo/auth-client";
+import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { fetchMypageCounts } from "@spotomo/domain-common";
 import { StatCard } from "@spotomo/shared-ui";
 
 const DOMAIN = "running";
-const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
 
 // マイページ（mypage_design）。1アカウントで全種目を横断管理する個人用画面。
 // プロフィールカード＋ダッシュボード集計＋主要導線を表示する。
@@ -22,10 +21,8 @@ export default async function MyPage() {
   type Prof = { nickname: string | null; avatar_url: string | null; introduction: string | null; area: string | null };
   const profile = (profRes.data ?? null) as Prof | null;
 
-  const origin = await selfOrigin();
-  const profileHref = ACCOUNT_URL
-    ? `${ACCOUNT_URL}/profile?redirect=${encodeURIComponent(origin)}`
-    : "/profile";
+  // 共通プロフィールは web に取り込み済みのためローカルへ。
+  const profileHref = "/profile";
 
   // プロフィール完成度（簡易）: 主要項目の充足率。
   const filled = [profile?.nickname, profile?.avatar_url, profile?.introduction, profile?.area].filter(Boolean).length;

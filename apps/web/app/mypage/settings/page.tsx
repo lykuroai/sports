@@ -46,7 +46,7 @@ export default async function SettingsPage() {
         <h2 className="font-semibold">アカウント情報</h2>
         <p className="text-slate-500">メールアドレス・パスワード・外部ログイン連携・プロフィール公開設定・退会は共通アカウントで管理します。</p>
         <div className="flex flex-wrap gap-3 pt-1">
-          <a href={accountHref("/profile")} className="text-brand hover:underline">プロフィール編集 →</a>
+          <a href="/profile" className="text-brand hover:underline">プロフィール編集 →</a>
           <a href={accountHref("/billing")} className="text-brand hover:underline">プレミアム会員 →</a>
         </div>
       </div>

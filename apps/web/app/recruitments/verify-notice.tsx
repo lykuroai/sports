@@ -1,8 +1,6 @@
-const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
-
 /**
  * メール・携帯番号の認証が未完了のとき、募集作成/参加申請ができない旨と
- * プロフィール（account 共通）への導線を表示する。
+ * プロフィール（共通プロフィール = web 内）への導線を表示する。
  */
 export function VerifyNotice({
   emailVerified,
@@ -22,7 +20,7 @@ export function VerifyNotice({
         募集の作成・参加申請には{missing.join("・")}の認証が必要です。
       </p>
       <a
-        href={`${ACCOUNT_URL}/profile`}
+        href="/profile"
         className="mt-2 inline-block rounded bg-amber-600 px-3 py-1.5 text-white hover:bg-amber-700"
       >
         プロフィールで認証する
