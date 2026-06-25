@@ -59,7 +59,7 @@ export default async function MyPage() {
 
       {/* ダッシュボード集計 */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard href="/mypage/events" label="作成した募集" count={counts.organized} />
+        <StatCard href="/mypage/recruitments" label="作成した募集" count={counts.organized} />
         <StatCard href="/mypage/participations" label="参加・応募" count={counts.participating} />
         <StatCard href="/mypage/favorites" label="保存した施設" count={counts.favorites} />
         <StatCard href="/mypage/following" label="フォロー" count={counts.following} />
@@ -68,7 +68,7 @@ export default async function MyPage() {
 
       {/* 主要導線（CTA） */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <Link href="/events/new" className="card p-4 text-center font-medium text-brand hover:shadow">仲間募集を作成する</Link>
+        <Link href="/recruitments/new" className="card p-4 text-center font-medium text-brand hover:shadow">仲間募集を作成する</Link>
         <Link href="/facilities" className="card p-4 text-center font-medium text-brand hover:shadow">施設を探す</Link>
         <Link href="/running" className="card p-4 text-center font-medium text-brand hover:shadow">種目から探す</Link>
       </div>

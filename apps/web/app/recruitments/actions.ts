@@ -38,7 +38,7 @@ export async function createEvent(_prev: CreateState, formData: FormData): Promi
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login?redirect=/events/new");
+  if (!user) redirect("/login?redirect=/recruitments/new");
 
   // 連絡先（メール・携帯）の認証が揃っていないと募集を作成できない。
   const eligibility = await fetchActivityEligibility(supabase, user.id);
@@ -75,7 +75,7 @@ export async function createEvent(_prev: CreateState, formData: FormData): Promi
   if ("error" in result) return { error: result.error };
 
   revalidatePath("/");
-  redirect(`/events/${result.id}`);
+  redirect(`/recruitments/${result.id}`);
 }
 
 const updateSchema = createSchema.extend({ event_id: z.string().uuid() });
@@ -86,7 +86,7 @@ export async function updateEvent(_prev: CreateState, formData: FormData): Promi
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login?redirect=/events/new");
+  if (!user) redirect("/login?redirect=/recruitments/new");
 
   const parsed = updateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.errors[0].message };
@@ -123,8 +123,8 @@ export async function updateEvent(_prev: CreateState, formData: FormData): Promi
   if (error) return { error: error.message };
 
   revalidatePath("/");
-  revalidatePath(`/events/${v.event_id}`);
-  redirect(`/events/${v.event_id}`);
+  revalidatePath(`/recruitments/${v.event_id}`);
+  redirect(`/recruitments/${v.event_id}`);
 }
 
 const deleteSchema = z.object({ event_id: z.string().uuid() });
@@ -147,7 +147,7 @@ export async function deleteEvent(formData: FormData): Promise<void> {
     .select("user_id", { count: "exact", head: true })
     .eq("event_id", parsed.data.event_id)
     .in("status", ["applied", "approved", "waitlist"]);
-  if ((count ?? 0) > 0) redirect(`/events/${parsed.data.event_id}/edit?error=has_applicants`);
+  if ((count ?? 0) > 0) redirect(`/recruitments/${parsed.data.event_id}/edit?error=has_applicants`);
 
   await supabase
     .schema(SCHEMA)
@@ -171,7 +171,7 @@ export async function applyToEvent(formData: FormData): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
   // 種目アプリには /login が無いため、account 共通ログインへ誘導し認証後この募集詳細へ戻す。
-  if (!user) redirect(await loginUrlFor(`/events/${String(formData.get("event_id") ?? "")}`));
+  if (!user) redirect(await loginUrlFor(`/recruitments/${String(formData.get("event_id") ?? "")}`));
 
   const parsed = applySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;
@@ -179,7 +179,7 @@ export async function applyToEvent(formData: FormData): Promise<void> {
   // 連絡先（メール・携帯）の認証が揃っていないと参加申請できない。
   const eligibility = await fetchActivityEligibility(supabase, user.id);
   if (!eligibility.eligible) {
-    redirect(`/events/${parsed.data.event_id}?error=${encodeURIComponent(VERIFY_REQUIRED_MSG)}`);
+    redirect(`/recruitments/${parsed.data.event_id}?error=${encodeURIComponent(VERIFY_REQUIRED_MSG)}`);
   }
 
   const result = await applyToSportEvent(supabase, SCHEMA, {
@@ -189,12 +189,12 @@ export async function applyToEvent(formData: FormData): Promise<void> {
     sportLabel: SPORT_LABEL,
   });
 
-  revalidatePath(`/events/${parsed.data.event_id}`);
+  revalidatePath(`/recruitments/${parsed.data.event_id}`);
   if (result === "closed") {
-    redirect(`/events/${parsed.data.event_id}?error=${encodeURIComponent("申請の締切日を過ぎているため参加申請できません。")}`);
+    redirect(`/recruitments/${parsed.data.event_id}?error=${encodeURIComponent("申請の締切日を過ぎているため参加申請できません。")}`);
   }
   if (result === "full") {
-    redirect(`/events/${parsed.data.event_id}?error=${encodeURIComponent("募集人数に達したため参加申請を締め切りました。")}`);
+    redirect(`/recruitments/${parsed.data.event_id}?error=${encodeURIComponent("募集人数に達したため参加申請を締め切りました。")}`);
   }
 }
 
@@ -210,11 +210,11 @@ export async function messageOrganizer(formData: FormData): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
   const eventId = String(formData.get("event_id") ?? "");
-  if (!user) redirect(await loginUrlFor(`/events/${eventId}`));
+  if (!user) redirect(await loginUrlFor(`/recruitments/${eventId}`));
 
   const parsed = messageSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    redirect(`/events/${eventId}?error=${encodeURIComponent(parsed.error.errors[0].message)}`);
+    redirect(`/recruitments/${eventId}?error=${encodeURIComponent(parsed.error.errors[0].message)}`);
   }
 
   const { error } = await messageEventOrganizer(supabase, SCHEMA, {
@@ -223,8 +223,8 @@ export async function messageOrganizer(formData: FormData): Promise<void> {
     message: parsed.data.message,
     sportLabel: SPORT_LABEL,
   });
-  revalidatePath(`/events/${parsed.data.event_id}`);
+  revalidatePath(`/recruitments/${parsed.data.event_id}`);
   redirect(
-    `/events/${parsed.data.event_id}?${error ? `error=${encodeURIComponent(error)}` : "sent=1"}`,
+    `/recruitments/${parsed.data.event_id}?${error ? `error=${encodeURIComponent(error)}` : "sent=1"}`,
   );
 }

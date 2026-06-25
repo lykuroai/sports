@@ -14,9 +14,9 @@ export const metadata = {
 // クイック導線（sport_category_page_design §10）。
 const QUICK = [
   { label: "募集を探す", href: "/running" },
-  { label: "大会を探す", href: "/races" },
+  { label: "大会を探す", href: "/events" },
   { label: "施設を探す", href: "/facilities" },
-  { label: "募集を作成", href: "/events/new" },
+  { label: "募集を作成", href: "/recruitments/new" },
 ];
 
 // 小カテゴリ（§14.1）。MVP は募集検索のキーワードへ。
@@ -63,9 +63,9 @@ export default async function RunningTop({
           <h1 className="text-2xl font-bold text-white drop-shadow sm:text-3xl">一緒に走る仲間を見つけよう</h1>
           <p className="max-w-2xl text-sm text-white/90 sm:text-base">ランニング、マラソン、ジョギング仲間を地域やレベルで探せます。</p>
           <div className="mt-1 flex flex-wrap gap-2">
-            <Link href="/races" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">大会を探す</Link>
+            <Link href="/events" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">大会を探す</Link>
             <Link href="/facilities" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">施設を探す</Link>
-            <Link href="/events/new" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">募集を作成</Link>
+            <Link href="/recruitments/new" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">募集を作成</Link>
           </div>
         </div>
       </section>
@@ -95,7 +95,7 @@ export default async function RunningTop({
           <p className="text-slate-500">条件に合う募集がありません。</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {events.slice(0, 8).map((r) => <EventCard key={r.id} event={r} sportLabel="ランニング" />)}
+            {events.slice(0, 8).map((r) => <EventCard key={r.id} event={r} sportLabel="ランニング" hrefBase="/recruitments" />)}
           </div>
         )}
       </section>

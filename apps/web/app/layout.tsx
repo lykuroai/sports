@@ -29,9 +29,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           nav={
             <>
               <Link href="/running" className="hover:text-brand">ランニング</Link>
-              <Link href="/races" className="hover:text-brand">大会を探す</Link>
+              <Link href="/events" className="hover:text-brand">大会を探す</Link>
               <Link href="/facilities" className="hover:text-brand">施設を探す</Link>
-              <Link href="/events/new" className="hover:text-brand">募集を作成</Link>
+              <Link href="/recruitments/new" className="hover:text-brand">募集を作成</Link>
             </>
           }
           actions={<NotificationBell accountUrl={accountUrl} />}
@@ -45,13 +45,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ul className="space-y-1 text-slate-500">
                 <li><Link href="/running" className="hover:text-brand">仲間募集</Link></li>
                 <li><Link href="/facilities" className="hover:text-brand">施設</Link></li>
-                <li><Link href="/races" className="hover:text-brand">イベント・大会</Link></li>
+                <li><Link href="/events" className="hover:text-brand">イベント・大会</Link></li>
               </ul>
             </div>
             <div>
               <div className="mb-2 font-semibold text-slate-700">登録</div>
               <ul className="space-y-1 text-slate-500">
-                <li><Link href="/events/new" className="hover:text-brand">仲間を募集する</Link></li>
+                <li><Link href="/recruitments/new" className="hover:text-brand">仲間を募集する</Link></li>
                 <li><Link href="/facilities" className="hover:text-brand">施設を探す・登録</Link></li>
               </ul>
             </div>

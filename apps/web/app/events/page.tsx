@@ -50,7 +50,7 @@ export default async function RaceSearch({
     if (sp.pref) params.set("pref", sp.pref);
     if (p > 1) params.set("page", String(p));
     const s = params.toString();
-    return s ? `/races?${s}` : "/races";
+    return s ? `/events?${s}` : "/events";
   };
 
   return (
@@ -63,7 +63,7 @@ export default async function RaceSearch({
         全国のマラソン・駅伝・ロードレース大会を検索できます。気になる大会が見つかったら、その大会に向けて一緒に走る仲間を募集しましょう。
       </p>
 
-      <form className="card flex flex-wrap items-center gap-2 p-4" action="/races">
+      <form className="card flex flex-wrap items-center gap-2 p-4" action="/events">
         <input name="q" defaultValue={sp.q ?? ""} placeholder="大会名キーワード" className="input max-w-xs" />
         <select name="pref" defaultValue={sp.pref ?? ""} className="input max-w-[10rem]">
           <option value="">都道府県</option>
@@ -123,7 +123,7 @@ export default async function RaceSearch({
                 </span>
               ) : (
                 <Link
-                  href={`/events/new?race=${encodeURIComponent(r.name)}${r.prefecture ? `&pref=${encodeURIComponent(r.prefecture)}` : ""}`}
+                  href={`/recruitments/new?race=${encodeURIComponent(r.name)}${r.prefecture ? `&pref=${encodeURIComponent(r.prefecture)}` : ""}`}
                   className="btn-outline shrink-0 whitespace-nowrap text-sm"
                 >
                   仲間を募集

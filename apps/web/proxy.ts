@@ -3,7 +3,7 @@ import { updateSession } from "@spotomo/auth-client/middleware";
 
 export async function proxy(request: NextRequest) {
   return await updateSession(request, {
-    protectedPrefixes: ["/mypage", "/events/new", "/profile", "/chat"],
+    protectedPrefixes: ["/mypage", "/recruitments/new", "/profile", "/chat"],
   });
 }
 

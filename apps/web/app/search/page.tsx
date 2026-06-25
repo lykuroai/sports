@@ -16,7 +16,7 @@ export default async function SearchDispatch({
 
   const target = sp.target ?? "recruitment";
   if (target === "facility") redirect(`/facilities${suffix}`);
-  if (target === "event") redirect(`/races${suffix}`);
+  if (target === "event") redirect(`/events${suffix}`);
 
   // 仲間募集（既定）。カテゴリ別の入口へ。running は統合サイト内、golf/outdoor は
   // 移行期サブドメイン、未実装カテゴリは共通施設DBへフォールバック。
@@ -28,9 +28,12 @@ export default async function SearchDispatch({
       redirect("https://outdoor-spotomo.lykuro.ai");
       break;
     case "running":
+      redirect(`/running${suffix}`);
+      break;
     case undefined:
     case "":
-      redirect(`/running${suffix}`);
+      // カテゴリ未指定の仲間募集検索は横断の募集一覧へ。
+      redirect(`/recruitments${suffix}`);
       break;
     default:
       // ball-sports / fitness / water-sports / winter-sports / leisure は未実装のため施設検索へ

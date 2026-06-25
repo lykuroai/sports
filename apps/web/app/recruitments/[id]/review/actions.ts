@@ -33,5 +33,5 @@ export async function submitReviewAction(formData: FormData): Promise<void> {
     comment: parsed.data.comment,
   });
 
-  revalidatePath(`/events/${parsed.data.event_id}/review`);
+  revalidatePath(`/recruitments/${parsed.data.event_id}/review`);
 }

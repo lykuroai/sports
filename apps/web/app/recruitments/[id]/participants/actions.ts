@@ -23,7 +23,7 @@ export async function approveAction(formData: FormData): Promise<void> {
   const { supabase, user, ev } = await organizerOf(eventId);
   if (!ev || ev.organizer_id !== user.id) return;
   await approveParticipant(supabase, SCHEMA, { eventId, applicantId, sportLabel: SPORT_LABEL, eventTitle: ev.title });
-  revalidatePath(`/events/${eventId}/participants`);
+  revalidatePath(`/recruitments/${eventId}/participants`);
 }
 
 export async function rejectAction(formData: FormData): Promise<void> {
@@ -32,7 +32,7 @@ export async function rejectAction(formData: FormData): Promise<void> {
   const { supabase, user, ev } = await organizerOf(eventId);
   if (!ev || ev.organizer_id !== user.id) return;
   await rejectParticipant(supabase, SCHEMA, { eventId, applicantId, sportLabel: SPORT_LABEL, eventTitle: ev.title });
-  revalidatePath(`/events/${eventId}/participants`);
+  revalidatePath(`/recruitments/${eventId}/participants`);
 }
 
 export async function cancelAction(formData: FormData): Promise<void> {
@@ -41,5 +41,5 @@ export async function cancelAction(formData: FormData): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   await cancelParticipation(supabase, SCHEMA, { eventId, userId: user.id });
-  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/recruitments/${eventId}`);
 }

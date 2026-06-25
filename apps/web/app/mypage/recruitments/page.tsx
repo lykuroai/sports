@@ -9,7 +9,7 @@ const DOMAIN = "running";
 export default async function MyEventsPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login?redirect=/mypage/events");
+  if (!user) redirect("/login?redirect=/mypage/recruitments");
 
   const events = await fetchMyOrganizedEvents(supabase, DOMAIN, user.id);
 
@@ -21,7 +21,7 @@ export default async function MyEventsPage() {
         <p className="text-sm text-slate-400">まだ募集を作成していません。</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {events.map((e) => <EventCard key={e.id} event={e} sportLabel="ランニング" />)}
+          {events.map((e) => <EventCard key={e.id} event={e} sportLabel="ランニング" hrefBase="/recruitments" />)}
         </div>
       )}
     </div>

@@ -1,14 +1,56 @@
 import { redirect } from "next/navigation";
+import { createServerClient, SCHEMA } from "@spotomo/auth-client";
+import { isPremium, fetchPublishedSports, fetchActivityEligibility } from "@spotomo/domain-common";
+import NewEventForm from "./new-event-form";
+import type { PickedFacility } from "./facility-picker";
+import { VerifyNotice } from "../verify-notice";
 
-// 画面遷移図の正規URL /recruitments/new → 既存の募集作成（/events/new）。
-// 認証ゲートは最終遷移先 /events/new（proxy の保護プレフィックス）で効く。
-export default async function RecruitmentNewAlias({
+export default async function NewEventPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<{ facility?: string; race?: string; pref?: string }>;
 }) {
-  const sp = await searchParams;
-  const qs = new URLSearchParams();
-  for (const [k, v] of Object.entries(sp)) if (typeof v === "string") qs.set(k, v);
-  redirect(`/events/new${qs.toString() ? `?${qs.toString()}` : ""}`);
+  const { facility: facilityId, race, pref } = await searchParams;
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    const next = facilityId ? `/recruitments/new?facility=${facilityId}` : "/recruitments/new";
+    redirect(`/login?redirect=${encodeURIComponent(next)}`);
+  }
+
+  // プレミアム会員のみ参加者条件・承認制を指定できる。
+  const [premium, sports, eligibility] = await Promise.all([
+    isPremium(supabase, user.id),
+    fetchPublishedSports(supabase),
+    fetchActivityEligibility(supabase, user.id),
+  ]);
+
+  // 施設詳細から「この施設で募集を作成」で来た場合、施設を初期選択する。
+  let initialFacility: PickedFacility | null = null;
+  if (facilityId) {
+    const { data } = await supabase
+      .schema(SCHEMA.facility)
+      .from("facilities")
+      .select("id, name, prefecture, city, address")
+      .eq("id", facilityId)
+      .maybeSingle();
+    if (data) initialFacility = data as PickedFacility;
+  }
+
+  return (
+    <>
+      {!eligibility.eligible && (
+        <VerifyNotice emailVerified={eligibility.emailVerified} phoneVerified={eligibility.phoneVerified} />
+      )}
+      <NewEventForm
+        premium={premium}
+        sports={sports}
+        initialFacility={initialFacility}
+        initialTitle={race ? `${race} に一緒に出よう` : ""}
+        initialPrefecture={pref ?? ""}
+      />
+    </>
+  );
 }

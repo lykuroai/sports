@@ -21,7 +21,7 @@ export default async function MyParticipationsPage() {
         <p className="text-sm text-slate-400">参加申請中・参加予定の募集はありません。</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {events.map((e) => <EventCard key={e.id} event={e} sportLabel="ランニング" />)}
+          {events.map((e) => <EventCard key={e.id} event={e} sportLabel="ランニング" hrefBase="/recruitments" />)}
         </div>
       )}
     </div>

@@ -22,7 +22,7 @@ export default async function EditEventPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?redirect=/events/${id}/edit`);
+  if (!user) redirect(`/login?redirect=/recruitments/${id}/edit`);
 
   const { data: ev } = await supabase
     .schema(SCHEMA)
@@ -33,7 +33,7 @@ export default async function EditEventPage({
     .eq("id", id)
     .maybeSingle();
   if (!ev || ev.deleted_at) notFound();
-  if (ev.organizer_id !== user.id) redirect(`/events/${id}`);
+  if (ev.organizer_id !== user.id) redirect(`/recruitments/${id}`);
 
   const [premium, sports, { count }] = await Promise.all([
     isPremium(supabase, user.id),

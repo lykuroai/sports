@@ -17,12 +17,12 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?redirect=/events/${id}/participants`);
+  if (!user) redirect(`/login?redirect=/recruitments/${id}/participants`);
 
   const { data: ev } = await supabase
     .schema(SCHEMA).from("events").select("organizer_id, title, capacity").eq("id", id).maybeSingle();
   if (!ev) notFound();
-  if (ev.organizer_id !== user.id) redirect(`/events/${id}`);
+  if (ev.organizer_id !== user.id) redirect(`/recruitments/${id}`);
 
   const [participants, conditions] = await Promise.all([
     fetchParticipants(supabase, SCHEMA, id),

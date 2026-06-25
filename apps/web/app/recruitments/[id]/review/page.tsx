@@ -10,7 +10,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?redirect=/events/${id}/review`);
+  if (!user) redirect(`/login?redirect=/recruitments/${id}/review`);
 
   const targets = await fetchReviewTargets(supabase, SCHEMA, id, user.id);
 
