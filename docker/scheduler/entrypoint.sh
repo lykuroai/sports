@@ -12,14 +12,40 @@ set -e
 AREAS=$(echo "$OSM_FETCH_AREAS" | tr ',' ' ')
 OSM_LOOP="for a in ${AREAS}; do curl -fsS -m 290 --get --data-urlencode \"area=\$a\" -H \"x-cron-secret: ${CRON_SECRET}\" \"${SCHED_TARGET}/api/cron/sync-osm-facilities\" >> /proc/1/fd/1 2>&1; echo >> /proc/1/fd/1; sleep 20; done"
 
-# 取り込み頻度（仕様: OSM 週1回 / マラソン大会 毎日〜週1回）。JST。
+# 自治体オープンデータ巡回スクリプトを生成（secret/target を埋め込む）。
+# /sources.json（compose で data/municipal-sources.json をマウント）を jq で読み、
+# 各ソースを per-URL エンドポイントへ順に流す。各リクエストは1ソースに収まり堅牢。
+cat > /run-municipal.sh <<SCRIPT
+#!/bin/sh
+SRC=/sources.json
+[ -f "\$SRC" ] || { echo "[municipal] \$SRC が無いためスキップ"; exit 0; }
+TAB=\$(printf '\t')
+jq -r '.[] | [.url, .source, (.pref // ""), (.license // "")] | @tsv' "\$SRC" | while IFS="\$TAB" read -r url source pref license; do
+  [ -n "\$url" ] || continue
+  echo "[municipal] \$source"
+  curl -fsS -m 290 --get \\
+    --data-urlencode "url=\$url" \\
+    --data-urlencode "source=\$source" \\
+    --data-urlencode "pref=\$pref" \\
+    --data-urlencode "license=\$license" \\
+    -H "x-cron-secret: ${CRON_SECRET}" \\
+    "${SCHED_TARGET}/api/cron/sync-municipal-facilities" >> /proc/1/fd/1 2>&1
+  echo >> /proc/1/fd/1
+  sleep 30
+done
+SCRIPT
+chmod +x /run-municipal.sh
+
+# 取り込み頻度（仕様: OSM 週1回 / 自治体 週1回〜月1回 / マラソン大会 毎日〜週1回）。JST。
 cat > /etc/crontabs/root <<EOF
 # OSM(Overpass) 施設取り込み: 毎週月曜 03:10 JST（対象 area を順に処理）
 10 3 * * 1 ${OSM_LOOP}
+# 自治体オープンデータ巡回: 毎月1日 04:00 JST（/sources.json の各URLを順に処理）
+0 4 1 * * /run-municipal.sh
 # マラソン大会フィード取り込み: 毎日 03:30 JST（RACE_FEED_URL 未設定時はサーバ側で 500 を返すだけ）
 30 3 * * * curl -fsS -m 290 -H "x-cron-secret: ${CRON_SECRET}" "${SCHED_TARGET}/api/cron/sync-races" >> /proc/1/fd/1 2>&1
 EOF
 
-echo "[scheduler] target=${SCHED_TARGET} areas=${AREAS} crontab:"
+echo "[scheduler] target=${SCHED_TARGET} areas=${AREAS} municipal_sources=$( [ -f /sources.json ] && jq 'length' /sources.json 2>/dev/null || echo 0 ) crontab:"
 cat /etc/crontabs/root
 exec crond -f -l 8

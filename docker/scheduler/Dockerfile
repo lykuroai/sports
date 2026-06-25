@@ -3,7 +3,7 @@
 # secret は env_file(.env.production) から受け取り、起動時に crontab へ埋め込む
 # （busybox crond のジョブ環境変数伝播に依存しないため）。
 FROM alpine:3.20
-RUN apk add --no-cache curl tzdata
+RUN apk add --no-cache curl tzdata jq
 ENV TZ=Asia/Tokyo
 COPY docker/scheduler/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

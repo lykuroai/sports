@@ -60,9 +60,13 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   ライセンス・列が異なるため URL 単位で叩く（BODIK CKAN 例で検証済み）。コード列(全国地方公共団体
   コード等)を県名と誤認しないこと。上限 `MUNICIPAL_FETCH_LIMIT`。
 - **cron スケジューラ 済**: docker compose の `scheduler` サービス（`docker/scheduler/`。alpine+busybox
-  crond）。起動時に `CRON_SECRET`（env_file）を埋め込んだ crontab を生成し、内部ネットワークの
-  `http://web:3000/api/cron/*` を叩く（TLS/Caddy 非経由）。OSM=毎週月 03:10 JST、races=毎日 03:30 JST。
-  対象上書きは `SCHED_TARGET`。デプロイは `docker compose up -d --build scheduler`（直列）。
+  crond+jq）。起動時に `CRON_SECRET`（env_file）を埋め込んだ crontab/巡回スクリプトを生成し、内部
+  ネットワークの `http://web:3000/api/cron/*` を叩く（TLS/Caddy 非経由）。OSM=毎週月 03:10 JST（複数県
+  ループ）、自治体=毎月1日 04:00 JST、races=毎日 03:30 JST。対象上書きは `SCHED_TARGET`。
+  - **自治体巡回**: ソース一覧は `data/municipal-sources.json`（`{url,source,pref,license}` 配列）を
+    compose で `/sources.json` にマウント（**再ビルド不要でホット編集可**。crond 起動時に再読込）。
+    `/run-municipal.sh` が jq で読み、各URLを per-URL エンドポイントへ順に流す（各リクエスト1ソース）。
+  - デプロイは `docker compose up -d --build scheduler`（直列）。ソース追加は JSON 編集＋scheduler 再起動。
 - **未了**: 集約ログインの web 内包、golf/outdoor の web 取り込み、ロール累積の再設計、旧アプリ撤去、
   自治体オープンデータ取り込み、施設詳細での OSM 帰属表示、重複の統合(merge)操作。
 

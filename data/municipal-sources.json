@@ -1,0 +1,26 @@
+[
+  {
+    "url": "https://data.bodik.jp/dataset/84b2d19e-742a-4790-95fb-abbebbfec754/resource/95629fe3-b8d7-48c1-a0d9-3f0f62d0ae60/download/sakai_public_sportsgym.csv",
+    "source": "堺市 スポーツ施設一覧(BODIK)",
+    "pref": "大阪府",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://data.bodik.jp/dataset/318a8c37-95ab-4670-b8fd-c0a66ec81e05/resource/c5a1bee5-dd82-44be-95d3-d9c8ee94192d/download/sports-facilities.csv",
+    "source": "静岡市 スポーツ施設一覧(BODIK)",
+    "pref": "静岡県",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://data.bodik.jp/dataset/b644c583-9579-4db5-bfed-b653cb042587/resource/099afc2d-4416-4a9d-a48c-f43096adab40/download/2-4_kankocho-sports.csv",
+    "source": "鹿児島市 官公庁・公共施設(スポーツ施設)(BODIK)",
+    "pref": "鹿児島県",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://data.bodik.jp/dataset/4ddbd82d-3fe7-420e-a3cf-a8f59b492030/resource/ca947060-86e1-4ef9-93e7-eb4627ed1249/download/472115_sports_public_facility.csv",
+    "source": "沖縄市 スポーツ施設一覧(BODIK)",
+    "pref": "沖縄県",
+    "license": "CC BY 4.0"
+  }
+]

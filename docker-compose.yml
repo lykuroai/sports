@@ -86,6 +86,9 @@ services:
       dockerfile: docker/scheduler/Dockerfile
     env_file: .env.production
     restart: unless-stopped
+    # 自治体ソース一覧をマウント（再ビルド不要でホット編集可。crond 起動時に再読込）。
+    volumes:
+      - ./data/municipal-sources.json:/sources.json:ro
     depends_on:
       - web
 
