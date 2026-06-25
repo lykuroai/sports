@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../../lib/events";
+import { fetchSportNodes, resolveCategorySportIds } from "../../lib/category";
 import heroImage from "../../public/running-hero.svg";
 
 export const metadata = {
@@ -30,26 +31,22 @@ export default async function RunningTop({
   const sp = await searchParams;
   const supabase = await createServerClient();
 
-  // 新着募集（ランニング）と、ランニングに紐づくおすすめ施設（共通DB・確認済み）。
-  const [events, sportRes] = await Promise.all([
-    fetchEvents(supabase, { keyword: sp.q, prefecture: sp.pref, beginnerOnly: sp.beginner === "1" }),
-    supabase.schema(SCHEMA.core).from("sports").select("id").eq("slug", "running").maybeSingle(),
-  ]);
+  // ランニング種目（大分類＋小分類）の sport_id 群に絞り込む。
+  const nodes = await fetchSportNodes(supabase);
+  const runningIds = resolveCategorySportIds(nodes, "running") ?? [];
 
-  let facilities: { id: string; name: string; facility_type: string | null; prefecture: string | null; city: string | null }[] = [];
-  const sportId = (sportRes.data as { id: string } | null)?.id;
-  if (sportId) {
-    const { data: links } = await supabase
-      .schema(SCHEMA.facility).from("facility_sports").select("facility_id").eq("sport_id", sportId).limit(40);
-    const ids = (links ?? []).map((l: { facility_id: string }) => l.facility_id);
-    if (ids.length) {
-      const { data: facs } = await supabase
-        .schema(SCHEMA.facility).from("facilities")
-        .select("id, name, facility_type, prefecture, city")
-        .in("id", ids).eq("status", "verified").limit(6);
-      facilities = (facs ?? []) as typeof facilities;
-    }
-  }
+  // 新着募集（ランニング種目に限定）と、ランニングに紐づくおすすめ施設（共通DB・確認済み）。
+  type Fac = { id: string; name: string; facility_type: string | null; prefecture: string | null; city: string | null };
+  const [events, facRes] = await Promise.all([
+    fetchEvents(supabase, { keyword: sp.q, prefecture: sp.pref, beginnerOnly: sp.beginner === "1", sportIds: runningIds }),
+    runningIds.length
+      ? supabase.schema(SCHEMA.facility).from("facilities")
+          .select("id, name, facility_type, prefecture, city, facility_sports!inner(sport_id)")
+          .eq("status", "verified").in("facility_sports.sport_id", runningIds)
+          .order("name", { ascending: true }).limit(6)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const facilities = (facRes.data ?? []) as unknown as Fac[];
 
   return (
     <div className="space-y-8">
