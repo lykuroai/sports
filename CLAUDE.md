@@ -57,8 +57,15 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   `/api/cron/sync-municipal-facilities?url=&source=&pref=&license=`。CKAN/CSV を取得し列名柔軟推定・
   文字コード(UTF-8→Shift_JIS)自動判定・RFC4180 パーサで正規化→重複判定→未承認登録、
   `facility_sources(source_type='municipal_open_data')` に出所URL/ライセンス/raw 保存。出所ごとに
-  ライセンス・列が異なるため URL 単位で叩く（BODIK CKAN 例で検証済み）。コード列(全国地方公共団体
-  コード等)を県名と誤認しないこと。上限 `MUNICIPAL_FETCH_LIMIT`。
+  ライセンス・列が異なるため URL 単位で叩く。データ源は **BODIK CKAN**（`data.bodik.jp`。多数DL
+  すると IP レート制限で body 読取不能になるので巡回はゆるめに）と **東京都オープンデータカタログ**
+  （`catalog.data.metro.tokyo.lg.jp`。CKAN・CC BY・BODIK と独立）。`data/municipal-sources.json` に
+  50ソース（BODIK 7 + 東京都 43自治体）。注意点:
+  - コード列(全国地方公共団体コード等)を県名と誤認しない（`findCol` はコード列除外）。
+  - **東京都推奨データセットv2 は緯度/経度が2組あり片方が空**。`findCols`/`pickCell` で同名列を全て
+    見て行ごとに非空値を採用する（片方だけ見ると全行 skip になる）。`所在地_都道府県/市区町村`・
+    `分類` 等の推奨DS標準列名にも対応。県名・指定pref が無ければ住所先頭から都道府県を抽出。
+  - 上限 `MUNICIPAL_FETCH_LIMIT`。スポーツ施設に限定（子育て/観光/学校/汎用公共施設は除外）。
 - **cron スケジューラ 済**: docker compose の `scheduler` サービス（`docker/scheduler/`。alpine+busybox
   crond+jq）。起動時に `CRON_SECRET`（env_file）を埋め込んだ crontab/巡回スクリプトを生成し、内部
   ネットワークの `http://web:3000/api/cron/*` を叩く（TLS/Caddy 非経由）。OSM=毎週月 03:10 JST（複数県
