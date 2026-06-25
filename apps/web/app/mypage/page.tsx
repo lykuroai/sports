@@ -69,9 +69,15 @@ export default async function MyPage() {
       {/* 主要導線（CTA） */}
       <div className="grid gap-3 sm:grid-cols-3">
         <Link href="/recruitments/new" className="card p-4 text-center font-medium text-brand hover:shadow">仲間募集を作成する</Link>
-        <Link href="/facilities" className="card p-4 text-center font-medium text-brand hover:shadow">施設を探す</Link>
-        <Link href="/running" className="card p-4 text-center font-medium text-brand hover:shadow">種目から探す</Link>
+        <Link href="/recruitments" className="card p-4 text-center font-medium text-brand hover:shadow">募集を探す</Link>
+        <Link href="/categories" className="card p-4 text-center font-medium text-brand hover:shadow">種目から探す</Link>
       </div>
+
+      {/* サブ導線 */}
+      <nav className="flex flex-wrap gap-4 text-sm text-slate-500">
+        <Link href="/mypage/notifications" className="hover:text-brand">通知一覧</Link>
+        <Link href="/mypage/settings" className="hover:text-brand">アカウント設定</Link>
+      </nav>
     </div>
   );
 }

@@ -82,7 +82,7 @@ export default async function RaceSearch({
             <div key={r.id} className="card flex items-start justify-between gap-3 p-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{r.name}</span>
+                  <Link href={`/events/${r.id}`} className="font-medium text-brand hover:underline">{r.name}</Link>
                   {r.discontinued && (
                     <span className="rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">終了</span>
                   )}

@@ -43,3 +43,12 @@ export function resolveCategorySportIds(nodes: SportNode[], category?: string | 
   }
   return [node.id];
 }
+
+/** 分類スラッグ（UI / cat-大分類 / 小分類）から大分類ノードを返す。種目別ページ用。 */
+export function resolveCategoryParent(nodes: SportNode[], code?: string | null): SportNode | null {
+  if (!code) return null;
+  const target = ALIAS[code] ?? code;
+  const node = nodes.find((n) => n.slug === target);
+  if (!node) return null;
+  return node.parent_id ? (nodes.find((n) => n.id === node.parent_id) ?? node) : node;
+}
