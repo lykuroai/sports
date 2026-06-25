@@ -28,10 +28,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           loginHref={loginHref}
           nav={
             <>
-              <Link href="/running" className="hover:text-brand">ランニング</Link>
-              <Link href="/events" className="hover:text-brand">大会を探す</Link>
-              <Link href="/facilities" className="hover:text-brand">施設を探す</Link>
-              <Link href="/recruitments/new" className="hover:text-brand">募集を作成</Link>
+              <Link href="/recruitments" className="hover:text-brand">募集を探す</Link>
+              <Link href="/facilities" className="hover:text-brand">募集を作成する</Link>
+              <Link href="/facilities" className="hover:text-brand">施設</Link>
+              <Link href="/events" className="hover:text-brand">イベント</Link>
             </>
           }
           actions={<NotificationBell accountUrl={accountUrl} />}
@@ -43,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div>
               <div className="mb-2 font-semibold text-slate-700">探す</div>
               <ul className="space-y-1 text-slate-500">
-                <li><Link href="/running" className="hover:text-brand">仲間募集</Link></li>
+                <li><Link href="/recruitments" className="hover:text-brand">募集を探す</Link></li>
                 <li><Link href="/facilities" className="hover:text-brand">施設</Link></li>
                 <li><Link href="/events" className="hover:text-brand">イベント・大会</Link></li>
               </ul>
@@ -51,8 +51,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div>
               <div className="mb-2 font-semibold text-slate-700">登録</div>
               <ul className="space-y-1 text-slate-500">
-                <li><Link href="/recruitments/new" className="hover:text-brand">仲間を募集する</Link></li>
-                <li><Link href="/facilities" className="hover:text-brand">施設を探す・登録</Link></li>
+                <li><Link href="/facilities" className="hover:text-brand">募集を作成する</Link></li>
+                <li><Link href="/facilities" className="hover:text-brand">施設を探す</Link></li>
               </ul>
             </div>
             <div>
