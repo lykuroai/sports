@@ -51,6 +51,10 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
 - **承認UI 済**: 管理画面（`apps/admin`）に「取り込み施設の承認」（`/facilities`。未承認一覧＋出所＋
   重複候補表示＋承認(verified)/却下(rejected)）と「取り込みバッチ履歴」（`/batch-runs`）。承認は
   `reviewImportedFacility`（サービスロール＋`audit_logs`）。ダッシュボードに未承認件数カードを追加。
+- **cron スケジューラ 済**: docker compose の `scheduler` サービス（`docker/scheduler/`。alpine+busybox
+  crond）。起動時に `CRON_SECRET`（env_file）を埋め込んだ crontab を生成し、内部ネットワークの
+  `http://web:3000/api/cron/*` を叩く（TLS/Caddy 非経由）。OSM=毎週月 03:10 JST、races=毎日 03:30 JST。
+  対象上書きは `SCHED_TARGET`。デプロイは `docker compose up -d --build scheduler`（直列）。
 - **未了**: 集約ログインの web 内包、golf/outdoor の web 取り込み、ロール累積の再設計、旧アプリ撤去、
   自治体オープンデータ取り込み、施設詳細での OSM 帰属表示、重複の統合(merge)操作。
 
