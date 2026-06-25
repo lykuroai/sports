@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { APPROVAL_TYPE_LABEL, PREFECTURES } from "@spotomo/shared-types";
 import type { SportOption } from "@spotomo/domain-common";
 import { updateEvent, deleteEvent, type CreateState } from "../../actions";
@@ -8,9 +8,6 @@ import { updateEvent, deleteEvent, type CreateState } from "../../actions";
 const initial: CreateState = { error: null };
 
 const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
-
-// ランニングアプリで募集の種目として選べるカテゴリー（core.sports.slug）。new-event-form と対。
-const RUNNING_SPORT_SLUGS = ["running", "jogging", "marathon", "walking"];
 
 const GENDER_OPTIONS = [
   { value: "unspecified", label: "指定なし" },
@@ -58,14 +55,21 @@ export default function EditEventForm({
   deleteError?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateEvent, initial);
-  const sportOptions = sports.filter((s) => RUNNING_SPORT_SLUGS.includes(s.slug));
-  const defaultSportId = event.sport_id || sportOptions.find((s) => s.slug === "running")?.id || sportOptions[0]?.id || "";
+  // 種目は 大分類(親)→小分類(子) のカスケード。現在の sport_id から初期選択する。
+  const parents = sports.filter((s) => !s.parent_id);
+  const subSports = sports.filter((s) => s.parent_id);
+  const initNode = sports.find((s) => s.id === event.sport_id);
+  const initParent = initNode ? (initNode.parent_id ?? initNode.id) : (parents.find((p) => p.slug === "cat-running")?.id ?? parents[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState(initParent);
+  const [subId, setSubId] = useState(initNode?.parent_id ? initNode.id : "");
+  const children = subSports.filter((s) => s.parent_id === categoryId);
+  const sportId = subId || categoryId;
   const prefSet = new Set(event.condition_prefectures);
   const sportSet = new Set(event.condition_sport_ids);
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-2xl font-bold">ランニングの募集を修正</h1>
+      <h1 className="text-2xl font-bold">募集を修正</h1>
 
       <form action={formAction} className="card space-y-4 p-6">
         {state.error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{state.error}</p>}
@@ -75,14 +79,26 @@ export default function EditEventForm({
           <label className="label" htmlFor="title">タイトル</label>
           <input id="title" name="title" className="input" required maxLength={120} defaultValue={event.title} />
         </div>
-        {sportOptions.length > 0 && (
-          <div>
-            <label className="label" htmlFor="sport_id">種目</label>
-            <select id="sport_id" name="sport_id" className="input" defaultValue={defaultSportId}>
-              {sportOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <p className="mt-1 text-xs text-slate-400">
-              この種目の新着募集メールを希望している利用者に通知されます。
+        {parents.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label" htmlFor="category_id">種目（大分類）</label>
+              <select id="category_id" className="input" value={categoryId}
+                onChange={(e) => { setCategoryId(e.target.value); setSubId(""); }}>
+                {parents.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="sub_id">小分類</label>
+              <select id="sub_id" className="input" value={subId}
+                onChange={(e) => setSubId(e.target.value)} disabled={children.length === 0}>
+                <option value="">{children.length ? "（指定なし）" : "—"}</option>
+                {children.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <input type="hidden" name="sport_id" value={sportId} />
+            <p className="col-span-2 mt-1 text-xs text-slate-400">
+              大分類→小分類で種目を選びます。この種目の新着募集メールを希望する利用者に通知されます。
             </p>
           </div>
         )}
@@ -180,11 +196,11 @@ export default function EditEventForm({
             </div>
           </div>
 
-          {sports.length > 0 && (
+          {subSports.length > 0 && (
             <div>
               <span className="label">趣味・関心のある種目（複数可）</span>
               <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto rounded border border-slate-200 p-2">
-                {sports.map((s) => (
+                {subSports.map((s) => (
                   <label key={s.id} className="flex items-center gap-1 text-sm">
                     <input type="checkbox" name="condition_sport_ids" value={s.id} defaultChecked={sportSet.has(s.id)} />
                     {s.name}
