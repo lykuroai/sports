@@ -120,6 +120,7 @@ const prefFromAddress = (addr: string | null): string | null => addr?.match(PREF
 // 施設名/種別から代表 sport slug を推定（一致しなければ null）。
 function inferSport(text: string): string | null {
   const t = text;
+  if (/ゴルフ/.test(t)) return "golf";
   if (/陸上競技|トラック|競技場/.test(t)) return "running";
   if (/プール|水泳/.test(t)) return "swimming";
   if (/テニス/.test(t)) return "tennis";

@@ -56,6 +56,7 @@ export type OsmSyncSummary = {
 function classify(tags: Record<string, string>): { sportSlug: string; facilityType: string } | null {
   const leisure = tags.leisure;
   const sport = tags.sport ?? "";
+  if (leisure === "golf_course") return { sportSlug: "golf", facilityType: "ゴルフ場" };
   if (leisure === "track") return { sportSlug: "running", facilityType: "陸上競技場・トラック" };
   if (leisure === "pitch" && /running|athletics/.test(sport)) return { sportSlug: "running", facilityType: "陸上競技場・トラック" };
   if (leisure === "stadium" && /running|athletics/.test(sport)) return { sportSlug: "running", facilityType: "競技場" };
@@ -138,6 +139,7 @@ export function buildOverpassQuery(bbox: Bbox): string {
   // 大きな県の bbox でも取得しきれるよう timeout を長め（fetch 側は maxDuration 300s）。
   return `[out:json][timeout:180];
 (
+  nwr["leisure"="golf_course"]${b};
   nwr["leisure"="track"]${b};
   nwr["leisure"="pitch"]["sport"~"running|athletics"]${b};
   nwr["leisure"="stadium"]["sport"~"running|athletics"]${b};
