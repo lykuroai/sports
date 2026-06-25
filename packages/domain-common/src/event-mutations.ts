@@ -1,13 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@spotomo/auth-client";
-import { notifyUser } from "./notify";
+import { notifyUser, notifyNewRecruitmentSubscribers } from "./notify";
 
 type Client = SupabaseClient;
 
 export interface CreateEventInput {
   organizer_id: string;
+  /** 募集の種目（core.sports.id）。新規募集の種目別メール配信のターゲティングに使う。 */
+  sport_id?: string | null;
   title: string;
   description?: string | null;
+  /** 開催施設（任意。施設未定の募集もある）。facility.facilities.id を参照。 */
+  facility_id?: string | null;
   prefecture?: string | null;
   city?: string | null;
   event_start_at: string; // ISO
@@ -61,6 +65,20 @@ export async function createSportEvent(
       .schema(schema)
       .from("chat_room_members")
       .insert({ chat_room_id: room.id, user_id: input.organizer_id, role: "organizer" });
+  }
+
+  // 種目の新規募集メールを希望しているユーザへ一斉通知（オプトイン制・best-effort）。
+  // 配信失敗で募集作成を巻き戻さない。
+  try {
+    await notifyNewRecruitmentSubscribers({
+      schema,
+      eventId: data.id as string,
+      sportId: input.sport_id ?? null,
+      title: input.title,
+      organizerId: input.organizer_id,
+    });
+  } catch {
+    // 通知は best-effort。失敗しても募集作成は成功扱いとする。
   }
   return { id: data.id as string };
 }

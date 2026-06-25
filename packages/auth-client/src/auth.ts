@@ -15,6 +15,7 @@ export const SCHEMA = {
   account: "account",
   core: "core",
   facility: "facility",
+  running: "running",
 } as const;
 
 /** ログイン中のユーザを返す（未ログインなら null）。 */
