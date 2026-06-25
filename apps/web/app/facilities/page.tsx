@@ -23,11 +23,21 @@ export default async function FacilitySearch({
 
   const supabase = await createServerClient();
 
+  // 種目（大分類/小分類）。検索フォームの種目セレクトと facility_sports 絞り込みに使う。
+  const nodes = await fetchSportNodes(supabase);
+  const parents = nodes.filter((n) => !n.parent_id);
+  // セレクトの現在値（cat-* 大分類スラッグ。トップのUIスラッグも大分類に正規化）。
+  const selectedCat = sp.category
+    ? (parents.find((p) => p.slug === sp.category)?.slug
+        ?? parents.find((p) => resolveCategorySportIds(nodes, sp.category)?.includes(p.id))?.slug
+        ?? "")
+    : "";
+
   // category（分類=種目）指定時は facility_sports で対象施設IDを先に絞る。
   // 大分類なら配下の小分類も含めて解決する。
   let sportFacilityIds: string[] | null = null;
   if (sp.category) {
-    const ids = resolveCategorySportIds(await fetchSportNodes(supabase), sp.category) ?? [];
+    const ids = resolveCategorySportIds(nodes, sp.category) ?? [];
     if (ids.length === 0) {
       sportFacilityIds = [];
     } else {
@@ -84,12 +94,15 @@ export default async function FacilitySearch({
       )}
 
       <form className="card flex flex-wrap items-center gap-2 p-4" action="/facilities">
-        <input name="q" defaultValue={sp.q ?? ""} placeholder="施設名キーワード" className="input max-w-xs" />
+        <select name="category" defaultValue={selectedCat} className="input max-w-[12rem]">
+          <option value="">すべての種目</option>
+          {parents.map((p) => <option key={p.id} value={p.slug}>{p.name}</option>)}
+        </select>
         <select name="pref" defaultValue={prefecture ?? ""} className="input max-w-[10rem]">
           <option value="">都道府県</option>
           {PREFECTURES.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
-        {sp.category && <input type="hidden" name="category" value={sp.category} />}
+        <input name="q" defaultValue={sp.q ?? ""} placeholder="施設名キーワード" className="input max-w-xs" />
         {forCreate && <input type="hidden" name="purpose" value="create_recruitment" />}
         <button className="btn-outline" type="submit">検索</button>
       </form>
