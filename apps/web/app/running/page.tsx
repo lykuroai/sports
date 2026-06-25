@@ -1,49 +1,84 @@
 import Image from "next/image";
 import Link from "next/link";
-import { createServerClient } from "@spotomo/auth-client";
+import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../../lib/events";
 import heroImage from "../../public/running-hero.svg";
 
-export default async function Home({
+export const metadata = {
+  title: "ランニング仲間募集・ランニング施設検索",
+  description:
+    "ランニング仲間を地域・日時・レベルで探せるSpotomo。初心者歓迎のジョギング、マラソン練習会、ランニングコースや施設情報もまとめて検索できます。",
+};
+
+// クイック導線（sport_category_page_design §10）。
+const QUICK = [
+  { label: "募集を探す", href: "/running" },
+  { label: "大会を探す", href: "/races" },
+  { label: "施設を探す", href: "/facilities" },
+  { label: "募集を作成", href: "/events/new" },
+];
+
+// 小カテゴリ（§14.1）。MVP は募集検索のキーワードへ。
+const SUBCATS = ["マラソン", "ジョギング", "駅伝", "陸上競技", "ランニングコース", "陸上競技場"];
+
+export default async function RunningTop({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; pref?: string; beginner?: string }>;
 }) {
   const sp = await searchParams;
   const supabase = await createServerClient();
-  const events = await fetchEvents(supabase, {
-    keyword: sp.q,
-    prefecture: sp.pref,
-    beginnerOnly: sp.beginner === "1",
-  });
+
+  // 新着募集（ランニング）と、ランニングに紐づくおすすめ施設（共通DB・確認済み）。
+  const [events, sportRes] = await Promise.all([
+    fetchEvents(supabase, { keyword: sp.q, prefecture: sp.pref, beginnerOnly: sp.beginner === "1" }),
+    supabase.schema(SCHEMA.core).from("sports").select("id").eq("slug", "running").maybeSingle(),
+  ]);
+
+  let facilities: { id: string; name: string; facility_type: string | null; prefecture: string | null; city: string | null }[] = [];
+  const sportId = (sportRes.data as { id: string } | null)?.id;
+  if (sportId) {
+    const { data: links } = await supabase
+      .schema(SCHEMA.facility).from("facility_sports").select("facility_id").eq("sport_id", sportId).limit(40);
+    const ids = (links ?? []).map((l: { facility_id: string }) => l.facility_id);
+    if (ids.length) {
+      const { data: facs } = await supabase
+        .schema(SCHEMA.facility).from("facilities")
+        .select("id, name, facility_type, prefecture, city")
+        .in("id", ids).eq("status", "verified").limit(6);
+      facilities = (facs ?? []) as typeof facilities;
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      {/* ヒーロー（ランニング仲間募集のメインビジュアル）。 */}
+    <div className="space-y-8">
+      {/* パンくず */}
+      <nav className="text-sm text-slate-500"><Link href="/" className="hover:text-brand">ホーム</Link> ＞ ランニング</nav>
+
+      {/* ヒーロー */}
       <section className="relative overflow-hidden rounded-2xl">
-        <Image
-          src={heroImage}
-          alt="ランニング仲間をみつけよう"
-          priority
-          className="h-auto w-full"
-        />
-        <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-2 bg-gradient-to-t from-black/50 to-transparent p-4 sm:p-6">
-          <Link href="/races" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">
-            大会を探す
-          </Link>
-          <Link href="/facilities" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
-            施設を探す
-          </Link>
-          <Link href="/events/new" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
-            募集を作成
-          </Link>
+        <Image src={heroImage} alt="一緒に走る仲間を見つけよう" priority className="h-auto w-full" />
+        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 bg-gradient-to-t from-black/60 to-transparent p-4 sm:p-6">
+          <h1 className="text-2xl font-bold text-white drop-shadow sm:text-3xl">一緒に走る仲間を見つけよう</h1>
+          <p className="max-w-2xl text-sm text-white/90 sm:text-base">ランニング、マラソン、ジョギング仲間を地域やレベルで探せます。</p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <Link href="/races" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">大会を探す</Link>
+            <Link href="/facilities" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">施設を探す</Link>
+            <Link href="/events/new" className="rounded-md border border-white/80 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">募集を作成</Link>
+          </div>
         </div>
       </section>
 
-      <h1 className="text-2xl font-bold">ランニングの仲間募集</h1>
+      {/* クイック導線 */}
+      <div className="flex flex-wrap gap-2">
+        {QUICK.map((q) => (
+          <Link key={q.label} href={q.href} className="rounded-full border border-slate-300 px-4 py-1.5 text-sm text-slate-700 hover:border-brand hover:text-brand">{q.label}</Link>
+        ))}
+      </div>
 
-      <form className="card flex flex-wrap gap-2 p-4" action="/">
+      {/* 種目内検索 */}
+      <form className="card flex flex-wrap gap-2 p-4" action="/running">
         <input name="q" defaultValue={sp.q ?? ""} placeholder="キーワード" className="input max-w-xs" />
         <input name="pref" defaultValue={sp.pref ?? ""} placeholder="都道府県" className="input max-w-[10rem]" />
         <label className="flex items-center gap-1 text-sm">
@@ -53,15 +88,55 @@ export default async function Home({
         <button className="btn-outline" type="submit">検索</button>
       </form>
 
-      {events.length === 0 ? (
-        <p className="text-slate-500">条件に合う募集がありません。</p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {events.map((r) => (
-            <EventCard key={r.id} event={r} sportLabel="ランニング" />
+      {/* 新着募集 */}
+      <section>
+        <h2 className="mb-3 text-xl font-bold">ランニングの新着募集</h2>
+        {events.length === 0 ? (
+          <p className="text-slate-500">条件に合う募集がありません。</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {events.slice(0, 8).map((r) => <EventCard key={r.id} event={r} sportLabel="ランニング" />)}
+          </div>
+        )}
+      </section>
+
+      {/* おすすめ施設（ランニング紐付け） */}
+      {facilities.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-end justify-between">
+            <h2 className="text-xl font-bold">ランニングにおすすめの施設</h2>
+            <Link href="/facilities" className="text-sm text-brand hover:underline">もっと見る →</Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {facilities.map((f) => (
+              <Link key={f.id} href={`/facilities/${f.id}`} className="card p-4 hover:shadow">
+                <div className="font-medium">{f.name}</div>
+                <div className="text-sm text-slate-500">{f.facility_type ? `${f.facility_type}・` : ""}{f.prefecture}{f.city}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 小カテゴリ */}
+      <section>
+        <h2 className="mb-3 text-xl font-bold">もっと絞り込む</h2>
+        <div className="flex flex-wrap gap-2">
+          {SUBCATS.map((s) => (
+            <Link key={s} href={`/running?q=${encodeURIComponent(s)}`} className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">{s}</Link>
           ))}
         </div>
-      )}
+      </section>
+
+      {/* 初心者向け説明（§15） */}
+      <section className="card p-5 text-sm leading-relaxed text-slate-700">
+        <h2 className="mb-2 text-lg font-bold text-slate-900">ランニング仲間募集について</h2>
+        <p>
+          ランニングページでは、地域や日時、レベルに合わせて一緒に走る仲間を探せます。初心者歓迎のジョギング、週末の練習会、
+          マラソン大会に向けた練習仲間など、目的に合わせて参加できます。気になる募集に参加申請し、承認後はグループチャットで
+          待ち合わせなどを調整しましょう。連絡先は公開されないので安心です。
+        </p>
+      </section>
     </div>
   );
 }
