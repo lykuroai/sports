@@ -47,8 +47,12 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   `/api/cron/sync-osm-facilities`）。ランニング/公園系を取得→`find_duplicate_candidates` で
   重複判定→**未承認(`status='unverified'`)で登録**し、`facility_sources` に出所(ODbL帰属)と raw を記録。
   施設一覧は `status='verified'` のみ表示（公開前承認）。env は `OSM_FETCH_AREA`/`OSM_FETCH_LIMIT`/
-  `CRON_SECRET`（`.env.production.example` 参照）。
-- **未了**: 集約ログインの web 内包、golf/outdoor の web 取り込み、ロール累積の再設計、旧アプリ撤去。
+  `OSM_USER_AGENT`/`CRON_SECRET`（`.env.production.example` 参照）。
+- **承認UI 済**: 管理画面（`apps/admin`）に「取り込み施設の承認」（`/facilities`。未承認一覧＋出所＋
+  重複候補表示＋承認(verified)/却下(rejected)）と「取り込みバッチ履歴」（`/batch-runs`）。承認は
+  `reviewImportedFacility`（サービスロール＋`audit_logs`）。ダッシュボードに未承認件数カードを追加。
+- **未了**: 集約ログインの web 内包、golf/outdoor の web 取り込み、ロール累積の再設計、旧アプリ撤去、
+  自治体オープンデータ取り込み、施設詳細での OSM 帰属表示、重複の統合(merge)操作。
 
 ### 重要な実装メモ
 

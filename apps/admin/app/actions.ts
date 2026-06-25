@@ -113,6 +113,24 @@ export async function reviewFacilitySubmission(formData: FormData): Promise<void
   revalidatePath("/facility-submissions");
 }
 
+// 自動取り込み（OSM等）の未承認施設を承認/却下する。承認→status='verified' で
+// 公開、却下→status='rejected'（重複や品質不良）。出所(facility_sources)は保持する。
+export async function reviewImportedFacility(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const facilityId = String(formData.get("facility_id"));
+  const decision = String(formData.get("decision")) === "approved" ? "verified" : "rejected";
+
+  const db = createAdminClient();
+  await db
+    .schema(SCHEMA.facility)
+    .from("facilities")
+    .update({ status: decision, last_checked_at: new Date().toISOString() })
+    .eq("id", facilityId);
+  await writeAuditLog(admin.id, `facility_import_${decision}`, "facility", facilityId, "facility");
+  revalidatePath("/facilities");
+}
+
 export async function reviewFacilityOwner(formData: FormData): Promise<void> {
   const admin = await getAdminUser();
   if (!admin) redirect("/");
