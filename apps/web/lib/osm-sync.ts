@@ -192,7 +192,9 @@ export function normalizeOsm(elements: OsmElement[], area: string): { facilities
       facilityType: cls.facilityType,
       lat,
       lng,
-      prefecture: tags["addr:province"] ?? (areaIsPref ? area : null),
+      // 取得対象の都道府県名（clean）を優先。addr:province は "Tokushima"/"和歌山" など
+      // 表記が不揃いで都道府県フィルタが効かなくなるためフォールバックに留める。
+      prefecture: (areaIsPref ? area : null) ?? tags["addr:province"] ?? null,
       city: tags["addr:city"] ?? null,
       address: tags["addr:full"] ?? null,
       tags,
