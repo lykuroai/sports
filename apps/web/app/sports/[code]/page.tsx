@@ -143,6 +143,18 @@ export default async function SportPage({
         </section>
       )}
 
+      {/* 人気地域（SEO・地域別導線。sport_category_page_design §16） */}
+      <section>
+        <h2 className="mb-3 text-xl font-bold">地域から探す</h2>
+        <div className="flex flex-wrap gap-2">
+          {["東京都", "神奈川県", "千葉県", "埼玉県", "愛知県", "大阪府", "兵庫県", "福岡県", "北海道"].map((pref) => (
+            <Link key={pref} href={`/recruitments?category=${slug}&area=${encodeURIComponent(pref)}`} className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:border-brand hover:text-brand">
+              {pref}の{parent.name}
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* 説明 */}
       <section className="card p-5 text-sm leading-relaxed text-slate-700">
         <h2 className="mb-2 text-lg font-bold text-slate-900">{parent.name}の仲間募集について</h2>

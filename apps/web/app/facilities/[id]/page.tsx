@@ -94,6 +94,16 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
         </p>
       )}
 
+      {/* 地図（OpenStreetMap 埋め込み・APIキー不要） */}
+      {f.latitude != null && f.longitude != null && (
+        <iframe
+          title="地図"
+          className="h-64 w-full rounded-lg border border-slate-200"
+          loading="lazy"
+          src={`https://www.openstreetmap.org/export/embed.html?bbox=${f.longitude - 0.01}%2C${f.latitude - 0.01}%2C${f.longitude + 0.01}%2C${f.latitude + 0.01}&layer=mapnik&marker=${f.latitude}%2C${f.longitude}`}
+        />
+      )}
+
       <section className="space-y-3">
         <h2 className="font-semibold">レビュー</h2>
         {reviewList.length === 0 ? (
