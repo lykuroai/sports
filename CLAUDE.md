@@ -38,9 +38,20 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
 マルチアプリ＋サブドメインを **`apps/web` 単一の統合サイト**へ集約中。設計と進捗は
 `docs/仕様変更/0_移行設計_統合サイト化.md`。決定事項: 主キーは UUID 維持 / 認証はロール累積へ /
 旧アプリは段階廃止（即時撤去しない）。
-- **Phase 1 済**: 旧 `apps/running/app/*` を `apps/web/app/*` へ取り込み（種目ランディングは
-  `/running`、events/races/facilities/mypage/profile/chat は top-level 横断）。トップの種目導線は
+- **Phase 1 済**: 旧 `apps/running/app/*` を `apps/web/app/*` へ取り込み。トップの種目導線は
   running=サイト内パス、golf/outdoor=既存サブドメイン（移行期）。ログインは当面 account 集約。
+- **【重要・URL体系】画面遷移図(docs/仕様変更/spotomo_top_screen_transition_diagram)に準拠して
+  web の URL をリネーム済み**。種目アプリ由来の名称から是正:
+  - 募集 = **`/recruitments/*`**（旧 `/events/*`）。一覧/詳細/`new`/`[id]/edit|participants|review`。
+  - 大会・イベント = **`/events`**（旧 `/races`）。`running.races` を表示。
+  - マイページ募集 = `/mypage/recruitments`（旧 `/mypage/events`）。proxy 保護は `/recruitments/new`。
+  - 種目別トップ = `/running`、`/sports/{code}` はそのエイリアス。
+  - **注意**: DBテーブルは `running.events`（募集）/`running.races`（大会）のまま（URLとは別物）。
+    `lib/events`・`makeEventRepo("running").from("events")` 等のモジュール/テーブル参照は不変。
+    EventCard は shared-ui 既定 hrefBase=`/events`(golf/outdoor互換) のため web では `hrefBase="/recruitments"` を明示。
+  - **トップ検索は目的別2導線**: 「募集に参加する」→`/recruitments?category=&area=`、
+    「募集を作成する」→`/facilities?category=&area=&purpose=create_recruitment`。`category`=種目slug
+    （facilities は `facility_sports` で絞る）、`area`=都道府県名。
 - **Phase 2 済**: 施設取り込み基盤（`0031`。`facility_sources`/`normalize_name`/
   `find_duplicate_candidates`/`core.batch_runs`）。詳細は下の施設スキーマ節。
 - **Phase 3 済**: OSM(Overpass) 取り込みバッチ（`apps/web/lib/osm-sync.ts` ＋
