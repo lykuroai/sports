@@ -93,7 +93,7 @@ export default async function HomePage() {
 
       {/* カテゴリ一覧（§11） */}
       <section>
-        <h2 className="mb-4 text-2xl font-bold text-slate-900">種目から探す</h2>
+        <h2 className="mb-4 text-2xl font-bold text-slate-900">種目</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {CATEGORIES.map((c) => (
             <a key={c.slug} href={c.href} className="card flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
