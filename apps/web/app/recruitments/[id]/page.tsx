@@ -29,6 +29,14 @@ export default async function EventDetail({
   const ev = await fetchEventDetail(supabase, id);
   if (!ev) notFound();
 
+  // 種目名（大分類/小分類）。sport_id から表示名を引く。
+  let sportName = "種目未設定";
+  const sportId = (ev as { sport_id?: string | null }).sport_id;
+  if (sportId) {
+    const { data: sp } = await supabase.schema("core").from("sports").select("name").eq("id", sportId).maybeSingle();
+    if (sp?.name) sportName = sp.name as string;
+  }
+
   const user = await getUser();
   const isOrganizer = user?.id === ev.organizer_id;
   // 未ログインで参加申請する場合は account 共通ログインへ誘導し、認証後この募集詳細へ戻す。
@@ -61,7 +69,7 @@ export default async function EventDetail({
     <article className="mx-auto max-w-2xl space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2">
-          <span className="badge bg-brand/10 text-brand">ランニング</span>
+          <span className="badge bg-brand/10 text-brand">{sportName}</span>
           <span className="badge bg-slate-100 text-slate-600">{EVENT_STATUS_LABEL[ev.status]}</span>
         </div>
         <h1 className="text-2xl font-bold">{ev.title}</h1>

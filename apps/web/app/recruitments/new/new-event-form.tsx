@@ -10,10 +10,6 @@ const initial: CreateState = { error: null };
 
 const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
 
-// ランニングアプリで募集の種目として選べるカテゴリー（core.sports.slug）。
-// 募集の種目は新規募集メールの種目別配信のターゲティングに使う。
-const RUNNING_SPORT_SLUGS = ["running", "jogging", "marathon", "walking"];
-
 const GENDER_OPTIONS: { value: string; label: string }[] = [
   { value: "unspecified", label: "指定なし" },
   { value: "male", label: "男性のみ" },
@@ -40,8 +36,15 @@ export default function NewEventForm({
   initialPrefecture?: string;
 }) {
   const [state, formAction, pending] = useActionState(createEvent, initial);
-  const sportOptions = sports.filter((s) => RUNNING_SPORT_SLUGS.includes(s.slug));
-  const defaultSportId = sportOptions.find((s) => s.slug === "running")?.id ?? sportOptions[0]?.id ?? "";
+  // 種目は 大分類(親=parent_id null)→小分類(子) で選択する（0032 で階層化）。
+  const parents = sports.filter((s) => !s.parent_id);
+  const subSports = sports.filter((s) => s.parent_id);
+  const defaultParentId = parents.find((p) => p.slug === "cat-running")?.id ?? parents[0]?.id ?? "";
+  const [categoryId, setCategoryId] = useState(defaultParentId);
+  const [subId, setSubId] = useState("");
+  const children = subSports.filter((s) => s.parent_id === categoryId);
+  // 小分類があれば小分類、無ければ大分類を種目として送る。
+  const sportId = subId || categoryId;
   const [facility, setFacility] = useState<PickedFacility | null>(initialFacility);
   // 施設を選ぶと開催地（都道府県・市区町村）を初期補完する。手入力での上書きも可。
   const [prefecture, setPrefecture] = useState(initialFacility?.prefecture ?? initialPrefecture);
@@ -57,7 +60,10 @@ export default function NewEventForm({
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-2xl font-bold">ランニングの募集を作成</h1>
+      <h1 className="text-2xl font-bold">仲間を募集する</h1>
+      <p className="text-sm text-slate-500">
+        施設や大会から、または直接この画面から募集を作成できます。種目を大分類・小分類で選んでください。
+      </p>
 
       <form action={formAction} className="card space-y-4 p-6">
         {state.error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{state.error}</p>}
@@ -66,14 +72,26 @@ export default function NewEventForm({
           <label className="label" htmlFor="title">タイトル</label>
           <input id="title" name="title" className="input" required maxLength={120} defaultValue={initialTitle} />
         </div>
-        {sportOptions.length > 0 && (
-          <div>
-            <label className="label" htmlFor="sport_id">種目</label>
-            <select id="sport_id" name="sport_id" className="input" defaultValue={defaultSportId}>
-              {sportOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <p className="mt-1 text-xs text-slate-400">
-              この種目の新着募集メールを希望している利用者に通知されます。
+        {parents.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label" htmlFor="category_id">種目（大分類）</label>
+              <select id="category_id" className="input" value={categoryId}
+                onChange={(e) => { setCategoryId(e.target.value); setSubId(""); }}>
+                {parents.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="sub_id">小分類</label>
+              <select id="sub_id" className="input" value={subId}
+                onChange={(e) => setSubId(e.target.value)} disabled={children.length === 0}>
+                <option value="">{children.length ? "（指定なし）" : "—"}</option>
+                {children.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <input type="hidden" name="sport_id" value={sportId} />
+            <p className="col-span-2 mt-1 text-xs text-slate-400">
+              大分類→小分類で種目を選びます。この種目の新着募集メールを希望する利用者に通知されます。
             </p>
           </div>
         )}
@@ -192,11 +210,11 @@ export default function NewEventForm({
             </div>
           </div>
 
-          {sports.length > 0 && (
+          {subSports.length > 0 && (
             <div>
               <span className="label">趣味・関心のある種目（複数可）</span>
               <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto rounded border border-slate-200 p-2">
-                {sports.map((s) => (
+                {subSports.map((s) => (
                   <label key={s.id} className="flex items-center gap-1 text-sm">
                     <input type="checkbox" name="condition_sport_ids" value={s.id} />
                     {s.name}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createServerClient } from "@spotomo/auth-client";
+import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { PREFECTURES } from "@spotomo/shared-types";
 import { fetchEvents } from "../../lib/events";
@@ -25,6 +25,10 @@ export default async function Recruitments({
   const events = otherCategory
     ? []
     : await fetchEvents(supabase, { keyword: sp.q, prefecture, beginnerOnly: sp.beginner === "1" });
+
+  // sport_id → 種目名（カードの種目バッジ）。
+  const { data: sportRows } = await supabase.schema(SCHEMA.core).from("sports").select("id, name");
+  const sportName = new Map((sportRows ?? []).map((s: { id: string; name: string }) => [s.id, s.name]));
 
   const createHref = `/facilities${sp.category || prefecture ? `?${new URLSearchParams({ ...(sp.category ? { category: sp.category } : {}), ...(prefecture ? { area: prefecture } : {}) }).toString()}` : ""}`;
 
@@ -58,7 +62,9 @@ export default async function Recruitments({
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((r) => <EventCard key={r.id} event={r} sportLabel="ランニング" hrefBase="/recruitments" />)}
+          {events.map((r) => (
+            <EventCard key={r.id} event={r} sportLabel={sportName.get((r as { sport_id?: string }).sport_id ?? "") ?? "種目"} hrefBase="/recruitments" />
+          ))}
         </div>
       )}
     </div>

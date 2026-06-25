@@ -8,16 +8,17 @@ export interface SportOption {
   name: string;
   slug: string;
   category_type: string;
+  /** 大分類(親)の id。null なら自身が大分類。0032 で階層化。 */
+  parent_id: string | null;
 }
 
-/** 公開中の種目を区分・表示順で取得（プロフィールの種目選択ピッカー用）。 */
+/** 公開中の種目を表示順で取得（種目選択ピッカー・募集の大分類/小分類用）。 */
 export async function fetchPublishedSports(supabase: Client): Promise<SportOption[]> {
   const { data } = await supabase
     .schema(SCHEMA.core)
     .from("sports")
-    .select("id, name, slug, category_type")
+    .select("id, name, slug, category_type, parent_id")
     .eq("status", "published")
-    .order("category_type", { ascending: true })
     .order("display_order", { ascending: true });
   return (data ?? []) as SportOption[];
 }
