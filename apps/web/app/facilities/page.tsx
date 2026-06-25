@@ -33,37 +33,33 @@ export default async function FacilitySearch({
         ?? "")
     : "";
 
-  // category（分類=種目）指定時は facility_sports で対象施設IDを先に絞る。
-  // 大分類なら配下の小分類も含めて解決する。
-  let sportFacilityIds: string[] | null = null;
-  if (sp.category) {
-    const ids = resolveCategorySportIds(nodes, sp.category) ?? [];
-    if (ids.length === 0) {
-      sportFacilityIds = [];
-    } else {
-      const { data: links } = await supabase.schema(SCHEMA.facility).from("facility_sports").select("facility_id").in("sport_id", ids).limit(1000);
-      sportFacilityIds = [...new Set((links ?? []).map((l: { facility_id: string }) => l.facility_id))];
-    }
-  }
+  // category（分類=種目）→ sport_id 群を解決。大分類なら配下の小分類も含める。
+  // null=絞り込みなし / 空配列=該当種目なし（0件）。
+  const sportIds = sp.category ? (resolveCategorySportIds(nodes, sp.category) ?? []) : null;
 
   let facilities: Facility[] = [];
   let total = 0;
-  if (sportFacilityIds === null || sportFacilityIds.length > 0) {
+  if (sportIds === null || sportIds.length > 0) {
+    // 種目絞り込みは facility_sports の inner join 埋め込みで行う（sport_id 配列で絞るため
+    // URL が短く済む。施設IDを数千件 .in する旧方式は URL 長すぎで失敗していた）。
+    const select = sportIds
+      ? "id, name, facility_type, prefecture, city, address, facility_sports!inner(sport_id)"
+      : "id, name, facility_type, prefecture, city, address";
     let query = supabase
       .schema(SCHEMA.facility)
       .from("facilities")
-      .select("id, name, facility_type, prefecture, city, address", { count: "exact" })
+      .select(select, { count: "exact" })
       // 自動取得（OSM等）の未承認施設は公開前承認まで一覧に出さない（仕様 §21.2）。
       .eq("status", "verified")
       .order("prefecture", { ascending: true })
       .order("name", { ascending: true })
       .range(from, from + PER_PAGE - 1);
-    if (sportFacilityIds) query = query.in("id", sportFacilityIds);
+    if (sportIds) query = query.in("facility_sports.sport_id", sportIds);
     if (sp.q) query = query.ilike("name", `%${sp.q}%`);
     if (prefecture) query = query.eq("prefecture", prefecture);
     if (sp.type) query = query.eq("facility_type", sp.type);
     const { data, count } = await query;
-    facilities = (data ?? []) as Facility[];
+    facilities = (data ?? []) as unknown as Facility[];
     total = count ?? 0;
   }
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
