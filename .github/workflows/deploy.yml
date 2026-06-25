@@ -11,9 +11,12 @@ name: Deploy (self-host)
 #   DEPLOY_USER     … SSH ユーザ（例: ubuntu / ec2-user）
 #   DEPLOY_SSH_KEY  … 秘密鍵（対応する公開鍵をサーバに登録）
 #   DEPLOY_PATH     … サーバ上のリポジトリパス（例: /opt/spotomo）
+#
+# 注意: 本番は同一マシン上で main を checkout → `docker compose up -d --build` を
+# 手動実行する運用のため、push での自動デプロイは行わない（SSH 先のリモートサーバ
+# が無く、上記 Secrets 未設定だと毎 push 「missing server host」で失敗するため）。
+# リモート SSH デプロイを使う場合のみ、Secrets を設定して手動実行（workflow_dispatch）する。
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
