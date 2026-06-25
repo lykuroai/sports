@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { PREFECTURES } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
+import { fetchSportNodes, resolveCategorySportIds } from "../../lib/category";
 
 export const metadata = { title: "施設を探す" };
 
@@ -22,15 +23,15 @@ export default async function FacilitySearch({
 
   const supabase = await createServerClient();
 
-  // category（種目）指定時は facility_sports で対象施設IDを先に絞る。
+  // category（分類=種目）指定時は facility_sports で対象施設IDを先に絞る。
+  // 大分類なら配下の小分類も含めて解決する。
   let sportFacilityIds: string[] | null = null;
   if (sp.category) {
-    const { data: sport } = await supabase.schema(SCHEMA.core).from("sports").select("id").eq("slug", sp.category).maybeSingle();
-    const sportId = (sport as { id: string } | null)?.id;
-    if (!sportId) {
+    const ids = resolveCategorySportIds(await fetchSportNodes(supabase), sp.category) ?? [];
+    if (ids.length === 0) {
       sportFacilityIds = [];
     } else {
-      const { data: links } = await supabase.schema(SCHEMA.facility).from("facility_sports").select("facility_id").eq("sport_id", sportId).limit(1000);
+      const { data: links } = await supabase.schema(SCHEMA.facility).from("facility_sports").select("facility_id").in("sport_id", ids).limit(1000);
       sportFacilityIds = [...new Set((links ?? []).map((l: { facility_id: string }) => l.facility_id))];
     }
   }

@@ -25,6 +25,8 @@ export interface EventFilter {
   prefecture?: string;
   city?: string;
   beginnerOnly?: boolean;
+  /** 種目(sport_id)で絞り込む。空配列なら 0 件、未指定なら絞り込まない。 */
+  sportIds?: string[];
   sort?: "soon" | "new" | "fee";
   limit?: number;
 }
@@ -52,6 +54,7 @@ export function makeEventRepo(schema: string) {
     if (filter.prefecture) query = query.eq("prefecture", filter.prefecture);
     if (filter.city) query = query.eq("city", filter.city);
     if (filter.beginnerOnly) query = query.eq("beginner_allowed", true);
+    if (filter.sportIds) query = query.in("sport_id", filter.sportIds.length ? filter.sportIds : ["00000000-0000-0000-0000-000000000000"]);
 
     switch (filter.sort) {
       case "new":
