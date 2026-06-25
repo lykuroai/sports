@@ -28,15 +28,16 @@ export default async function NewEventPage({
   ]);
 
   // 施設詳細から「この施設で募集を作成」で来た場合、施設を初期選択する。
+  // あわせて施設の種目(facility_sports)を取得し、募集の大分類/小分類の初期値にする。
   let initialFacility: PickedFacility | null = null;
+  let initialSportId = "";
   if (facilityId) {
-    const { data } = await supabase
-      .schema(SCHEMA.facility)
-      .from("facilities")
-      .select("id, name, prefecture, city, address")
-      .eq("id", facilityId)
-      .maybeSingle();
+    const [{ data }, { data: fsp }] = await Promise.all([
+      supabase.schema(SCHEMA.facility).from("facilities").select("id, name, prefecture, city, address").eq("id", facilityId).maybeSingle(),
+      supabase.schema(SCHEMA.facility).from("facility_sports").select("sport_id").eq("facility_id", facilityId).limit(1).maybeSingle(),
+    ]);
     if (data) initialFacility = data as PickedFacility;
+    initialSportId = (fsp as { sport_id: string } | null)?.sport_id ?? "";
   }
 
   return (
@@ -48,6 +49,7 @@ export default async function NewEventPage({
         premium={premium}
         sports={sports}
         initialFacility={initialFacility}
+        initialSportId={initialSportId}
         initialTitle={race ? `${race} に一緒に出よう` : ""}
         initialPrefecture={pref ?? ""}
       />

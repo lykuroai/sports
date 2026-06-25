@@ -26,12 +26,14 @@ export default function NewEventForm({
   premium,
   sports,
   initialFacility = null,
+  initialSportId = "",
   initialTitle = "",
   initialPrefecture = "",
 }: {
   premium: boolean;
   sports: SportOption[];
   initialFacility?: PickedFacility | null;
+  initialSportId?: string;
   initialTitle?: string;
   initialPrefecture?: string;
 }) {
@@ -39,9 +41,13 @@ export default function NewEventForm({
   // 種目は 大分類(親=parent_id null)→小分類(子) で選択する（0032 で階層化）。
   const parents = sports.filter((s) => !s.parent_id);
   const subSports = sports.filter((s) => s.parent_id);
-  const defaultParentId = parents.find((p) => p.slug === "cat-running")?.id ?? parents[0]?.id ?? "";
+  // 施設から来た場合は施設の種目を初期選択（大分類/小分類を施設に合わせる）。
+  const initNode = sports.find((s) => s.id === initialSportId);
+  const defaultParentId = initNode
+    ? (initNode.parent_id ?? initNode.id)
+    : (parents.find((p) => p.slug === "cat-running")?.id ?? parents[0]?.id ?? "");
   const [categoryId, setCategoryId] = useState(defaultParentId);
-  const [subId, setSubId] = useState("");
+  const [subId, setSubId] = useState(initNode?.parent_id ? initNode.id : "");
   const children = subSports.filter((s) => s.parent_id === categoryId);
   // 小分類があれば小分類、無ければ大分類を種目として送る。
   const sportId = subId || categoryId;
