@@ -32,6 +32,24 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
 - 未実装（仕様の将来拡張）: 地図タイル表示（地図プロバイダ未選定）、オンライン予約・決済、
   AI推薦、LINE通知、ネイティブアプリ（仕様 §12.2 / §14）。MVP（§12.1）はおおむね充足。
 
+### 【進行中】統合サイト化（マルチアプリ→1サイト集約）
+
+`docs/仕様変更/`（single_site / architecture / facility_data v1.2）の方針転換に伴い、
+マルチアプリ＋サブドメインを **`apps/web` 単一の統合サイト**へ集約中。設計と進捗は
+`docs/仕様変更/0_移行設計_統合サイト化.md`。決定事項: 主キーは UUID 維持 / 認証はロール累積へ /
+旧アプリは段階廃止（即時撤去しない）。
+- **Phase 1 済**: 旧 `apps/running/app/*` を `apps/web/app/*` へ取り込み（種目ランディングは
+  `/running`、events/races/facilities/mypage/profile/chat は top-level 横断）。トップの種目導線は
+  running=サイト内パス、golf/outdoor=既存サブドメイン（移行期）。ログインは当面 account 集約。
+- **Phase 2 済**: 施設取り込み基盤（`0031`。`facility_sources`/`normalize_name`/
+  `find_duplicate_candidates`/`core.batch_runs`）。詳細は下の施設スキーマ節。
+- **Phase 3 済**: OSM(Overpass) 取り込みバッチ（`apps/web/lib/osm-sync.ts` ＋
+  `/api/cron/sync-osm-facilities`）。ランニング/公園系を取得→`find_duplicate_candidates` で
+  重複判定→**未承認(`status='unverified'`)で登録**し、`facility_sources` に出所(ODbL帰属)と raw を記録。
+  施設一覧は `status='verified'` のみ表示（公開前承認）。env は `OSM_FETCH_AREA`/`OSM_FETCH_LIMIT`/
+  `CRON_SECRET`（`.env.production.example` 参照）。
+- **未了**: 集約ログインの web 内包、golf/outdoor の web 取り込み、ロール累積の再設計、旧アプリ撤去。
+
 ### 重要な実装メモ
 
 - Supabase クライアントは **untyped**（`SupabaseClient`、generic なし）で使い、行は
@@ -66,6 +84,16 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   - `status` は enum `verification_status`（既定 `verified`）。`0001` 由来の
     `nearest_station`/`phone`/`website_url`/`verification_status`/`source_id` 等のカラムは
     本番には**存在しない**。CSV/`submitted_data` のキーは上記実カラムに合わせること。
+  - **【統合サイト化 Phase 2・`0031`】外部取り込み基盤を追加**（既存モデルは非破壊）。
+    `facilities` に `normalized_name`/`last_checked_at` を追加。出所は単一 `source`(enum) に加え
+    **`facility.facility_sources`**（複数行・`source_type`(TEXT)/`source_id`/`source_url`/`license`/
+    `raw_data`(jsonb)/`fetched_at`）で多重ソース・帰属表示・再取得・重複判定を扱う。
+    重複候補は RPC **`facility.find_duplicate_candidates(name,lat,lng,radius_m,lim)`**（pg_trgm
+    `similarity` + PostGIS）、名称正規化は **`facility.normalize_name(text)`**。外部取得バッチの
+    履歴は **`core.batch_runs`/`core.batch_run_logs`**。これら取り込み系は raw_data を含むため
+    RLS で**管理者のみ select**、書き込みはサービスロール。新仕様の `facility_categories`/
+    `facility_details`(平坦) は採用せず、既存 `facility_sports`(core.sports ツリー)/`facility_features`
+    (key-value) を継続（より正規化が進むため＝意図的逸脱、`docs/仕様変更/0_移行設計` §5）。
 - **通知作成は必ず `notifyUser()`（`src/lib/notify.ts`）経由**。notifications には INSERT
   用 RLS ポリシーが無く、セッションクライアントからの他ユーザー宛 insert は失敗する。
   `notifyUser` はサービスロールで insert し、`users.email` 宛にメール送信

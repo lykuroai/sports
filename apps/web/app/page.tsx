@@ -1,13 +1,14 @@
 import Image from "next/image";
-import { SPORT_DOMAINS } from "@spotomo/shared-types";
 import heroImage from "../public/park-hero.webp";
 
-// 種目ごとの表示メタ（ブランド名・ロゴ）。host は SPORT_DOMAINS と対応。
-const SPORT_META: Record<string, { label: string; logo: string }> = {
-  golf: { label: "ゴルフとも", logo: "/golf-logo.svg" },
-  running: { label: "ランニング", logo: "/running-logo.svg" },
-  outdoor: { label: "アウトドア", logo: "/outdoor-logo.svg" },
-};
+// 種目ごとの表示メタ（ブランド名・ロゴ・遷移先）。
+// 統合サイト化の移行期: running は統合サイト内パス（/running）へ取り込み済み。
+// golf/outdoor は移行完了まで既存サブドメインへ送る（段階廃止）。Phase 4 で /golf /outdoor へ。
+const SPORT_CARDS: { slug: string; label: string; logo: string; href: string }[] = [
+  { slug: "running", label: "ランニング", logo: "/running-logo.svg", href: "/running" },
+  { slug: "golf", label: "ゴルフとも", logo: "/golf-logo.svg", href: "//golf-spotomo.lykuro.ai" },
+  { slug: "outdoor", label: "アウトドア", logo: "/outdoor-logo.svg", href: "//outdoor-spotomo.lykuro.ai" },
+];
 
 // よくある質問（総合トップ用）。回答はアプリの実態（無料/プレミアム・募集参加・
 // プライバシー方針・グループチャット・相互評価・施設検索）に即して記載する。
@@ -55,25 +56,22 @@ export default function HomePage() {
           ゴルフ・ランニング・アウトドアなど、さまざまなスポーツ・レジャーの仲間募集に参加できます。
         </p>
         <div className="mt-4 grid grid-cols-1 gap-2 sm:mt-6 sm:grid-cols-3 sm:gap-3">
-          {SPORT_DOMAINS.map((d) => {
-            const meta = SPORT_META[d.slug] ?? { label: d.name, logo: "" };
-            return (
-              <a
-                key={d.slug}
-                href={`//${d.host}`}
-                className="group flex items-center gap-3 rounded-lg bg-white/95 px-4 py-3 shadow-sm ring-1 ring-black/5 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white ring-1 ring-black/5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={meta.logo} alt={meta.label} className="h-full w-full object-contain" />
-                </span>
-                <span className="flex flex-col">
-                  <span className="text-base font-semibold leading-tight text-slate-900">{meta.label}</span>
-                  <span className="text-xs text-emerald-700">仲間を探す →</span>
-                </span>
-              </a>
-            );
-          })}
+          {SPORT_CARDS.map((c) => (
+            <a
+              key={c.slug}
+              href={c.href}
+              className="group flex items-center gap-3 rounded-lg bg-white/95 px-4 py-3 shadow-sm ring-1 ring-black/5 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white ring-1 ring-black/5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.logo} alt={c.label} className="h-full w-full object-contain" />
+              </span>
+              <span className="flex flex-col">
+                <span className="text-base font-semibold leading-tight text-slate-900">{c.label}</span>
+                <span className="text-xs text-emerald-700">仲間を探す →</span>
+              </span>
+            </a>
+          ))}
         </div>
       </div>
     </section>
