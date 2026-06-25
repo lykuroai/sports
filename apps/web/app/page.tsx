@@ -40,17 +40,20 @@ export default async function HomePage() {
   const fac = supabase.schema(SCHEMA.facility);
   const run = supabase.schema(SCHEMA.running);
 
-  const [events, facListRes, racesRes, facCntRes, raceCntRes, recCntRes, catCntRes] = await Promise.all([
+  const [events, facListRes, racesRes, facCntRes, raceCntRes, recCntRes, catRes] = await Promise.all([
     fetchEvents(supabase, {}),
     fac.from("facilities").select("id, name, facility_type, prefecture, city").eq("status", "verified").order("created_at", { ascending: false }).limit(6),
     run.from("races").select("id, name, prefecture, city, event_date, website_url").eq("discontinued", false).order("event_date", { ascending: true, nullsFirst: false }).limit(6),
     fac.from("facilities").select("id", { count: "exact", head: true }).eq("status", "verified"),
     run.from("races").select("id", { count: "exact", head: true }).eq("discontinued", false),
     run.from("events").select("id", { count: "exact", head: true }),
-    supabase.schema(SCHEMA.core).from("sports").select("id", { count: "exact", head: true }).eq("status", "published"),
+    supabase.schema(SCHEMA.core).from("sports").select("id, name", { count: "exact" }).eq("status", "published"),
   ]);
 
   const newRecruitments = events.slice(0, 6);
+  // sport_id → 種目名（募集カードの種目バッジ）。
+  const sportName = new Map(((catRes.data ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]));
+  const catCntRes = catRes;
   type Fac = { id: string; name: string; facility_type: string | null; prefecture: string | null; city: string | null };
   type Race = { id: string; name: string; prefecture: string | null; city: string | null; event_date: string | null; website_url: string | null };
   const facilities = (facListRes.data ?? []) as Fac[];
@@ -117,7 +120,7 @@ export default async function HomePage() {
           <p className="text-slate-500">現在募集中の投稿はありません。最初の募集を作成してみましょう。</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {newRecruitments.map((r) => <EventCard key={r.id} event={r} sportLabel="ランニング" hrefBase="/recruitments" />)}
+            {newRecruitments.map((r) => <EventCard key={r.id} event={r} sportLabel={sportName.get((r as { sport_id?: string }).sport_id ?? "") ?? "種目"} hrefBase="/recruitments" />)}
           </div>
         )}
       </section>

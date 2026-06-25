@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createServerClient } from "@spotomo/auth-client";
+import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { fetchMyOrganizedEvents } from "@spotomo/domain-common";
 import { EventCard } from "@spotomo/shared-ui";
 
@@ -12,6 +12,8 @@ export default async function MyEventsPage() {
   if (!user) redirect("/login?redirect=/mypage/recruitments");
 
   const events = await fetchMyOrganizedEvents(supabase, DOMAIN, user.id);
+  const { data: sportRows } = await supabase.schema(SCHEMA.core).from("sports").select("id, name");
+  const sportName = new Map((sportRows ?? []).map((s: { id: string; name: string }) => [s.id, s.name]));
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -21,7 +23,7 @@ export default async function MyEventsPage() {
         <p className="text-sm text-slate-400">まだ募集を作成していません。</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {events.map((e) => <EventCard key={e.id} event={e} sportLabel="ランニング" hrefBase="/recruitments" />)}
+          {events.map((e) => <EventCard key={e.id} event={e} sportLabel={sportName.get((e as { sport_id?: string }).sport_id ?? "") ?? "種目"} hrefBase="/recruitments" />)}
         </div>
       )}
     </div>
