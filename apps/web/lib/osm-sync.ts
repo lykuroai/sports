@@ -172,6 +172,17 @@ export async function fetchOverpass(area: string): Promise<OsmElement[]> {
   return json.elements ?? [];
 }
 
+// 日本国外（特に韓国）の混入を除外する。bbox は経度が韓国と重なるため、ハングル名、
+// addr:country=KR/KP、または韓国南東部の座標域（対馬・九州の日本領は除く）を弾く。
+export function isLikelyForeign(name: string, lat: number, lng: number, tags: Record<string, string>): boolean {
+  if (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(name)) return true;
+  const country = (tags["addr:country"] ?? "").toUpperCase();
+  if (country === "KR" || country === "KP") return true;
+  // 韓国南東部（釜山・大邱・慶州・江陵等）。対馬(lat≲34.7)・九州本土(lng≳129.9)は除外。
+  if (lat > 34.85 && lng < 129.75) return true;
+  return false;
+}
+
 /** 生要素を取り込み候補へ正規化（名前・座標・分類が揃うもののみ）。 */
 export function normalizeOsm(elements: OsmElement[], area: string): { facilities: OsmFacility[]; skipped: number } {
   const out: OsmFacility[] = [];
@@ -183,7 +194,7 @@ export function normalizeOsm(elements: OsmElement[], area: string): { facilities
     const lat = el.lat ?? el.center?.lat;
     const lng = el.lon ?? el.center?.lon;
     const cls = classify(tags);
-    if (!name || lat == null || lng == null || !cls) {
+    if (!name || lat == null || lng == null || !cls || isLikelyForeign(name, lat, lng, tags)) {
       skipped++;
       continue;
     }
