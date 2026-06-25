@@ -1,5 +1,5 @@
 import { requireAdmin, createServerClient, SCHEMA } from "@spotomo/auth-client";
-import { reviewImportedFacility } from "../actions";
+import { reviewImportedFacility, mergeImportedFacility } from "../actions";
 
 export const metadata = { title: "取り込み施設の承認" };
 
@@ -83,14 +83,21 @@ export default async function ImportedFacilitiesPage() {
           {f.candidates.length > 0 && (
             <div className="rounded border border-amber-200 bg-amber-50 p-2 text-xs">
               <div className="font-medium text-amber-800">重複候補あり（要確認）</div>
-              <ul className="mt-1 space-y-0.5 text-amber-900">
+              <ul className="mt-1 space-y-1 text-amber-900">
                 {f.candidates.map((c) => (
-                  <li key={c.id}>
-                    {c.name}
-                    <span className="ml-2 text-amber-700">
+                  <li key={c.id} className="flex flex-wrap items-center gap-2">
+                    <span>{c.name}</span>
+                    <span className="text-amber-700">
                       類似 {c.name_sim != null ? c.name_sim.toFixed(2) : "—"}
                       {c.distance_m != null ? ` / ${Math.round(c.distance_m)}m` : ""}
                     </span>
+                    <form action={mergeImportedFacility}>
+                      <input type="hidden" name="source_facility_id" value={f.id} />
+                      <input type="hidden" name="target_facility_id" value={c.id} />
+                      <button className="rounded border border-amber-400 px-2 py-0.5 text-xs text-amber-800 hover:bg-amber-100" type="submit">
+                        この施設へ統合
+                      </button>
+                    </form>
                   </li>
                 ))}
               </ul>

@@ -131,6 +131,39 @@ export async function reviewImportedFacility(formData: FormData): Promise<void> 
   revalidatePath("/facilities");
 }
 
+// 取り込み施設（source）を既存施設（target）へ統合する。出所・種目を target へ移し、
+// source を削除する。重複の自動統合はせず、管理者が候補を確認して実行する（仕様 §6.6）。
+export async function mergeImportedFacility(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const sourceId = String(formData.get("source_facility_id"));
+  const targetId = String(formData.get("target_facility_id"));
+  if (!sourceId || !targetId || sourceId === targetId) return;
+
+  const db = createAdminClient();
+  const fac = db.schema(SCHEMA.facility);
+
+  // 1) 出所(facility_sources)を target へ付け替え（OSM の source_id は一意なので衝突しない）。
+  await fac.from("facility_sources").update({ facility_id: targetId }).eq("facility_id", sourceId);
+
+  // 2) 種目(facility_sports)のうち target に無いものを移す。
+  const [{ data: srcSports }, { data: tgtSports }] = await Promise.all([
+    fac.from("facility_sports").select("sport_id").eq("facility_id", sourceId),
+    fac.from("facility_sports").select("sport_id").eq("facility_id", targetId),
+  ]);
+  const have = new Set((tgtSports ?? []).map((s: { sport_id: string }) => s.sport_id));
+  const toAdd = ((srcSports ?? []) as { sport_id: string }[])
+    .filter((s) => !have.has(s.sport_id))
+    .map((s) => ({ facility_id: targetId, sport_id: s.sport_id }));
+  if (toAdd.length) await fac.from("facility_sports").insert(toAdd);
+
+  // 3) source を削除（残る子テーブルは ON DELETE CASCADE。出所は移済みで消えない）。
+  await fac.from("facilities").delete().eq("id", sourceId);
+
+  await writeAuditLog(admin.id, "facility_merge", "facility", `${sourceId}->${targetId}`, "facility");
+  revalidatePath("/facilities");
+}
+
 export async function reviewFacilityOwner(formData: FormData): Promise<void> {
   const admin = await getAdminUser();
   if (!admin) redirect("/");
