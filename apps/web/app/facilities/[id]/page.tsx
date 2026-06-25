@@ -17,7 +17,7 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
   if (!facility) notFound();
   const f = facility as Facility;
 
-  const [{ data: featureRows }, { data: reviews }] = await Promise.all([
+  const [{ data: featureRows }, { data: reviews }, { data: sourceRows }] = await Promise.all([
     supabase.schema(SCHEMA.facility).from("facility_features").select("feature_key, value").eq("facility_id", id),
     supabase
       .schema(SCHEMA.facility)
@@ -26,7 +26,18 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
       .eq("facility_id", id)
       .order("created_at", { ascending: false })
       .limit(50),
+    supabase.schema(SCHEMA.facility).from("facility_sources").select("source_type, source_url, source_name, license").eq("facility_id", id),
   ]);
+
+  type Source = { source_type: string; source_url: string | null; source_name: string | null; license: string | null };
+  const sources = (sourceRows ?? []) as Source[];
+  // 楽天GORA の予約導線（送客モデル）。予約・決済は楽天GORA 側で確定する。
+  const gora = sources.find((s) => s.source_type === "rakuten_gora" && s.source_url);
+  // 出所の帰属表示（OSM は ODbL 帰属が必須）。
+  const hasOsm = sources.some((s) => s.source_type === "openstreetmap");
+  const attribution = sources
+    .map((s) => (s.source_type === "openstreetmap" ? "© OpenStreetMap contributors" : s.source_type === "rakuten_gora" ? "楽天GORA" : s.source_name))
+    .filter((v, i, a) => v && a.indexOf(v) === i);
 
   type Review = { id: string; user_id: string; rating: number; comment: string | null; created_at: string };
   const reviewList = (reviews ?? []) as Review[];
@@ -70,10 +81,18 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
 
       <div className="flex flex-wrap gap-2">
         <Link href={`/recruitments/new?facility=${f.id}`} className="btn-primary">この施設で募集を作成</Link>
+        {gora?.source_url && (
+          <a href={gora.source_url} target="_blank" rel="noopener noreferrer" className="btn-outline border-rose-400 text-rose-600 hover:bg-rose-50">楽天GORAで予約する ↗</a>
+        )}
         {mapHref && (
           <a href={mapHref} target="_blank" rel="noopener noreferrer" className="btn-outline">地図で見る</a>
         )}
       </div>
+      {gora && (
+        <p className="text-xs text-slate-400">
+          料金・空き状況は変動します。予約は楽天GORA のページで確定します（送客）。
+        </p>
+      )}
 
       <section className="space-y-3">
         <h2 className="font-semibold">レビュー</h2>
@@ -93,6 +112,13 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
           </ul>
         )}
       </section>
+
+      {attribution.length > 0 && (
+        <p className="border-t border-slate-100 pt-3 text-xs text-slate-400">
+          出所: {attribution.join(" / ")}
+          {hasOsm && "（地図データは OpenStreetMap の貢献者によるもので ODbL ライセンスで提供されています）"}
+        </p>
+      )}
     </article>
   );
 }
