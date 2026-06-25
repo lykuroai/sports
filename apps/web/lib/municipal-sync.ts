@@ -93,6 +93,23 @@ function findCol(headers: string[], candidates: string[]): number {
   return -1;
 }
 
+// 同名列が複数ある場合に全インデックスを返す（東京都推奨データセットは緯度/経度が
+// 2組あり、片方が空のことがある。行ごとに非空を採用するため全列を見る）。
+function findCols(headers: string[], candidates: string[]): number[] {
+  const H = headers.map(norm);
+  const isCode = (h: string) => h.includes("コード") || h.includes("code");
+  const out: number[] = [];
+  H.forEach((h, i) => {
+    if (!isCode(h) && candidates.some((c) => h === norm(c) || h.includes(norm(c)))) out.push(i);
+  });
+  return out;
+}
+// 複数列から最初の非空セルを返す。
+const pickCell = (cells: string[], cols: number[]): string | undefined => {
+  for (const i of cols) { const v = cells[i]; if (v != null && v.trim() !== "") return v; }
+  return undefined;
+};
+
 // 全国地方公共団体コード等（数字のみ）を都道府県/市区町村名として扱わない。
 const nameOrNull = (v: string | null): string | null => (v && /^\d+$/.test(v) ? null : v);
 
@@ -131,20 +148,21 @@ export function normalizeMunicipalCsv(text: string, prefDefault: string | null):
   const headers = grid[0];
   const idx = {
     name: findCol(headers, ["施設名称", "施設名", "名称", "name", "施設"]),
-    type: findCol(headers, ["施設種別", "種別", "区分", "カテゴリ", "type"]),
-    lat: findCol(headers, ["緯度", "latitude", "lat"]),
-    lng: findCol(headers, ["経度", "longitude", "lng", "lon"]),
-    addr: findCol(headers, ["所在地", "住所", "address", "所在地住所"]),
-    pref: findCol(headers, ["都道府県", "prefecture"]),
-    city: findCol(headers, ["市区町村", "市町村", "city"]),
+    type: findCol(headers, ["施設種別", "種別", "区分", "分類", "カテゴリ", "type"]),
+    // 緯度/経度は同名列が複数あり得る（東京都推奨DSは2組）。全列を見て非空を採用。
+    lat: findCols(headers, ["緯度", "latitude"]),
+    lng: findCols(headers, ["経度", "longitude"]),
+    addr: findCol(headers, ["所在地_連結表記", "所在地", "住所", "address"]),
+    pref: findCol(headers, ["所在地_都道府県", "都道府県", "prefecture"]),
+    city: findCol(headers, ["所在地_市区町村", "市区町村", "市町村", "city"]),
   };
   const rows: MunicipalRow[] = [];
   let skipped = 0;
   for (let r = 1; r < grid.length; r++) {
     const cells = grid[r];
     const name = toStr(cells[idx.name]);
-    const lat = toNum(cells[idx.lat]);
-    const lng = toNum(cells[idx.lng]);
+    const lat = toNum(pickCell(cells, idx.lat));
+    const lng = toNum(pickCell(cells, idx.lng));
     if (!name || lat == null || lng == null) { skipped++; continue; }
     const facilityType = idx.type >= 0 ? toStr(cells[idx.type]) : null;
     const address = idx.addr >= 0 ? toStr(cells[idx.addr]) : null;

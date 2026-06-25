@@ -40,5 +40,263 @@
     "source": "豊田市 豊田市スポーツ施設検索簡易ツール(BODIK)",
     "pref": "愛知県",
     "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www2.wagmap.jp/nakanodatamap/nakanodatamap/opendatafile/map_21/CSV/opendata_5001291.csv",
+    "source": "中野区 スポーツ施設(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.city.bunkyo.lg.jp/documents/6059/bunka-sports.csv",
+    "source": "文京区 文化・スポーツ施設(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/kodaira/132110_kodairashi_sportsfacilities.csv",
+    "source": "小平市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/hachioji/132012_hachioujishi_sportsfacilities.csv",
+    "source": "八王子市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/bunkyo/131059_bunkyoku_sportsfacilities.csv",
+    "source": "文京区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/setagaya/131121_setagayaku_sportsfacilities.csv",
+    "source": "世田谷区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/hino/132128_hinoshi_sportsfacilities.csv",
+    "source": "日野市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/meguro/131105_meguroku_sportsfacilities.csv",
+    "source": "目黒区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/chofu/132080_chofushi_sportsfacilities.csv",
+    "source": "調布市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/arakawa/131181_arakawaku_sportsfacilities.csv",
+    "source": "荒川区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/machida/132098_machidashi_sportsfacilities.csv",
+    "source": "町田市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/nishitokyo/132292_nishitokyoshi_sportsfacilities.csv",
+    "source": "西東京市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://opendata.city.minato.tokyo.jp/dataset/26e96810-c3b0-4494-9dd4-fa6669ace56d/resource/24f4bb57-bc75-4a7e-a9d1-016a177b4092/download/sports_shisetsu_ichiran.csv",
+    "source": "港区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/suginami/131156_suginamiku_sportsfacilities.csv",
+    "source": "杉並区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/shinagawa/131091_shinagawaku_sportsfacilities.csv",
+    "source": "品川区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/chuo/131024_chuoku_sportsfacilities.csv",
+    "source": "中央区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/koto/131083_kotoku_sportsfacilities.csv",
+    "source": "江東区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/higashimurayama/132136_higashimurayamashi_sportsfacilities.csv",
+    "source": "東村山市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/toshima/131164_toshimaku_sportsfacilities.csv",
+    "source": "豊島区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/chiyoda/131016_chiyodaku_sportsfacilities.csv",
+    "source": "千代田区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/edogawa/131237_edogawaku_sportsfacilities.csv",
+    "source": "江戸川区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/fussa/132187_fussashi_sportsfacilities.csv",
+    "source": "福生市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/katsushika/131229_katsushikaku_sportsfacilities.csv",
+    "source": "葛飾区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/nerima/131202_nerimaku_sportsfacilities.csv",
+    "source": "練馬区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/akiruno/132284_akirunoshi_sportsfacilities.csv",
+    "source": "あきる野市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/ota/131113_otaku_sportsfacilities.csv",
+    "source": "大田区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/ogasawara/134210_ogasawaramura_sportsfacilities.csv",
+    "source": "小笠原村 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/oshima/133612_oshimamachi_sportsfacilities.csv",
+    "source": "大島町 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/okutama/133086_okutamamachi_sportsfacilities.csv",
+    "source": "奥多摩町 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/aogashima/134023_aogashimamura_sportsfacilities.csv",
+    "source": "青ヶ島村 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/hachijo/134015_hachijomachi_sportsfacilities.csv",
+    "source": "八丈町 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/taito/131067_taitoku_sportsfacilities.csv",
+    "source": "台東区 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/miyake/133817_miyakemura_sportsfacilities.csv",
+    "source": "三宅村 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/hinode/133051_hinodemachi_sportsfacilities.csv",
+    "source": "日の出町 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/mizuho/133035_mizuhomachi_sportsfacilities.csv",
+    "source": "瑞穂町 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/inagi/132250_inagishi_sportsfacilities.csv",
+    "source": "稲城市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/kokubunji/132144_kokubunjishi_sportsfacilities.csv",
+    "source": "国分寺市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/akishima/132071_akishimashi_sportsfacilities.csv",
+    "source": "昭島市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/ome/132055_omeshi_sportsfacilities.csv",
+    "source": "青梅市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/hamura/132276_hamurashi_sportsfacilities.csv",
+    "source": "羽村市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/komae/132195_komaeshi_sportsfacilities.csv",
+    "source": "狛江市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/kunitachi/132152_kunitachishi_sportsfacilities.csv",
+    "source": "国立市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "https://www.opendata.metro.tokyo.lg.jp/koganei/132101_koganeishi_sportsfacilities.csv",
+    "source": "小金井市 スポーツ施設一覧(東京都オープンデータ)",
+    "pref": "東京都",
+    "license": "CC BY 4.0"
   }
 ]
