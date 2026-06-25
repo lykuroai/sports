@@ -10,6 +10,10 @@ const initial: CreateState = { error: null };
 
 const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
 
+// ランニングアプリで募集の種目として選べるカテゴリー（core.sports.slug）。
+// 募集の種目は新規募集メールの種目別配信のターゲティングに使う。
+const RUNNING_SPORT_SLUGS = ["running", "jogging", "marathon", "walking"];
+
 const GENDER_OPTIONS: { value: string; label: string }[] = [
   { value: "unspecified", label: "指定なし" },
   { value: "male", label: "男性のみ" },
@@ -36,6 +40,8 @@ export default function NewEventForm({
   initialPrefecture?: string;
 }) {
   const [state, formAction, pending] = useActionState(createEvent, initial);
+  const sportOptions = sports.filter((s) => RUNNING_SPORT_SLUGS.includes(s.slug));
+  const defaultSportId = sportOptions.find((s) => s.slug === "running")?.id ?? sportOptions[0]?.id ?? "";
   const [facility, setFacility] = useState<PickedFacility | null>(initialFacility);
   // 施設を選ぶと開催地（都道府県・市区町村）を初期補完する。手入力での上書きも可。
   const [prefecture, setPrefecture] = useState(initialFacility?.prefecture ?? initialPrefecture);
@@ -60,6 +66,17 @@ export default function NewEventForm({
           <label className="label" htmlFor="title">タイトル</label>
           <input id="title" name="title" className="input" required maxLength={120} defaultValue={initialTitle} />
         </div>
+        {sportOptions.length > 0 && (
+          <div>
+            <label className="label" htmlFor="sport_id">種目</label>
+            <select id="sport_id" name="sport_id" className="input" defaultValue={defaultSportId}>
+              {sportOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <p className="mt-1 text-xs text-slate-400">
+              この種目の新着募集メールを希望している利用者に通知されます。
+            </p>
+          </div>
+        )}
         <div>
           <label className="label" htmlFor="description">説明</label>
           <textarea id="description" name="description" className="input" rows={4} />

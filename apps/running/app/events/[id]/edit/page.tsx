@@ -28,7 +28,7 @@ export default async function EditEventPage({
     .schema(SCHEMA)
     .from("events")
     .select(
-      "id, organizer_id, title, description, prefecture, city, event_start_at, application_deadline, capacity, participation_fee, beginner_allowed, approval_type, gender_condition, skill_level, condition_prefectures, condition_sport_ids, target_pace, deleted_at",
+      "id, organizer_id, sport_id, title, description, prefecture, city, event_start_at, application_deadline, capacity, participation_fee, beginner_allowed, approval_type, gender_condition, skill_level, condition_prefectures, condition_sport_ids, target_pace, deleted_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -49,6 +49,7 @@ export default async function EditEventPage({
 
   const event: EventInit = {
     id: ev.id,
+    sport_id: ev.sport_id ?? "",
     title: ev.title,
     description: ev.description,
     prefecture: ev.prefecture,

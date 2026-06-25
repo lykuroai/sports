@@ -2,7 +2,7 @@ export { sendEmail } from "./email";
 export { sendVerification, checkVerification, lookupPhone } from "./sms";
 export type { PhoneLookupResult } from "./sms";
 export { verifyTurnstile } from "./captcha";
-export { notifyUser } from "./notify";
+export { notifyUser, notifyNewRecruitmentSubscribers } from "./notify";
 export { makeEventRepo, isApplyable, decorateEvents } from "./events";
 export type { DecoratedEvent, EventFilter } from "./events";
 export {

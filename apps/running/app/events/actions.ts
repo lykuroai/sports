@@ -13,6 +13,8 @@ const SPORT_LABEL = "ランニング";
 
 const createSchema = z.object({
   title: z.string().min(1, "タイトルを入力してください").max(120),
+  // 募集の種目（core.sports.id）。新規募集メールの種目別配信のターゲティングに使う。
+  sport_id: z.string().uuid().optional().or(z.literal("")),
   description: z.string().max(4000).optional(),
   // 開催施設（任意）。空文字は未選択として扱う。
   facility_id: z.string().uuid().optional().or(z.literal("")),
@@ -51,6 +53,7 @@ export async function createEvent(_prev: CreateState, formData: FormData): Promi
 
   const result = await createSportEvent(supabase, SCHEMA, {
     organizer_id: user.id,
+    sport_id: v.sport_id || null,
     title: v.title,
     description: v.description || null,
     facility_id: v.facility_id || null,
@@ -98,6 +101,7 @@ export async function updateEvent(_prev: CreateState, formData: FormData): Promi
     .from("events")
     .update({
       title: v.title,
+      sport_id: v.sport_id || null,
       description: v.description || null,
       prefecture: v.prefecture || null,
       city: v.city || null,

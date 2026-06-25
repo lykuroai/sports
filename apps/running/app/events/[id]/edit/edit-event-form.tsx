@@ -9,6 +9,9 @@ const initial: CreateState = { error: null };
 
 const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "";
 
+// ランニングアプリで募集の種目として選べるカテゴリー（core.sports.slug）。new-event-form と対。
+const RUNNING_SPORT_SLUGS = ["running", "jogging", "marathon", "walking"];
+
 const GENDER_OPTIONS = [
   { value: "unspecified", label: "指定なし" },
   { value: "male", label: "男性のみ" },
@@ -23,6 +26,7 @@ const SKILL_OPTIONS = [
 
 export interface EventInit {
   id: string;
+  sport_id: string;
   title: string;
   description: string | null;
   prefecture: string | null;
@@ -54,6 +58,8 @@ export default function EditEventForm({
   deleteError?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateEvent, initial);
+  const sportOptions = sports.filter((s) => RUNNING_SPORT_SLUGS.includes(s.slug));
+  const defaultSportId = event.sport_id || sportOptions.find((s) => s.slug === "running")?.id || sportOptions[0]?.id || "";
   const prefSet = new Set(event.condition_prefectures);
   const sportSet = new Set(event.condition_sport_ids);
 
@@ -69,6 +75,17 @@ export default function EditEventForm({
           <label className="label" htmlFor="title">タイトル</label>
           <input id="title" name="title" className="input" required maxLength={120} defaultValue={event.title} />
         </div>
+        {sportOptions.length > 0 && (
+          <div>
+            <label className="label" htmlFor="sport_id">種目</label>
+            <select id="sport_id" name="sport_id" className="input" defaultValue={defaultSportId}>
+              {sportOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <p className="mt-1 text-xs text-slate-400">
+              この種目の新着募集メールを希望している利用者に通知されます。
+            </p>
+          </div>
+        )}
         <div>
           <label className="label" htmlFor="description">説明</label>
           <textarea id="description" name="description" className="input" rows={4} defaultValue={event.description ?? ""} />
