@@ -75,15 +75,26 @@ export function decodeBytes(buf: ArrayBuffer): string {
 
 // ---- 列名の柔軟マッチ ----
 const norm = (s: string) => s.replace(/\s|　/g, "").toLowerCase();
+// 「全国地方公共団体コード」「市区町村コード」等のコード列を都道府県/市区町村名と
+// 誤認しないよう除外する。完全一致を優先し、無ければ部分一致（コード列は除く）。
 function findCol(headers: string[], candidates: string[]): number {
   const H = headers.map(norm);
+  const isCode = (h: string) => h.includes("コード") || h.includes("code");
   for (const cand of candidates) {
     const c = norm(cand);
-    const i = H.findIndex((h) => h === c || h.includes(c));
+    const i = H.findIndex((h) => h === c);
+    if (i >= 0) return i;
+  }
+  for (const cand of candidates) {
+    const c = norm(cand);
+    const i = H.findIndex((h) => h.includes(c) && !isCode(h));
     if (i >= 0) return i;
   }
   return -1;
 }
+
+// 全国地方公共団体コード等（数字のみ）を都道府県/市区町村名として扱わない。
+const nameOrNull = (v: string | null): string | null => (v && /^\d+$/.test(v) ? null : v);
 
 // 施設名/種別から代表 sport slug を推定（一致しなければ null）。
 function inferSport(text: string): string | null {
@@ -141,8 +152,8 @@ export function normalizeMunicipalCsv(text: string, prefDefault: string | null):
       facilityType: facilityType ?? "公共施設",
       sportSlug: inferSport(`${name} ${facilityType ?? ""}`),
       lat, lng,
-      prefecture: (idx.pref >= 0 ? toStr(cells[idx.pref]) : null) ?? prefDefault,
-      city: idx.city >= 0 ? toStr(cells[idx.city]) : null,
+      prefecture: nameOrNull(idx.pref >= 0 ? toStr(cells[idx.pref]) : null) ?? prefDefault,
+      city: nameOrNull(idx.city >= 0 ? toStr(cells[idx.city]) : null),
       address,
       raw,
     });
