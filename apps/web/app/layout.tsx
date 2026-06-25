@@ -29,7 +29,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           nav={
             <>
               <Link href="/recruitments" className="hover:text-brand">募集を探す</Link>
-              <Link href="/facilities" className="hover:text-brand">仲間を募集する</Link>
+              <Link href="/recruitments/new" className="hover:text-brand">仲間を募集する</Link>
               <Link href="/facilities" className="hover:text-brand">施設</Link>
               <Link href="/events" className="hover:text-brand">イベント</Link>
             </>
