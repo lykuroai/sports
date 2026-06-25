@@ -46,7 +46,7 @@ export default async function FacilitySearch({
     let query = supabase
       .schema(SCHEMA.facility)
       .from("facilities")
-      .select("id, name, facility_type, prefecture, city, address, facility_sports!inner(sport_id)", { count: "exact" })
+      .select("id, name, facility_type, description, prefecture, city, address, facility_sports!inner(sport_id)", { count: "exact" })
       // 自動取得（OSM等）の未承認施設は公開前承認まで一覧に出さない（仕様 §21.2）。
       .eq("status", "verified")
       .in("facility_sports.sport_id", sportIds)
@@ -61,6 +61,20 @@ export default async function FacilitySearch({
     total = count ?? 0;
   }
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+
+  // 表示中の施設のサムネイル（display_order 最小の1枚）をまとめて取得。
+  const imageMap = new Map<string, string>();
+  if (facilities.length > 0) {
+    const { data: imgRows } = await supabase
+      .schema(SCHEMA.facility)
+      .from("facility_images")
+      .select("facility_id, url, display_order")
+      .in("facility_id", facilities.map((f) => f.id))
+      .order("display_order", { ascending: true });
+    for (const row of (imgRows ?? []) as { facility_id: string; url: string }[]) {
+      if (row.url && !imageMap.has(row.facility_id)) imageMap.set(row.facility_id, row.url);
+    }
+  }
 
   const qs = (p: number) => {
     const params = new URLSearchParams();
@@ -120,12 +134,19 @@ export default async function FacilitySearch({
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {facilities.map((f) => (
-            <Link key={f.id} href={`/facilities/${f.id}${forCreate ? "?purpose=create_recruitment" : ""}`} className="card p-4 hover:shadow">
-              <div className="font-medium">{f.name}</div>
-              <div className="text-sm text-slate-500">
-                {f.facility_type ? `${f.facility_type}・` : ""}{f.prefecture}{f.city}{f.address}
+            <Link key={f.id} href={`/facilities/${f.id}${forCreate ? "?purpose=create_recruitment" : ""}`} className="card overflow-hidden p-0 hover:shadow">
+              {imageMap.has(f.id) && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={imageMap.get(f.id)} alt={f.name} className="h-40 w-full object-cover" />
+              )}
+              <div className="p-4">
+                <div className="font-medium">{f.name}</div>
+                <div className="text-sm text-slate-500">
+                  {f.facility_type ? `${f.facility_type}・` : ""}{f.prefecture}{f.city}{f.address}
+                </div>
+                {f.description && <p className="mt-1 line-clamp-2 text-sm text-slate-600">{f.description}</p>}
+                {forCreate && <div className="mt-2 text-sm font-medium text-sky-700">この施設で募集を作成 →</div>}
               </div>
-              {forCreate && <div className="mt-2 text-sm font-medium text-sky-700">この施設で募集を作成 →</div>}
             </Link>
           ))}
         </div>

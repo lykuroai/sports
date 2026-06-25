@@ -17,7 +17,7 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
   if (!facility) notFound();
   const f = facility as Facility;
 
-  const [{ data: featureRows }, { data: reviews }, { data: sourceRows }] = await Promise.all([
+  const [{ data: featureRows }, { data: reviews }, { data: sourceRows }, { data: imageRows }] = await Promise.all([
     supabase.schema(SCHEMA.facility).from("facility_features").select("feature_key, value").eq("facility_id", id),
     supabase
       .schema(SCHEMA.facility)
@@ -27,7 +27,10 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
       .order("created_at", { ascending: false })
       .limit(50),
     supabase.schema(SCHEMA.facility).from("facility_sources").select("source_type, source_url, source_name, license").eq("facility_id", id),
+    supabase.schema(SCHEMA.facility).from("facility_images").select("url, display_order").eq("facility_id", id).order("display_order", { ascending: true }),
   ]);
+
+  const images = ((imageRows ?? []) as { url: string; display_order: number }[]).filter((i) => i.url);
 
   type Source = { source_type: string; source_url: string | null; source_name: string | null; license: string | null };
   const sources = (sourceRows ?? []) as Source[];
@@ -67,7 +70,27 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
         )}
       </header>
 
-      {f.description && <p className="whitespace-pre-wrap text-sm text-slate-700">{f.description}</p>}
+      {images.length > 0 && (
+        <div className="space-y-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={images[0].url} alt={f.name} className="h-64 w-full rounded-lg border border-slate-200 object-cover" />
+          {images.length > 1 && (
+            <div className="grid grid-cols-4 gap-2">
+              {images.slice(1).map((img) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={img.url} src={img.url} alt={f.name} className="h-20 w-full rounded-md border border-slate-200 object-cover" />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {f.description && (
+        <section className="space-y-1">
+          <h2 className="font-semibold">概要</h2>
+          <p className="whitespace-pre-wrap text-sm text-slate-700">{f.description}</p>
+        </section>
+      )}
 
       {(featureRows ?? []).length > 0 && (
         <div className="flex flex-wrap gap-2">
