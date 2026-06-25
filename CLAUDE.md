@@ -49,8 +49,16 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   施設一覧は `status='verified'` のみ表示（公開前承認）。env は `OSM_FETCH_AREA`/`OSM_FETCH_LIMIT`/
   `OSM_USER_AGENT`/`CRON_SECRET`（`.env.production.example` 参照）。
 - **承認UI 済**: 管理画面（`apps/admin`）に「取り込み施設の承認」（`/facilities`。未承認一覧＋出所＋
-  重複候補表示＋承認(verified)/却下(rejected)）と「取り込みバッチ履歴」（`/batch-runs`）。承認は
-  `reviewImportedFacility`（サービスロール＋`audit_logs`）。ダッシュボードに未承認件数カードを追加。
+  重複候補表示＋承認(verified)/却下(rejected)＋**重複統合(merge)**＋**県フィルタ/ページング/一括承認**）と
+  「取り込みバッチ履歴」（`/batch-runs`）。アクション: `reviewImportedFacility`/`bulkReviewImportedFacilities`/
+  `mergeImportedFacility`（いずれもサービスロール＋`audit_logs`）。merge は出所・種目を既存施設へ移し
+  取り込み側を削除（自動統合せず管理者が実行）。ダッシュボードに未承認件数カードを追加。
+- **自治体オープンデータ取り込み 済**: `apps/web/lib/municipal-sync.ts` ＋
+  `/api/cron/sync-municipal-facilities?url=&source=&pref=&license=`。CKAN/CSV を取得し列名柔軟推定・
+  文字コード(UTF-8→Shift_JIS)自動判定・RFC4180 パーサで正規化→重複判定→未承認登録、
+  `facility_sources(source_type='municipal_open_data')` に出所URL/ライセンス/raw 保存。出所ごとに
+  ライセンス・列が異なるため URL 単位で叩く（BODIK CKAN 例で検証済み）。コード列(全国地方公共団体
+  コード等)を県名と誤認しないこと。上限 `MUNICIPAL_FETCH_LIMIT`。
 - **cron スケジューラ 済**: docker compose の `scheduler` サービス（`docker/scheduler/`。alpine+busybox
   crond）。起動時に `CRON_SECRET`（env_file）を埋め込んだ crontab を生成し、内部ネットワークの
   `http://web:3000/api/cron/*` を叩く（TLS/Caddy 非経由）。OSM=毎週月 03:10 JST、races=毎日 03:30 JST。
