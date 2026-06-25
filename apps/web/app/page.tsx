@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
-import { PREFECTURES } from "@spotomo/shared-types";
 import { fetchEvents } from "../lib/events";
 import heroImage from "../public/park-hero.webp";
 
@@ -24,7 +23,6 @@ const CATEGORIES: { slug: string; name: string; icon: string; desc: string; href
   { slug: "leisure", name: "レジャー", icon: "🎳", desc: "ボウリング・ダーツ・カラオケ", href: "/sports/leisure" },
   { slug: "all", name: "すべて", icon: "🔎", desc: "全カテゴリの施設を探す", href: "/facilities" },
 ];
-const CATEGORY_OPTIONS = CATEGORIES.filter((c) => c.slug !== "all");
 
 // サービスの特徴（§15）。
 const FEATURES: { title: string; body: string }[] = [
@@ -66,20 +64,6 @@ export default async function HomePage() {
   ];
   const nf = new Intl.NumberFormat("ja-JP");
 
-  // 目的別検索フォーム（分類+地域）の共通 select。
-  const categorySelect = (
-    <select name="category" className="input w-full sm:w-44" defaultValue="">
-      <option value="">分類を選択</option>
-      {CATEGORY_OPTIONS.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-    </select>
-  );
-  const areaSelect = (
-    <select name="area" className="input w-full sm:w-40" defaultValue="">
-      <option value="">地域を選択</option>
-      {PREFECTURES.map((p) => <option key={p} value={p}>{p}</option>)}
-    </select>
-  );
-
   return (
     <div className="space-y-12">
       {/* 1. ヒーロー */}
@@ -107,29 +91,7 @@ export default async function HomePage() {
         ))}
       </section>
 
-      {/* 2. 目的別検索エリア（§10。募集に参加する / 募集を作成する） */}
-      <section>
-        <h2 className="mb-4 text-2xl font-bold text-slate-900">目的から探す</h2>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* 募集に参加する → recruitments を分類+地域で検索 */}
-          <form action="/recruitments" className="card space-y-3 border-t-4 border-emerald-500 p-5">
-            <div className="text-lg font-bold text-slate-900">募集に参加する</div>
-            <p className="text-sm text-slate-500">参加できる仲間募集を分類と地域から探します。</p>
-            <div className="flex flex-col gap-2 sm:flex-row">{categorySelect}{areaSelect}</div>
-            <button className="btn-primary w-full" type="submit">募集を検索する</button>
-          </form>
-          {/* 募集を作成する → facilities を分類+地域で検索 */}
-          <form action="/facilities" className="card space-y-3 border-t-4 border-sky-500 p-5">
-            <div className="text-lg font-bold text-slate-900">募集を作成する</div>
-            <p className="text-sm text-slate-500">募集を開催する施設を分類と地域から探します。</p>
-            <div className="flex flex-col gap-2 sm:flex-row">{categorySelect}{areaSelect}</div>
-            <input type="hidden" name="purpose" value="create_recruitment" />
-            <button className="btn-primary w-full bg-sky-600 hover:bg-sky-700" type="submit">施設を検索する</button>
-          </form>
-        </div>
-      </section>
-
-      {/* 3. カテゴリ一覧（§11） */}
+      {/* カテゴリ一覧（§11） */}
       <section>
         <h2 className="mb-4 text-2xl font-bold text-slate-900">種目から探す</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
