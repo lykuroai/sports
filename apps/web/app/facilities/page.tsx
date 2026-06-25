@@ -21,9 +21,9 @@ export default async function FacilitySearch({
   let query = supabase
     .schema(SCHEMA.facility)
     .from("facilities")
+    .select("id, name, facility_type, prefecture, city, address", { count: "exact" })
     // 自動取得（OSM等）の未承認施設は公開前承認まで一覧に出さない（仕様 §21.2）。
     .eq("status", "verified")
-    .select("id, name, facility_type, prefecture, city, address", { count: "exact" })
     .order("prefecture", { ascending: true })
     .order("name", { ascending: true })
     .range(from, from + PER_PAGE - 1);
