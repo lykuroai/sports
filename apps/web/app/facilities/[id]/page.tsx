@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createServerClient, SCHEMA } from "@spotomo/auth-client";
+import { createServerClient, SCHEMA, loginUrlFor } from "@spotomo/auth-client";
 import { formatDateTime } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
+import { submitFacilityReview } from "./review-actions";
 
 export default async function FacilityDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: facility } = await supabase
     .schema(SCHEMA.facility)
@@ -129,6 +133,23 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
 
       <section className="space-y-3">
         <h2 className="font-semibold">レビュー</h2>
+        {user ? (
+          <form action={submitFacilityReview} className="card space-y-2 p-4">
+            <input type="hidden" name="facility_id" value={f.id} />
+            <div>
+              <label className="label" htmlFor="rating">評価</label>
+              <select id="rating" name="rating" className="input max-w-[8rem]" defaultValue="5">
+                {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <textarea name="comment" className="input" rows={2} placeholder="コメント（任意）" />
+            <button className="btn-primary" type="submit">レビューを投稿</button>
+          </form>
+        ) : (
+          <p className="text-sm text-slate-500">
+            レビューを投稿するには<Link href={await loginUrlFor(`/facilities/${f.id}`)} className="text-brand hover:underline">ログイン</Link>してください。
+          </p>
+        )}
         {reviewList.length === 0 ? (
           <p className="text-sm text-slate-400">まだレビューはありません。</p>
         ) : (
