@@ -81,7 +81,11 @@ export async function requireAdmin(): Promise<User> {
   const user = await getAdminUser();
   if (!user) {
     const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-    redirect(site ? `${site}/login` : "/login");
+    const login = site ? `${site}/login` : "/login";
+    // ログイン後に admin（別サブドメイン）へ戻す。admin の公開オリジンを redirect に載せる。
+    // web の resolvePostLogin は同一 apex（lykuro.ai）の絶対URLを許可するため戻れる。
+    const back = await selfOrigin();
+    redirect(`${login}?redirect=${encodeURIComponent(back)}`);
   }
   return user;
 }

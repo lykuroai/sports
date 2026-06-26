@@ -40,16 +40,18 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
 - **【現在の構成】アプリは `apps/web`（統合サイト）と `apps/admin`（管理画面）の2つのみ**。
   旧 `apps/account`/`apps/facility`/`apps/golf`/`apps/outdoor`/`apps/running` は web へ集約し**撤去済み**。
   公開サブドメインは **`spotomo.lykuro.ai`（web）/ `admin-spotomo.lykuro.ai`（admin）の2本**。
-- **【単一オリジン・ログイン】絶対URLログイン誘導は廃止**。ログイン・課金・公開プロフィール・通知設定・
-  本人確認・退会は web 自身の相対パス（`/login`・`/owner/login` 等）で完結。`NEXT_PUBLIC_ACCOUNT_URL`/
-  `FACILITY_URL` は**未設定（空）が前提**。auth-client は空なら `loginUrl()`→相対 `/login`、proxy も
-  自オリジン `/login` に倒れる。OAuth/メール確認/LINE/Stripe のコールバックは絶対URLが要るため
+- **【単一オリジン・ログイン】ログインは web 自身（spotomo）で完結**。ログイン・課金・公開プロフィール・
+  通知設定・本人確認・退会は web 内に存在。`NEXT_PUBLIC_ACCOUNT_URL`/`FACILITY_URL` は **web のオリジン
+  （=`SITE_URL`=`https://spotomo.lykuro.ai`）を設定**する（空でも web 内ログインは動くが、admin から
+  ログイン後に admin へ戻すには ACCOUNT_URL を spotomo にしておく＝`resolvePostLogin` が同一 apex の
+  絶対URLを許可するため）。OAuth/メール確認/LINE/Stripe のコールバックは絶対URLが要るため
   `selfOrigin()`/`requestOrigin()`（X-Forwarded-Host 由来）で組み立てる。
-- **【重要・COOKIE_DOMAIN は維持】**`admin`(admin-spotomo) は `web`(spotomo) と**別サブドメイン**で
+- **【重要・COOKIE_DOMAIN は必須】**`admin`(admin-spotomo) は `web`(spotomo) と**別サブドメイン**で
   Supabase セッション Cookie を共有するため **`NEXT_PUBLIC_COOKIE_DOMAIN=.lykuro.ai` が必須**。
-  外すと admin がログイン（web で確立したセッション）を認識できず `requireAdmin()` が無限ループする。
+  外すと admin がログイン（web で確立したセッション）を認識できず `requireAdmin()` がループする。
   管理者は web の `/login` でログイン → 共有 Cookie で admin-spotomo にもセッションが効く。
-  `requireAdmin()` は未ログイン/非管理者を web の `${SITE_URL}/login` へ逃がす（admin "/" へ戻すとループ）。
+  `requireAdmin()` は未ログイン/非管理者を `${SITE_URL}/login?redirect=<admin の自オリジン>` へ逃がし、
+  ログイン後 admin へ戻す（admin "/" へ戻すとループするため必ず web ログインを経由）。
 - **Phase 1 済**: 旧 `apps/running/app/*` を `apps/web/app/*` へ取り込み。種目導線は全て web 内パス
   （running=`/running`、golf/outdoor=`/sports/{code}`→募集は `/recruitments?category=`）。
 - **【重要・URL体系】画面遷移図(docs/仕様変更/spotomo_top_screen_transition_diagram)に準拠して
