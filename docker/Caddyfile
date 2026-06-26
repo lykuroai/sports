@@ -13,34 +13,11 @@
 	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.nopass.pem
 }
 
+# 統合サイト化により公開は web（統合サイト）と admin（管理）の2本のみ。
+# account/facility/golf/outdoor/running は web へ集約・撤去済み。
 spotomo.lykuro.ai {
 	import realtls
 	reverse_proxy web:3000
-}
-
-account-spotomo.lykuro.ai {
-	import realtls
-	reverse_proxy account:3000
-}
-
-golf-spotomo.lykuro.ai {
-	import realtls
-	reverse_proxy golf:3000
-}
-
-running-spotomo.lykuro.ai {
-	import realtls
-	reverse_proxy running:3000
-}
-
-outdoor-spotomo.lykuro.ai {
-	import realtls
-	reverse_proxy outdoor:3000
-}
-
-facility-spotomo.lykuro.ai {
-	import realtls
-	reverse_proxy facility:3000
 }
 
 admin-spotomo.lykuro.ai {

@@ -24,6 +24,22 @@ export function loginUrl(redirectTo?: string): string {
   return `${base}${path}${qs}`;
 }
 
+/**
+ * Route Handler のリクエストから公開オリジンを組み立てる。リバースプロキシ（Caddy）越しでは
+ * request.url の origin が内部アドレス（0.0.0.0:3000）になるため、X-Forwarded-Host/Proto を
+ * 優先する。単一オリジン運用（ACCOUNT_URL 未設定）で OAuth/メール確認のコールバックを
+ * 自オリジンへ正しく戻すために使う。
+ */
+export function requestOrigin(request: Request): string {
+  const h = request.headers;
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (host) {
+    const proto = h.get("x-forwarded-proto") ?? "https";
+    return `${proto}://${host}`;
+  }
+  return new URL(request.url).origin;
+}
+
 /** apex（登録ドメイン）を粗く取り出す（例: golf-spotomo.lykuro.ai → lykuro.ai）。 */
 function apex(host: string): string {
   return host.split(".").slice(-2).join(".");

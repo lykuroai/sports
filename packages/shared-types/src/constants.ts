@@ -125,9 +125,9 @@ export const GENDER_CONDITION_OPTIONS: { value: Gender; label: string }[] = [
   { value: "female", label: "女性のみ" },
 ];
 
-/** 種目ドメインのメタ情報（サブドメイン・表示名・アイコン）。 */
+/** 種目導線のメタ情報（統合サイト化により全種目 web 内パスへ集約）。 */
 export const SPORT_DOMAINS = [
-  { slug: "golf", name: "ゴルフ", host: "golf-spotomo.lykuro.ai" },
-  { slug: "running", name: "ランニング", host: "running-spotomo.lykuro.ai" },
-  { slug: "outdoor", name: "アウトドア", host: "outdoor-spotomo.lykuro.ai" },
+  { slug: "golf", name: "ゴルフ", href: "/sports/golf" },
+  { slug: "running", name: "ランニング", href: "/running" },
+  { slug: "outdoor", name: "アウトドア", href: "/sports/outdoor" },
 ] as const;

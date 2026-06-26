@@ -1,5 +1,6 @@
-# 自前サーバ / EC2 / 開発機 共通。7 app + Caddy リバースプロキシ。
-# 本番・開発とも同一構成（ローカル専用オーバーライドは廃止）。
+# 自前サーバ / EC2 / 開発機 共通。統合サイト（web）+ 管理(admin) + Caddy リバースプロキシ。
+# 統合サイト化により account/facility/golf/outdoor/running は web へ集約・撤去済み。
+# 公開は spotomo.lykuro.ai（web）と admin-spotomo.lykuro.ai（admin）の2本のみ（単一オリジン）。
 # 使い方:
 #   cp .env.production.example .env.production   # シークレット等を設定
 #   docker compose up -d --build
@@ -11,13 +12,12 @@
 # クライアント/サーバ共通の公開値。
 #   * build.args  … NEXT_PUBLIC_* をクライアントバンドルへ焼き込み（要 --build）
 #   * environment … サーバ側の実行時値（env_file の値を上書きし齟齬を防ぐ）
+# 単一オリジン化: ACCOUNT_URL/FACILITY_URL/COOKIE_DOMAIN は撤廃（ログイン等は web 自身の
+# 相対パス /login・/owner/login で完結。Cookie は host-only）。
 x-public: &public
   NEXT_PUBLIC_SUPABASE_URL: https://lkdltkkggjmsyodimdoy.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_acZRB7VYWjvTuJHrbe-5mA_NKg7G36i
   NEXT_PUBLIC_SITE_URL: https://spotomo.lykuro.ai
-  NEXT_PUBLIC_ACCOUNT_URL: https://account-spotomo.lykuro.ai
-  NEXT_PUBLIC_FACILITY_URL: https://facility-spotomo.lykuro.ai
-  NEXT_PUBLIC_COOKIE_DOMAIN: .lykuro.ai
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: 0x4AAAAAADoFYwWljS9AE7a0
 
 x-app-common: &app-common
@@ -35,41 +35,6 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       args: { APP: web, <<: *public }
-
-  account:
-    <<: *app-common
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args: { APP: account, <<: *public }
-
-  golf:
-    <<: *app-common
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args: { APP: golf, <<: *public }
-
-  running:
-    <<: *app-common
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args: { APP: running, <<: *public }
-
-  outdoor:
-    <<: *app-common
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args: { APP: outdoor, <<: *public }
-
-  facility:
-    <<: *app-common
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args: { APP: facility, <<: *public }
 
   admin:
     <<: *app-common
@@ -105,11 +70,6 @@ services:
       - caddy_config:/config
     depends_on:
       - web
-      - account
-      - golf
-      - running
-      - outdoor
-      - facility
       - admin
 
 volumes:

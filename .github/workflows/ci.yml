@@ -34,7 +34,6 @@ jobs:
         run: pnpm build
         env:
           # ビルド時に参照される公開 env（ダミーで型/ビルドを通す。実値はデプロイ先で設定）
+          # 統合サイト化により単一オリジン運用（ACCOUNT_URL/FACILITY_URL は不要）。
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
-          NEXT_PUBLIC_ACCOUNT_URL: https://account-spotomo.lykuro.ai
-          NEXT_PUBLIC_FACILITY_URL: https://facility-spotomo.lykuro.ai

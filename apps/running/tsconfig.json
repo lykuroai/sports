@@ -1,6 +1,0 @@
-{
-  "extends": "@spotomo/config/tsconfig.nextjs.json",
-  "compilerOptions": {
-    "paths": { "@/*": ["./*"] }
-  }
-}

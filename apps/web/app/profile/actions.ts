@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createServerClient, createAdminClient, resolvePostLogin, SCHEMA } from "@spotomo/auth-client";
+import { createServerClient, createAdminClient, resolvePostLogin, selfOrigin, SCHEMA } from "@spotomo/auth-client";
 import { syncUserSports, sendVerification, checkVerification, verifyTurnstile, lookupPhone, type PhoneLookupResult } from "@spotomo/domain-common";
 
 const VALID_LEVELS = new Set(["beginner", "intermediate", "advanced"]);
@@ -95,7 +95,7 @@ const emailSchema = z.string().email("メールアドレスの形式が正しく
  * メールアドレス変更。新アドレスへ確認リンクを送る（supabase.auth.updateUser）。
  * リンク確定までは変更は未反映。確定時に auth.users が更新され、0015 トリガーが
  * account.users.email / email_verified_at を同期する。確認リンクの PKCE 交換は
- * account の /auth/callback で行うため、emailRedirectTo は ACCOUNT_URL 配下。
+ * web 自身の /auth/callback で行う（単一オリジン。Supabase は絶対URLを要求するため selfOrigin）。
  */
 export async function requestEmailChange(
   _prev: EmailState,
@@ -111,7 +111,7 @@ export async function requestEmailChange(
   if (!parsed.success) return { error: parsed.error.errors[0].message };
   if (parsed.data === user.email) return { error: "現在のメールアドレスと同じです。" };
 
-  const emailRedirectTo = `${process.env.NEXT_PUBLIC_ACCOUNT_URL ?? ""}/auth/callback`;
+  const emailRedirectTo = `${await selfOrigin()}/auth/callback`;
   const { error } = await supabase.auth.updateUser(
     { email: parsed.data },
     { emailRedirectTo },

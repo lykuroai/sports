@@ -18,15 +18,9 @@ export default async function SearchDispatch({
   if (target === "facility") redirect(`/facilities${suffix}`);
   if (target === "event") redirect(`/events${suffix}`);
 
-  // 仲間募集（既定）。カテゴリ別の入口へ。running は統合サイト内、golf/outdoor は
-  // 移行期サブドメイン、未実装カテゴリは共通施設DBへフォールバック。
+  // 仲間募集（既定）。統合サイト化により全種目を web 内の横断募集一覧へ集約。
+  // running は専用トップ、その他カテゴリは category で絞った募集一覧へ向ける。
   switch (sp.category) {
-    case "golf":
-      redirect("https://golf-spotomo.lykuro.ai");
-      break;
-    case "outdoor":
-      redirect("https://outdoor-spotomo.lykuro.ai");
-      break;
     case "running":
       redirect(`/running${suffix}`);
       break;
@@ -35,8 +29,11 @@ export default async function SearchDispatch({
       // カテゴリ未指定の仲間募集検索は横断の募集一覧へ。
       redirect(`/recruitments${suffix}`);
       break;
-    default:
-      // ball-sports / fitness / water-sports / winter-sports / leisure は未実装のため施設検索へ
-      redirect(`/facilities${suffix}`);
+    default: {
+      // golf / outdoor / ball-sports / fitness 等はカテゴリで絞った募集一覧へ。
+      const catParams = new URLSearchParams(qs);
+      catParams.set("category", sp.category);
+      redirect(`/recruitments?${catParams.toString()}`);
+    }
   }
 }

@@ -92,7 +92,7 @@ export function SiteHeader({
       <nav className="flex items-center gap-3 text-sm">
         {nav ??
           SPORT_DOMAINS.map((d) => (
-            <a key={d.slug} href={`//${d.host}`} className="hover:text-brand">
+            <a key={d.slug} href={d.href} className="hover:text-brand">
               {d.name}
             </a>
           ))}

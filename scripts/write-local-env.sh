@@ -16,22 +16,16 @@ if [ -z "${API_URL}" ] || [ -z "${ANON}" ]; then
   exit 1
 fi
 
-for a in web account golf running outdoor facility admin; do
+# 統合サイト化により web/admin のみ。単一オリジン運用のため ACCOUNT_URL/FACILITY_URL は空。
+for a in web admin; do
   cat > "apps/$a/.env.local" <<EOF
 # 自動生成（make env-local）。ローカル Supabase 用。コミットしないこと。
 NEXT_PUBLIC_SUPABASE_URL=${API_URL}
 NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}
 SUPABASE_SERVICE_ROLE_KEY=${SVC}
-NEXT_PUBLIC_ACCOUNT_URL=http://localhost:3001
-NEXT_PUBLIC_FACILITY_URL=http://localhost:3005
+NEXT_PUBLIC_ACCOUNT_URL=
+NEXT_PUBLIC_FACILITY_URL=
 EMAIL_FROM=no-reply@example.com
-# 楽天GORA API（ゴルフ場検索・プラン検索。サーバー側のみで使用しフロントに公開しない）。
-# 未設定なら golf アプリのゴルフ場検索は「未設定」と表示され API は呼ばれない。
-RAKUTEN_APPLICATION_ID=${RAKUTEN_APPLICATION_ID:-}
-RAKUTEN_ACCESS_KEY=${RAKUTEN_ACCESS_KEY:-}
-RAKUTEN_AFFILIATE_ID=${RAKUTEN_AFFILIATE_ID:-}
-RAKUTEN_GORA_API_BASE_URL=${RAKUTEN_GORA_API_BASE_URL:-https://openapi.rakuten.co.jp/engine/api}
-RAKUTEN_GORA_REFERER=${RAKUTEN_GORA_REFERER:-}
 EOF
 done
 echo "apps/*/.env.local を生成しました（API: ${API_URL}）"
