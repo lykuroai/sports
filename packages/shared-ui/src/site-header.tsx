@@ -43,6 +43,11 @@ export interface SiteHeaderProps {
    * 総合ポータルのように共通プロフィールへ直接飛ばす場合は "プロフィール" 等に差し替える。
    */
   accountLabel?: string;
+  /**
+   * 右側のナビ（種目スイッチャ／アカウント・ログイン／通知など）を一切表示しない。
+   * 管理画面（admin）のように利用者向け導線が不要なアプリで使う。既定 false。
+   */
+  minimal?: boolean;
 }
 
 /**
@@ -61,6 +66,7 @@ export function SiteHeader({
   loginHref,
   actions,
   accountLabel = "アカウント",
+  minimal = false,
 }: SiteHeaderProps) {
   // 未ログイン（loggedIn === false）かつログイン先がある場合は、アカウント／マイページの
   // 代わりに「ログイン（新規登録）」を表示する。
@@ -89,6 +95,7 @@ export function SiteHeader({
         {appName && <span className="text-sm text-gray-500">{appName}</span>}
       </div>
 
+      {minimal ? null : (
       <nav className="flex items-center gap-3 text-sm">
         {nav ??
           SPORT_DOMAINS.map((d) => (
@@ -119,6 +126,7 @@ export function SiteHeader({
           </>
         )}
       </nav>
+      )}
     </header>
   );
 }
