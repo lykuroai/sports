@@ -12,6 +12,7 @@ const GENERAL_PREFIXES = [
   "/notifications",
   "/withdraw",
   "/verification",
+  "/facilities/register",
 ];
 // 施設運営者の専用領域（未ログインは運営者ログイン /owner/login へ誘導）。
 const OWNER_PREFIXES = ["/owner", "/facilities/submit"];

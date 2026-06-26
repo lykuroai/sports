@@ -1,12 +1,11 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createServerClient, SCHEMA } from "@spotomo/auth-client";
+import { createServerClient, requireGeneralAccount, SCHEMA } from "@spotomo/auth-client";
 import type { SubmitState } from "../_components/types";
 
-// submitted_data のキーは facility.facilities のカラム名に一致させること。
-// 管理者承認時に reviewFacilitySubmission がそのまま facilities へ insert/update する。
+// 一般ユーザによる施設の新規登録申請。submitted_data のキーは facility.facilities の
+// カラム名に一致させること（管理者承認時に reviewFacilitySubmission がそのまま insert する）。
 const schema = z.object({
   name: z.string().min(1, "施設名を入力してください").max(200),
   facility_type: z.string().max(60).optional(),
@@ -16,15 +15,13 @@ const schema = z.object({
   source_url: z.string().url("URL の形式が正しくありません").optional().or(z.literal("")),
 });
 
-export async function submitFacility(
+export async function registerFacility(
   _prev: SubmitState,
   formData: FormData,
 ): Promise<SubmitState> {
+  // 一般会員のみ（未ログインは /login?redirect=、運営者は運営者領域へ誘導）。
+  const user = await requireGeneralAccount("/facilities/register");
   const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login?redirect=/facilities/submit");
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.errors[0].message };

@@ -122,13 +122,17 @@ export default async function FacilitySearch({
         </div>
       ) : (
       <>
-      <p className="text-sm text-slate-500">{total}件中 {total === 0 ? 0 : from + 1}〜{Math.min(from + PER_PAGE, total)}件を表示</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-slate-500">{total}件中 {total === 0 ? 0 : from + 1}〜{Math.min(from + PER_PAGE, total)}件を表示</p>
+        <Link href="/facilities/register" className="text-sm text-brand hover:underline">施設が見つからない場合は登録する →</Link>
+      </div>
 
       {facilities.length === 0 ? (
         <div className="card space-y-3 p-6 text-center">
           <p className="text-slate-600">該当する施設が見つかりません。条件を変更するか、施設を登録して募集を作成できます。</p>
           <div className="flex flex-wrap justify-center gap-2">
             <Link href="/facilities" className="btn-outline">条件を変更する</Link>
+            <Link href="/facilities/register" className="btn-primary">施設を登録する</Link>
           </div>
         </div>
       ) : (

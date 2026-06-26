@@ -1,4 +1,5 @@
-import { FacilitySubmitForm } from "./submit-form";
+import { FacilitySubmitForm } from "../_components/facility-submit-form";
+import { submitFacility } from "./actions";
 
 export default function SubmitPage() {
   return (
@@ -9,7 +10,7 @@ export default function SubmitPage() {
         （facility.facility_submissions）。重複は自動統合せず管理者が確認します。
         根拠 URL の添付を推奨します。
       </p>
-      <FacilitySubmitForm />
+      <FacilitySubmitForm action={submitFacility} />
     </div>
   );
 }

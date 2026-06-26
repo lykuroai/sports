@@ -2,17 +2,23 @@
 
 import { useActionState } from "react";
 import { PREFECTURES } from "@spotomo/shared-types";
-import { submitFacility, type SubmitState } from "./actions";
+import type { SubmitState } from "./types";
 
 const initial: SubmitState = { error: null };
 
-export function FacilitySubmitForm() {
-  const [state, formAction, pending] = useActionState(submitFacility, initial);
+type Props = {
+  // サーバーアクション（運営者=submitFacility / 一般=registerFacility）を受け取り共用する。
+  action: (prev: SubmitState, formData: FormData) => Promise<SubmitState>;
+  doneMessage?: string;
+};
+
+export function FacilitySubmitForm({ action, doneMessage }: Props) {
+  const [state, formAction, pending] = useActionState(action, initial);
 
   if (state.ok) {
     return (
       <div className="card p-6 text-sm text-green-700">
-        申請を受け付けました。管理者の承認後に施設として公開されます。
+        {doneMessage ?? "申請を受け付けました。管理者の承認後に施設として公開されます。"}
       </div>
     );
   }
