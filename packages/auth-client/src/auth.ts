@@ -71,10 +71,18 @@ export async function getAdminUser(): Promise<User | null> {
   return data ? user : null;
 }
 
-/** 管理者でなければトップへリダイレクト。 */
+/**
+ * 管理者でなければ統合サイト（web）のログインへリダイレクト。admin は web と別サブドメイン
+ * （admin-spotomo）だがセッション Cookie を COOKIE_DOMAIN=.lykuro.ai で共有する。未ログイン/
+ * 非管理者を admin の "/" に飛ばすと requireAdmin が再度走り無限ループになるため、必ず web の
+ * 絶対URL（SITE_URL/login）へ逃がす。SITE_URL 未設定（ローカル単一オリジン）は相対 /login。
+ */
 export async function requireAdmin(): Promise<User> {
   const user = await getAdminUser();
-  if (!user) redirect("/");
+  if (!user) {
+    const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+    redirect(site ? `${site}/login` : "/login");
+  }
   return user;
 }
 

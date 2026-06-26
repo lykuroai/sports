@@ -12,12 +12,14 @@
 # クライアント/サーバ共通の公開値。
 #   * build.args  … NEXT_PUBLIC_* をクライアントバンドルへ焼き込み（要 --build）
 #   * environment … サーバ側の実行時値（env_file の値を上書きし齟齬を防ぐ）
-# 単一オリジン化: ACCOUNT_URL/FACILITY_URL/COOKIE_DOMAIN は撤廃（ログイン等は web 自身の
-# 相対パス /login・/owner/login で完結。Cookie は host-only）。
+# 単一オリジン化: ACCOUNT_URL/FACILITY_URL は撤廃（web のログインは相対 /login・/owner/login で完結）。
+# COOKIE_DOMAIN は維持: admin(admin-spotomo) と web(spotomo) は別サブドメインで Supabase セッション
+# Cookie を共有するため .lykuro.ai が必須（外すと admin がログインを認識できずループする）。
 x-public: &public
   NEXT_PUBLIC_SUPABASE_URL: https://lkdltkkggjmsyodimdoy.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_acZRB7VYWjvTuJHrbe-5mA_NKg7G36i
   NEXT_PUBLIC_SITE_URL: https://spotomo.lykuro.ai
+  NEXT_PUBLIC_COOKIE_DOMAIN: .lykuro.ai
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: 0x4AAAAAADoFYwWljS9AE7a0
 
 x-app-common: &app-common
