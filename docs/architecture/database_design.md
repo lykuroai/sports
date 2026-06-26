@@ -84,6 +84,8 @@ facility.facility_sports (facility_id, sport_id)   -- core.sports と多対多 =
 facility.facility_features (facility_id, feature_key, value)
 facility.facility_images (facility_id, url, ...)
 facility.facility_submissions (id, user_id, facility_id, submitted_data jsonb, status, ...)
+  -- submitted_data のキーは facilities のカラム名に一致。例外: sport_ids（uuid[]）は
+  -- 一般登録 /facilities/register が付与し、承認時に facility_sports へ展開（facilities へは入れない）。
 facility.facility_owners (facility_id, user_id, verified_at)
 facility.facility_reviews (id, facility_id, user_id, rating, comment, ...)
 ```

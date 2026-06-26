@@ -49,7 +49,7 @@ POST   /api/golf/events/{id}/messages
 # facility-api（種目横断の共有資産・施設運営者向け）
 GET    /api/facilities                      地域/駅/地図/半径検索（種目で絞り込み可）
 GET    /api/facilities/{id}
-POST   /api/facilities/submissions          利用者の登録/修正申請
+POST   /api/facilities/submissions          利用者の登録/修正申請（種別=種目大分類/小分類を選択。submitted_data.sport_ids→承認時 facility_sports へ展開）
 POST   /api/facilities/{id}/reviews
 GET    /api/facilities/nearby               現在地周辺（補助機能）
 # 施設運営者
@@ -117,7 +117,9 @@ golf-spotomo.lykuro.ai（ゴルフ。running/outdoor も同型）
 facility-spotomo.lykuro.ai（施設運営者）
   /                     管理する施設一覧
   /facilities/[id]/edit
-  /facilities/submit    登録/修正申請（一般利用者導線もここへ）
+  /facilities/submit    登録/修正申請（施設運営者。requireOwnerAccount）
+  ※【現状】統合サイト化後、一般利用者の施設登録は web 内 /facilities/register（requireGeneralAccount。
+     種別=種目大分類/小分類を選択し、承認時に facility_sports へ展開）。運営者用 /facilities/submit と分離。
 
 admin-spotomo.lykuro.ai（運営管理）
   /                     ダッシュボード
