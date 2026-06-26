@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { requireGeneralAccount } from "@spotomo/auth-client";
+import { createServerClient, requireGeneralAccount } from "@spotomo/auth-client";
 import { FacilitySubmitForm } from "../_components/facility-submit-form";
+import { fetchSportNodes } from "../../../lib/category";
 import { registerFacility } from "./actions";
 
 export default async function RegisterFacilityPage() {
   // 未ログインは /login?redirect=/facilities/register へ。運営者は運営者領域へ。
   await requireGeneralAccount("/facilities/register");
+  const supabase = await createServerClient();
+  const sportNodes = await fetchSportNodes(supabase);
 
   return (
     <div className="mx-auto max-w-xl space-y-3">
@@ -20,6 +23,7 @@ export default async function RegisterFacilityPage() {
       </p>
       <FacilitySubmitForm
         action={registerFacility}
+        sportNodes={sportNodes}
         doneMessage="施設登録の申請を受け付けました。管理者の承認後に施設として公開され、その施設で募集を作成できるようになります。"
       />
     </div>

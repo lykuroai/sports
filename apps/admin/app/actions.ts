@@ -96,11 +96,40 @@ export async function reviewFacilitySubmission(formData: FormData): Promise<void
   if (!sub) return;
 
   if (decision === "approved") {
-    // submitted_data のキーは facilities のカラム名に一致している前提
+    // submitted_data のキーは facilities のカラム名に一致している前提。
+    // sport_ids だけは facilities のカラムではなく、承認時に facility_sports へ展開する
+    // （一般登録 /facilities/register が付与。種目検索 facility_sports!inner で見つかるようにする）。
+    const { sport_ids, ...facilityData } = (sub.submitted_data ?? {}) as Record<string, unknown> & {
+      sport_ids?: unknown;
+    };
+    const sportIds = Array.isArray(sport_ids) ? sport_ids.filter((s): s is string => typeof s === "string") : [];
+
     if (sub.submission_type === "new") {
-      await db.schema(SCHEMA.facility).from("facilities").insert({ ...sub.submitted_data, source: "user_submission" });
+      const { data: inserted } = await db
+        .schema(SCHEMA.facility)
+        .from("facilities")
+        .insert({ ...facilityData, source: "user_submission" })
+        .select("id")
+        .maybeSingle();
+      const facilityId = (inserted as { id?: string } | null)?.id;
+      if (facilityId && sportIds.length > 0) {
+        await db
+          .schema(SCHEMA.facility)
+          .from("facility_sports")
+          .insert(sportIds.map((sportId) => ({ facility_id: facilityId, sport_id: sportId })));
+      }
     } else if (sub.facility_id) {
-      await db.schema(SCHEMA.facility).from("facilities").update(sub.submitted_data).eq("id", sub.facility_id);
+      await db.schema(SCHEMA.facility).from("facilities").update(facilityData).eq("id", sub.facility_id);
+      if (sportIds.length > 0) {
+        // 修正申請で種目が付く場合は upsert（既存 PK は重複無視）。
+        await db
+          .schema(SCHEMA.facility)
+          .from("facility_sports")
+          .upsert(
+            sportIds.map((sportId) => ({ facility_id: sub.facility_id, sport_id: sportId })),
+            { onConflict: "facility_id,sport_id", ignoreDuplicates: true },
+          );
+      }
     }
   }
 
