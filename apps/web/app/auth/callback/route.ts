@@ -27,8 +27,17 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createServerClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    // exchangeCodeForSession は code_verifier Cookie 欠落/不一致（サブドメイン間の
+    // Cookie ドメイン変更で host-only と .lykuro.ai が二重化した等）で throw する場合があり、
+    // 未捕捉だと /auth/callback のまま 500（白画面エラー）になる。捕捉して /login へ逃がす。
+    let exchangeError: string | null = null;
+    try {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      exchangeError = error?.message ?? null;
+    } catch (e) {
+      exchangeError = e instanceof Error ? e.message : "exchange_failed";
+    }
+    if (!exchangeError) {
       if (verify === "email") {
         await supabase.auth.signOut();
         // 認証後の戻り先（プロフィール設定→元ページ）をログイン画面へ引き継ぐ。
@@ -41,6 +50,10 @@ export async function GET(request: Request) {
       res.cookies.set("oauth_next", "", { maxAge: 0, path: "/" });
       return res;
     }
+    console.error("[auth/callback] exchangeCodeForSession failed:", exchangeError);
   }
-  return NextResponse.redirect(`${base}/login?error=auth`);
+  // 失敗時は古い PKCE verifier / oauth_next を掃除してログインへ。再試行でクリーンな状態にする。
+  const fail = NextResponse.redirect(`${base}/login?error=auth`);
+  fail.cookies.set("oauth_next", "", { maxAge: 0, path: "/" });
+  return fail;
 }
