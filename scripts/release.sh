@@ -70,12 +70,17 @@ run "rm -f '$TAR'"
 
 # ---- 6. ヘルスチェック（nginx 経由で実オリジン Host を投げる）----
 if [ "${DRY_RUN:-0}" != 1 ]; then
-  log "healthcheck via lykuro-nginx"
+  log "healthcheck via lykuro-nginx（起動待ちのため最大 ~30s リトライ）"
   ssh "${SSH_OPTS[@]}" "$EC2_USER@$EC2_HOST" '
-    w=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: spotomo.lykuro.ai"       http://127.0.0.1/login || echo 000)
-    a=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: admin-spotomo.lykuro.ai" http://127.0.0.1/      || echo 000)
+    ok=0
+    for i in $(seq 1 15); do
+      w=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: spotomo.lykuro.ai"       http://127.0.0.1/login || echo 000)
+      case "$w" in 200|301|302|307|308) ok=1; break ;; esac
+      sleep 2
+    done
+    a=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: admin-spotomo.lykuro.ai" http://127.0.0.1/ || echo 000)
     echo "  web spotomo.lykuro.ai/login = $w   admin admin-spotomo.lykuro.ai/ = $a"
-    case "$w" in 200|301|302|307|308) ;; *) echo "  ⚠ web が異常応答: $w"; exit 1 ;; esac
+    [ "$ok" = 1 ] || { echo "  ⚠ web が異常応答: $w"; exit 1; }
   ' || die "ヘルスチェック失敗（nginx→spotomo の経路を確認）"
 fi
 
