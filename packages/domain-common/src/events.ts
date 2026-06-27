@@ -48,6 +48,13 @@ export function makeEventRepo(schema: string) {
       .is("deleted_at", null)
       .in("status", VISIBLE_EVENT_STATUSES);
 
+    // 期限切れの募集は一覧に出さない。「期限」は申込期限(application_deadline)を優先し、
+    // 未設定なら開催日時(event_start_at)を期限とみなす。どちらも現在時刻を過ぎたら除外。
+    const nowIso = new Date().toISOString();
+    query = query.or(
+      `application_deadline.gte.${nowIso},and(application_deadline.is.null,event_start_at.gte.${nowIso})`,
+    );
+
     if (filter.keyword) {
       query = query.or(`title.ilike.%${filter.keyword}%,description.ilike.%${filter.keyword}%`);
     }
