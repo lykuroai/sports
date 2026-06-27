@@ -1,10 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createServerClient, SCHEMA, loginUrlFor } from "@spotomo/auth-client";
+import { createServerClient, createAdminClient, SCHEMA, loginUrlFor } from "@spotomo/auth-client";
 import { formatDateTime, OWNER_STATUS_LABEL } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
 import { submitFacilityReview } from "./review-actions";
 import { applyForOwnership, withdrawOwnership } from "./owner-actions";
+
+// 楽天GORA の予約リンクを楽天アフィリエイトのリダイレクト経由にして、確実に自分の
+// アフィリエイトID（RAKUTEN_AFFILIATE_ID, サーバー env）を通す（送客→成果報酬）。
+// 未設定時は素のGORA URL をそのまま使う（リンクは出すが無報酬）。
+function goraAffiliateHref(targetUrl: string): string {
+  const aff = process.env.RAKUTEN_AFFILIATE_ID;
+  if (!aff) return targetUrl;
+  const enc = encodeURIComponent(targetUrl);
+  return `https://hb.afl.rakuten.co.jp/hgc/${aff}/?pc=${enc}&m=${enc}`;
+}
 
 export default async function FacilityDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,6 +32,9 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
   if (!facility) notFound();
   const f = facility as Facility;
 
+  // facility_sources は raw_data を含むため RLS で管理者のみ select 可（0031）。だが GORA の予約リンクや
+  // OSM 帰属は公開情報なので、一般ユーザにも表示できるよう **安全な列のみ** をサービスロールで取得する。
+  const admin = createAdminClient();
   const [{ data: featureRows }, { data: reviews }, { data: sourceRows }, { data: imageRows }] = await Promise.all([
     supabase.schema(SCHEMA.facility).from("facility_features").select("feature_key, value").eq("facility_id", id),
     supabase
@@ -31,7 +44,7 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
       .eq("facility_id", id)
       .order("created_at", { ascending: false })
       .limit(50),
-    supabase.schema(SCHEMA.facility).from("facility_sources").select("source_type, source_url, source_name, license").eq("facility_id", id),
+    admin.schema(SCHEMA.facility).from("facility_sources").select("source_type, source_url, source_name, license").eq("facility_id", id),
     supabase.schema(SCHEMA.facility).from("facility_images").select("url, display_order").eq("facility_id", id).order("display_order", { ascending: true }),
   ]);
 
@@ -122,7 +135,7 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
       <div className="flex flex-wrap gap-2">
         <Link href={`/recruitments/new?facility=${f.id}`} className="btn-primary">この施設で募集を作成</Link>
         {gora?.source_url && (
-          <a href={gora.source_url} target="_blank" rel="noopener noreferrer" className="btn-outline border-rose-400 text-rose-600 hover:bg-rose-50">楽天GORAで予約する ↗</a>
+          <a href={goraAffiliateHref(gora.source_url)} target="_blank" rel="noopener noreferrer sponsored" className="btn-outline border-rose-400 text-rose-600 hover:bg-rose-50">楽天GORAで予約する ↗</a>
         )}
         {mapHref && (
           <a href={mapHref} target="_blank" rel="noopener noreferrer" className="btn-outline">地図で見る</a>
