@@ -5,7 +5,7 @@ import { EventCard } from "@spotomo/shared-ui";
 import { PREFECTURES } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
 import { fetchEvents } from "../../../lib/events";
-import { fetchSportNodes, resolveCategoryParent, resolveCategorySportIds, categoryIcon } from "../../../lib/category";
+import { fetchSportNodes, resolveCategoryParent, resolveCategorySportIds } from "../../../lib/category";
 
 // 種目別トップ（sport_category_page_design）。共通の施設DB・募集DBを種目で絞り込んで表示する。
 // running は専用ページがあるためリダイレクト。golf/outdoor 含む他種目はこの汎用ページで提供。
@@ -71,12 +71,7 @@ export default async function SportPage({
 
       {/* ヒーロー */}
       <section className="rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 p-6 text-white sm:p-8">
-        <h1 className="flex items-center gap-3 text-2xl font-bold sm:text-3xl">
-          {categoryIcon(code) && (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/15 text-3xl sm:h-14 sm:w-14 sm:text-4xl" aria-hidden>{categoryIcon(code)}</span>
-          )}
-          {parent.name}の仲間を見つけよう
-        </h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">{parent.name}の仲間を見つけよう</h1>
         <p className="mt-2 max-w-2xl text-sm text-white/90">{COPY[slug]?.sub ?? `${parent.name}の仲間募集・施設を探せます。`}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href={`/recruitments?category=${slug}`} className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">募集を探す</Link>

@@ -15,25 +15,8 @@ const ALIAS: Record<string, string> = {
   "martial-arts": "cat-martial",
 };
 
-// トップの種目一覧と種目詳細ページのヘッダで共有する種目アイコン（UIスラッグ → 絵文字）。
-// 一覧と詳細で同じアイコンを出すための単一ソース。
-export const CATEGORY_ICONS: Record<string, string> = {
-  running: "🏃",
-  golf: "⛳",
-  outdoor: "🏕️",
-  "ball-sports": "⚽",
-  fitness: "🧘",
-  "water-sports": "🏊",
-  "winter-sports": "🎿",
-  cycling: "🚴",
-  "martial-arts": "🥋",
-  leisure: "🎳",
-  all: "🔎",
-};
-
-/** UIスラッグ（running/golf/outdoor 等）から種目アイコンを返す。未定義なら undefined。 */
-export const categoryIcon = (code?: string | null): string | undefined =>
-  code ? CATEGORY_ICONS[code] : undefined;
+// 種目アイコン（絵文字）は純粋モジュール lib/sport-icons に集約（クライアント部品からも参照するため）。
+export { CATEGORY_ICONS, categoryIcon } from "./sport-icons";
 
 export type SportNode = { id: string; name: string; slug: string; parent_id: string | null };
 

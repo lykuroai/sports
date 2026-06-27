@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteHeader, LegalLinks } from "@spotomo/shared-ui";
 import { NotificationBell } from "@spotomo/shared-ui/notification-bell";
 import { selfOrigin, getUser, loginUrlFor } from "@spotomo/auth-client";
+import { SportBrandEmoji } from "./_components/sport-brand-emoji";
 
 export const metadata: Metadata = {
   title: { default: "スポともパーク｜スポともパーク", template: "%s｜スポともパーク" },
@@ -20,6 +21,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen">
         <SiteHeader
           appName=""
+          logo={<SportBrandEmoji />}
           accountUrl={accountUrl}
           currentOrigin={currentOrigin}
           accountLabel="プロフィール"
