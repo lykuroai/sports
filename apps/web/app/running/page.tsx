@@ -5,7 +5,6 @@ import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../../lib/events";
 import { fetchSportNodes, resolveCategorySportIds, categoryIcon } from "../../lib/category";
 import heroImage from "../../public/running-hero.svg";
-import runningLogo from "../../public/running-logo.svg";
 import timeboxImage from "../../public/timebox-race.png";
 
 export const metadata = {
@@ -52,11 +51,6 @@ export default async function RunningTop({
 
   return (
     <div className="space-y-8">
-      {/* 種目ロゴ（種目ページ上部） */}
-      <div className="flex items-center">
-        <Image src={runningLogo} alt="ランとも" priority className="h-14 w-auto" />
-      </div>
-
       {/* パンくず */}
       <nav className="text-sm text-slate-500"><Link href="/" className="hover:text-brand">ホーム</Link> ＞ ランニング</nav>
 
