@@ -124,6 +124,14 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   `make release EC2_HOST=… EC2_KEY=…` も同等（`REL_SERVICES` に限定）。`DRY_RUN=1 scripts/release.sh` で確認可。
   - **【重要・落とし穴】デプロイ時の `up -d` は必ず `web admin scheduler` に限定する**。素の `docker compose up -d`
     だと EC2 のベース compose の caddy が起動し **:80 を lykuro-nginx と取り合って失敗**する。
+  - **【重要・nginx バッファ】Google ログイン等で `/auth/callback` が 502 になる典型原因は nginx の
+    `proxy_buffer_size` 超過**（`upstream sent too big header`）。Supabase のセッション Cookie は JWT＋Google
+    provider トークンを含み**分割された複数の巨大 `Set-Cookie`** になるため、認証**成功時**の応答ヘッダが nginx
+    既定 8k を超え 502 になり、ブラウザにセッションが届かない（→ ユーザが再試行すると code 消費済みで
+    `invalid flow state`→`/login?error=auth`。これは 502 の二次症状）。**対策は lykuro-nginx の spotomo/admin-spotomo
+    server ブロックに `proxy_buffer_size 16k; proxy_buffers 8 16k; proxy_busy_buffers_size 32k;` を設定**
+    （EC2 の `/data/lykuro/src/docker/nginx/default.conf`、設定後 `docker exec lykuro-nginx nginx -s reload`）。
+    nginx 再デプロイで消えないよう lykuro 側リポジトリにも反映すること。
   - ローカルと EC2 は**ともに arm64**（EC2=Graviton）。クロスビルド不要。Intel Mac から出す場合のみ
     `ALLOW_CROSS_ARCH=1`＋buildx で arm64 を作る。
 - **502 の典型原因**: ①再デプロイ中の web 再生成ウィンドウ（nginx→host port が一時 connection refused）、
