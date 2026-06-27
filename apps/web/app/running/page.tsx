@@ -97,6 +97,27 @@ export default async function RunningTop({
         )}
       </section>
 
+      {/* 宣伝枠：計測システム timebox-race（外部） */}
+      <section>
+        <a
+          href="https://timebox.ebskk.com/LP/timebox-race/index.html"
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          className="group flex flex-col gap-3 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-sky-50 p-5 transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex flex-col gap-1">
+            <span className="inline-flex w-fit items-center rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white">PR・計測システム</span>
+            <h2 className="text-lg font-bold text-slate-900">大会・練習会の記録は「TIMEBOX RACE」で</h2>
+            <p className="text-sm text-slate-600">
+              ランニング大会やイベントのタイム計測をかんたんに。練習会の記録管理にもおすすめの計測システムです。
+            </p>
+          </div>
+          <span className="inline-flex shrink-0 items-center justify-center rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition group-hover:bg-emerald-700">
+            詳しく見る →
+          </span>
+        </a>
+      </section>
+
       {/* おすすめ施設（ランニング紐付け） */}
       {facilities.length > 0 && (
         <section>
