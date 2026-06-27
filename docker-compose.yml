@@ -1,4 +1,11 @@
-# 自前サーバ / EC2 / 開発機 共通。統合サイト（web）+ 管理(admin) + Caddy リバースプロキシ。
+# 自前サーバ / EC2 / 開発機 共通。統合サイト（web）+ 管理(admin) + 定期バッチ(scheduler)。
+# エッジ（TLS終端・リバースプロキシ）はホストにより異なり、ベースはエッジ非依存に保つ:
+#   - EC2(本番): AWS ALB が TLS 終端 → ホストの lykuro-nginx(:80) が server_name で
+#     spotomo.lykuro.ai→host:3002 / admin-spotomo.lykuro.ai→host:3003 へ振り分け
+#     （host.docker.internal 経由）。ポート公開はホスト固有 override（docker-compose.ec2.yml
+#     相当 = web:3002/admin:3003 を publish）で付与。caddy は使わない。
+#   - ローカルで TLS を張りたい時だけ caddy を使う: `docker compose --profile edge-caddy up -d`
+#     （docker/certs のワイルドカード証明書で 80/443 を配信）。既定 up では起動しない。
 # 統合サイト化により account/facility/golf/outdoor/running は web へ集約・撤去済み。
 # 公開は spotomo.lykuro.ai（web）と admin-spotomo.lykuro.ai（admin）の2本のみ（単一オリジン）。
 # 使い方:
@@ -6,7 +13,7 @@
 #   docker compose up -d --build
 #
 # DNS: 各サブドメインを当サーバ（本番）/ 127.0.0.1（開発機の /etc/hosts）へ向ける。
-# TLS: Caddy が docker/certs のワイルドカード実証明書（*.lykuro.ai）で配信。
+# web/admin は既定 expose:3000 のみ。外部公開はエッジ（EC2=ALB+nginx が host port へ / ローカル=caddy profile）が担う。
 # Supabase は別途（ホスティング or セルフホスト）。
 
 # クライアント/サーバ共通の公開値。
@@ -65,8 +72,12 @@ services:
     depends_on:
       - web
 
+  # ローカル開発で TLS 終端したい場合のみ起動するエッジ。本番(EC2)は ALB+lykuro-nginx が
+  # エッジを担うため使わない。`profiles` 指定により既定の `docker compose up -d` では起動せず、
+  # `docker compose --profile edge-caddy up -d` で明示的に起動する。
   caddy:
     image: caddy:2-alpine
+    profiles: ["edge-caddy"]
     restart: unless-stopped
     ports:
       - "80:80"

@@ -16,3 +16,6 @@ docker/data/
 
 # ローカル用の実SSL証明書・秘密鍵（コミット禁止）
 docker/certs/
+
+# リリースバッチ(scripts/release.sh)が生成するイメージ tarball
+spotomo-images.tar.gz

@@ -67,3 +67,42 @@ docker-down: ## コンテナ停止
 
 docker-logs: ## ログ追従（make docker-logs s=golf で個別）
 	docker compose logs -f $(s)
+
+# ---- リリース / EC2 デプロイ（build → save → ship → deploy）----
+# 例: make release EC2_HOST=ec2-18-181-207-71.ap-northeast-1.compute.amazonaws.com \
+#                  EC2_KEY=~/.ssh/lykuro-prod-key.pem
+# ローカルで本番イメージをビルド → tar.gz に save → EC2 へ scp → EC2 上で load → up -d。
+# 前提: EC2 の $(EC2_DIR) に docker-compose.yml / .env.production / data/ が配置済み（イメージのみ転送）。
+EC2_HOST     ?=
+EC2_USER     ?= ubuntu
+EC2_KEY      ?= ~/.ssh/lykuro-prod-key.pem
+EC2_DIR      ?= /data/spotomo
+REL_SERVICES ?= web admin scheduler
+REL_IMAGES   := $(addprefix spotomo-,$(REL_SERVICES))
+REL_TAR      := spotomo-images.tar.gz
+SSH_OPTS     := -i $(EC2_KEY) -o StrictHostKeyChecking=accept-new
+
+.PHONY: release release-build release-save release-ship release-deploy _require-ec2
+
+release: release-build release-save release-ship release-deploy ## EC2 へリリース（build→save→ship→deploy）。要 EC2_HOST EC2_KEY
+	@echo "✅ リリース完了: $(EC2_USER)@$(EC2_HOST):$(EC2_DIR)"
+
+release-build: ## [release] web/admin/scheduler の本番イメージをビルド
+	docker compose build $(REL_SERVICES)
+
+release-save: ## [release] イメージを $(REL_TAR) に保存（gzip）
+	docker save $(REL_IMAGES) | gzip > $(REL_TAR)
+
+release-ship: _require-ec2 ## [release] tar を EC2:$(EC2_DIR) へ転送
+	scp $(SSH_OPTS) $(REL_TAR) $(EC2_USER)@$(EC2_HOST):$(EC2_DIR)/
+
+release-deploy: _require-ec2 ## [release] EC2 で load → up -d（web/admin/scheduler のみ）→ 古いイメージ掃除
+	# caddy は本番では使わない（:80 を lykuro-nginx と競合）。必ず $(REL_SERVICES) に限定して up する。
+	ssh $(SSH_OPTS) $(EC2_USER)@$(EC2_HOST) \
+	  'cd $(EC2_DIR) && gunzip -c $(REL_TAR) | docker load && docker compose up -d $(REL_SERVICES) && rm -f $(REL_TAR) && docker image prune -f'
+
+_require-ec2:
+	@test -n "$(EC2_HOST)" || { echo "EC2_HOST が未設定です（例: make release EC2_HOST=... EC2_KEY=...）"; exit 1; }
+
+release-sh: ## EC2 へ一括リリース（本番ホスト既定値入り・ヘルスチェック付き。scripts/release.sh）
+	./scripts/release.sh

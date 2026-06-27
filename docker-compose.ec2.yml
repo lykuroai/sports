@@ -1,0 +1,18 @@
+# EC2(本番 / ec2-18-181-207-71 = lykuro-prod-data-node)向けエッジ override。
+# このホストは AWS ALB が TLS を終端し、ホストの lykuro-nginx(:80) が server_name で
+#   spotomo.lykuro.ai       → host.docker.internal:3002 (web)
+#   admin-spotomo.lykuro.ai → host.docker.internal:3003 (admin)
+# へ振り分ける（lykuro-nginx は extra_hosts: host.docker.internal:host-gateway 付き）。
+# よって spotomo 自身の caddy は使わず（ベース compose で profiles:["edge-caddy"] のため既定 up から除外）、
+# web/admin を host ポートへ publish するだけでよい。
+#
+# 適用: `docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d`
+# 注: EC2 ホスト上では同内容を auto-load される docker-compose.override.yml として配置している
+#     （リポジトリのベース docker-compose.yml は不変・エッジ非依存に保つ方針）。
+services:
+  web:
+    ports:
+      - "3002:3000"
+  admin:
+    ports:
+      - "3003:3000"

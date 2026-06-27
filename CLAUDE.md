@@ -93,7 +93,7 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   - 上限 `MUNICIPAL_FETCH_LIMIT`。スポーツ施設に限定（子育て/観光/学校/汎用公共施設は除外）。
 - **cron スケジューラ 済**: docker compose の `scheduler` サービス（`docker/scheduler/`。alpine+busybox
   crond+jq）。起動時に `CRON_SECRET`（env_file）を埋め込んだ crontab/巡回スクリプトを生成し、内部
-  ネットワークの `http://web:3000/api/cron/*` を叩く（TLS/Caddy 非経由）。OSM=毎週月 03:10 JST（複数県
+  ネットワークの `http://web:3000/api/cron/*` を叩く（TLS/エッジ非経由）。OSM=毎週月 03:10 JST（複数県
   ループ）、自治体=毎月1日 04:00 JST、races=毎日 03:30 JST。対象上書きは `SCHED_TARGET`。
   - **自治体巡回**: ソース一覧は `data/municipal-sources.json`（`{url,source,pref,license}` 配列）を
     compose で `/sources.json` にマウント（**再ビルド不要でホット編集可**。crond 起動時に再読込）。
@@ -103,6 +103,31 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
   `api/stripe/webhook`/`users/[id]`/`notifications`/`settings`/`verification`/`withdraw` を web 配下へ移植。
   facility 運営者機能（`/owner`・`/owner/login|register`・`/facilities/submit`・施設詳細の運営者申請）も web へ。
 - **未了**: golf(GORA 楽天予約) の web 取り込み（撤去のみで固有機能は未移植）、地図タイル表示。
+
+### デプロイ / エッジ構成（本番 EC2）
+
+- **本番ホストは `ec2-18-181-207-71.ap-northeast-1.compute.amazonaws.com`（`lykuro-prod-data-node`）**。
+  lk-*（lykuro 本体）スタックと**同一ホストに同居**し、エッジを共有する。**caddy は本番では使わない**。
+- **エッジ経路**: `AWS ALB（TLS終端）→ ホストの lykuro-nginx(:80) → host.docker.internal:<port> →
+  spotomo コンテナ`。nginx は `lykuro_data-net` 上で `extra_hosts: host.docker.internal:host-gateway` を持ち、
+  `server_name` で振り分ける: **`spotomo.lykuro.ai`→host:3002（web）/ `admin-spotomo.lykuro.ai`→host:3003（admin）**。
+  nginx 設定は `/opt/lykuro/docker/nginx/default.conf`（ホスト上で稼働中のコンテナにマウント）。:443 は開かない。
+- **ベース `docker-compose.yml` はエッジ非依存に保つ**: web/admin は既定 `expose:3000` のみ。caddy は
+  `profiles:["edge-caddy"]` で**既定 `up` から除外**（ローカルで TLS を張る時だけ
+  `docker compose --profile edge-caddy up -d`）。
+- **EC2 のポート公開はホスト固有 override**: `docker-compose.ec2.yml`（リポ管理のテンプレ＝web:3002/admin:3003 を
+  publish）と同内容を、EC2 ホスト `/data/spotomo/docker-compose.override.yml`（auto-load）として配置。
+  デプロイ単位は `/data/spotomo`（イメージを ship、compose は EC2 側のものを使う）。
+- **リリース手順**: `scripts/release.sh`（本番ホスト既定値入り・ヘルスチェック付き。`make release-sh` でも可）。
+  ローカル arm64 でイメージ build → `spotomo-images.tar.gz` に save → EC2 へ scp → `docker load` →
+  **`docker compose up -d web admin scheduler`（caddy は含めない）** → prune → nginx 経由で /login を確認。
+  `make release EC2_HOST=… EC2_KEY=…` も同等（`REL_SERVICES` に限定）。`DRY_RUN=1 scripts/release.sh` で確認可。
+  - **【重要・落とし穴】デプロイ時の `up -d` は必ず `web admin scheduler` に限定する**。素の `docker compose up -d`
+    だと EC2 のベース compose の caddy が起動し **:80 を lykuro-nginx と取り合って失敗**する。
+  - ローカルと EC2 は**ともに arm64**（EC2=Graviton）。クロスビルド不要。Intel Mac から出す場合のみ
+    `ALLOW_CROSS_ARCH=1`＋buildx で arm64 を作る。
+- **502 の典型原因**: ①再デプロイ中の web 再生成ウィンドウ（nginx→host port が一時 connection refused）、
+  ②nginx に当該 `server_name` ブロックが無い/ポート不一致。現状 EC2 は両ブロックとも疎通確認済み（web=200/admin=307）。
 
 ### 重要な実装メモ
 
@@ -163,7 +188,8 @@ DB は `supabase/migrations/0001_init.sql`（スキーマ+PostGIS）→ `0002_rl
     `/owner/login`）。`packages/auth-client` の `loginUrlFor(path)` は `ACCOUNT_URL` 未設定なら相対
     `/login` を返し、`updateSession`（proxy）も自オリジン `/login` に倒れる。proxy のパス分岐は
     `apps/web/proxy.ts`（一般保護パスと運営者保護パスで `loginPath` を出し分け）。
-  - OAuth/メール確認/LINE/Stripe のコールバックは**絶対URLが必要**。リバースプロキシ（Caddy）越しでは
+  - OAuth/メール確認/LINE/Stripe のコールバックは**絶対URLが必要**。リバースプロキシ（本番=ALB+nginx /
+    ローカル=caddy）越しでは
     `request.url`/`Host` が内部アドレス `0.0.0.0:3000` になるため、**`X-Forwarded-Host`/`X-Forwarded-Proto`**
     から公開オリジンを組み立てる: Server Action は `selfOrigin()`、Route Handler は `requestOrigin(request)`
     （いずれも `packages/auth-client`）。
