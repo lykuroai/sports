@@ -5,6 +5,8 @@ import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../../lib/events";
 import { fetchSportNodes, resolveCategorySportIds } from "../../lib/category";
 import heroImage from "../../public/running-hero.svg";
+import runningLogo from "../../public/running-logo.svg";
+import timeboxImage from "../../public/timebox-race.png";
 
 export const metadata = {
   title: "ランニング仲間募集・ランニング施設検索",
@@ -50,6 +52,11 @@ export default async function RunningTop({
 
   return (
     <div className="space-y-8">
+      {/* 種目ロゴ（種目ページ上部） */}
+      <div className="flex items-center">
+        <Image src={runningLogo} alt="ランとも" priority className="h-14 w-auto" />
+      </div>
+
       {/* パンくず */}
       <nav className="text-sm text-slate-500"><Link href="/" className="hover:text-brand">ホーム</Link> ＞ ランニング</nav>
 
@@ -103,16 +110,23 @@ export default async function RunningTop({
           href="https://timebox.ebskk.com/LP/timebox-race/index.html"
           target="_blank"
           rel="noopener noreferrer sponsored"
-          className="group flex flex-col gap-3 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-sky-50 p-5 transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+          className="group flex flex-col gap-4 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-sky-50 p-5 transition hover:shadow-md sm:flex-row sm:items-center"
         >
-          <div className="flex flex-col gap-1">
+          {/* 計測装置（RFID 計測機とアンテナ）のイメージ */}
+          <Image
+            src={timeboxImage}
+            alt="TIMEBOX RACE の RFID 計測機とアンテナ"
+            className="h-auto w-full rounded-lg border border-emerald-100 bg-white object-cover sm:w-48"
+            sizes="(max-width: 640px) 100vw, 12rem"
+          />
+          <div className="flex flex-1 flex-col gap-1">
             <span className="inline-flex w-fit items-center rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white">PR・計測システム</span>
             <h2 className="text-lg font-bold text-slate-900">大会・練習会の記録は「TIMEBOX RACE」で</h2>
             <p className="text-sm text-slate-600">
               ランニング大会やイベントのタイム計測をかんたんに。練習会の記録管理にもおすすめの計測システムです。
             </p>
           </div>
-          <span className="inline-flex shrink-0 items-center justify-center rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition group-hover:bg-emerald-700">
+          <span className="inline-flex shrink-0 items-center justify-center rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition group-hover:bg-emerald-700 sm:self-center">
             詳しく見る →
           </span>
         </a>

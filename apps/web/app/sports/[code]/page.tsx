@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import type { StaticImageData } from "next/image";
 import { redirect, notFound } from "next/navigation";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
@@ -6,6 +8,14 @@ import { PREFECTURES } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
 import { fetchEvents } from "../../../lib/events";
 import { fetchSportNodes, resolveCategoryParent, resolveCategorySportIds } from "../../../lib/category";
+import golfLogo from "../../../public/golf-logo.svg";
+import outdoorLogo from "../../../public/outdoor-logo.svg";
+
+// 種目コード → 上部に出すロゴ（用意があるものだけ。running は /running へリダイレクト）。
+const SPORT_LOGOS: Record<string, StaticImageData> = {
+  golf: golfLogo,
+  outdoor: outdoorLogo,
+};
 
 // 種目別トップ（sport_category_page_design）。共通の施設DB・募集DBを種目で絞り込んで表示する。
 // running は専用ページがあるためリダイレクト。golf/outdoor 含む他種目はこの汎用ページで提供。
@@ -64,9 +74,17 @@ export default async function SportPage({
   const sportName = new Map(nodes.map((n) => [n.id, n.name]));
 
   const facHref = `/facilities?category=${slug}`;
+  const logo = SPORT_LOGOS[code];
 
   return (
     <div className="space-y-8">
+      {/* 種目ロゴ（種目ページ上部・用意がある種目のみ） */}
+      {logo && (
+        <div className="flex items-center">
+          <Image src={logo} alt={`${parent.name}とも`} priority className="h-14 w-auto" />
+        </div>
+      )}
+
       <nav className="text-sm text-slate-500"><Link href="/" className="hover:text-brand">ホーム</Link> ＞ {parent.name}</nav>
 
       {/* ヒーロー */}
