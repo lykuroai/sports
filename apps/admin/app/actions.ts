@@ -80,6 +80,47 @@ export async function resolveReport(formData: FormData): Promise<void> {
   revalidatePath("/reports");
 }
 
+// 募集（running.events）の違反削除。規約違反の募集をソフト削除（deleted_at）し status を
+// 中止にすることで、公開一覧・詳細から除外する。主催者へ通知し、理由付きで監査ログに記録する。
+// 復旧が必要な場合に備え物理削除はしない（仕様 §11.1・§15.9）。
+export async function deleteRecruitment(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const eventId = String(formData.get("event_id"));
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!eventId) return;
+
+  const db = createAdminClient();
+  const { data: ev } = await db
+    .schema(SCHEMA.running)
+    .from("events")
+    .select("organizer_id, title")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  await db
+    .schema(SCHEMA.running)
+    .from("events")
+    .update({ deleted_at: new Date().toISOString(), status: "cancelled" })
+    .eq("id", eventId);
+
+  const organizerId = (ev as { organizer_id?: string } | null)?.organizer_id;
+  const title = (ev as { title?: string } | null)?.title ?? "募集";
+  if (organizerId) {
+    await notifyUser({
+      userId: organizerId,
+      type: "recruitment_removed",
+      title: "募集が削除されました",
+      body: `あなたの募集「${title}」は規約違反のため運営により削除されました。${reason ? ` 理由: ${reason}` : ""}`,
+      relatedType: "event",
+      relatedId: eventId,
+    });
+  }
+
+  await writeAuditLog(admin.id, "recruitment_delete", "event", eventId, "running", reason ? { reason } : undefined);
+  revalidatePath("/recruitments");
+}
+
 export async function reviewFacilitySubmission(formData: FormData): Promise<void> {
   const admin = await getAdminUser();
   if (!admin) redirect("/");

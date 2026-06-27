@@ -6,8 +6,9 @@ export default async function AdminDashboard() {
   await requireAdmin();
   const supabase = await createServerClient();
 
-  const [users, reports, submissions, owners, verifications, imported] = await Promise.all([
+  const [users, recruitments, reports, submissions, owners, verifications, imported] = await Promise.all([
     supabase.schema(SCHEMA.account).from("users").select("id", { count: "exact", head: true }),
+    supabase.schema(SCHEMA.running).from("events").select("id", { count: "exact", head: true }).is("deleted_at", null),
     supabase.schema(SCHEMA.core).from("reports").select("id", { count: "exact", head: true }).eq("status", "open"),
     supabase.schema(SCHEMA.facility).from("facility_submissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.schema(SCHEMA.facility).from("facility_owners").select("facility_id", { count: "exact", head: true }).eq("status", "pending"),
@@ -17,6 +18,7 @@ export default async function AdminDashboard() {
 
   const cards = [
     { label: "登録ユーザ", value: users.count ?? 0, href: "/users" },
+    { label: "公開中の募集", value: recruitments.count ?? 0, href: "/recruitments" },
     { label: "未対応の通報", value: reports.count ?? 0, href: "/reports" },
     { label: "施設申請（保留）", value: submissions.count ?? 0, href: "/facility-submissions" },
     { label: "運営者申請（保留）", value: owners.count ?? 0, href: "/facility-owners" },
@@ -37,6 +39,7 @@ export default async function AdminDashboard() {
       </div>
       <nav className="card flex flex-wrap gap-4 p-4 text-sm">
         <a className="text-brand hover:underline" href="/users">利用者管理</a>
+        <a className="text-brand hover:underline" href="/recruitments">募集の閲覧・違反削除</a>
         <a className="text-brand hover:underline" href="/reports">通報対応</a>
         <a className="text-brand hover:underline" href="/facility-submissions">施設登録申請</a>
         <a className="text-brand hover:underline" href="/facility-owners">施設運営者申請</a>
