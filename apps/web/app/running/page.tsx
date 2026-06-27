@@ -3,8 +3,7 @@ import Link from "next/link";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../../lib/events";
-import { fetchSportNodes, resolveCategorySportIds } from "../../lib/category";
-import { SportIcon } from "../../components/sport-icon";
+import { fetchSportNodes, resolveCategorySportIds, categoryIcon } from "../../lib/category";
 import heroImage from "../../public/running-hero.svg";
 import runningLogo from "../../public/running-logo.svg";
 import timeboxImage from "../../public/timebox-race.png";
@@ -66,9 +65,7 @@ export default async function RunningTop({
         <Image src={heroImage} alt="一緒に走る仲間を見つけよう" priority className="h-auto w-full" />
         <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 bg-gradient-to-t from-black/60 to-transparent p-4 sm:p-6">
           <h1 className="flex items-center gap-3 text-2xl font-bold text-white drop-shadow sm:text-3xl">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/20 sm:h-14 sm:w-14">
-              <SportIcon code="running" className="h-7 w-7 sm:h-8 sm:w-8" />
-            </span>
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/20 text-3xl sm:h-14 sm:w-14 sm:text-4xl" aria-hidden>{categoryIcon("running")}</span>
             一緒に走る仲間を見つけよう
           </h1>
           <p className="max-w-2xl text-sm text-white/90 sm:text-base">ランニング、マラソン、ジョギング仲間を地域やレベルで探せます。</p>
