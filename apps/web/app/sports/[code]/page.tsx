@@ -7,7 +7,8 @@ import { EventCard } from "@spotomo/shared-ui";
 import { PREFECTURES } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
 import { fetchEvents } from "../../../lib/events";
-import { fetchSportNodes, resolveCategoryParent, resolveCategorySportIds, categoryIcon } from "../../../lib/category";
+import { fetchSportNodes, resolveCategoryParent, resolveCategorySportIds } from "../../../lib/category";
+import { SportIcon, hasSportIcon } from "../../../components/sport-icon";
 import golfLogo from "../../../public/golf-logo.svg";
 import outdoorLogo from "../../../public/outdoor-logo.svg";
 
@@ -90,8 +91,10 @@ export default async function SportPage({
       {/* ヒーロー */}
       <section className="rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 p-6 text-white sm:p-8">
         <h1 className="flex items-center gap-3 text-2xl font-bold sm:text-3xl">
-          {categoryIcon(code) && (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/15 text-3xl sm:h-14 sm:w-14 sm:text-4xl" aria-hidden>{categoryIcon(code)}</span>
+          {hasSportIcon(code) && (
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/15 sm:h-14 sm:w-14">
+              <SportIcon code={code} className="h-7 w-7 sm:h-8 sm:w-8" />
+            </span>
           )}
           {parent.name}の仲間を見つけよう
         </h1>

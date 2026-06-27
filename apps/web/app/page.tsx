@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { fetchEvents } from "../lib/events";
-import { CATEGORY_ICONS } from "../lib/category";
+import { SportIcon } from "../components/sport-icon";
 import heroImage from "../public/park-hero.webp";
 
 export const metadata = {
@@ -13,17 +13,17 @@ export const metadata = {
 };
 
 // 分類（top_page_design §10.4）。検索フォームの分類セレクトと種目カードに使う。
-// アイコンは lib/category の CATEGORY_ICONS を単一ソースとして参照（種目詳細ヘッダと共有）。
-const CATEGORIES: { slug: string; name: string; icon: string; desc: string; href: string }[] = [
-  { slug: "running", name: "ランニング", icon: CATEGORY_ICONS.running, desc: "ランニング仲間・マラソン大会・競技場", href: "/sports/running" },
-  { slug: "golf", name: "ゴルフ", icon: CATEGORY_ICONS.golf, desc: "ラウンド仲間・ゴルフ場・練習場", href: "/sports/golf" },
-  { slug: "outdoor", name: "アウトドア", icon: CATEGORY_ICONS.outdoor, desc: "キャンプ・登山・BBQ・釣り", href: "/sports/outdoor" },
-  { slug: "ball-sports", name: "球技", icon: CATEGORY_ICONS["ball-sports"], desc: "サッカー・野球・テニス・バスケ", href: "/sports/ball-sports" },
-  { slug: "fitness", name: "フィットネス", icon: CATEGORY_ICONS.fitness, desc: "ジム・ヨガ・ダンス", href: "/sports/fitness" },
-  { slug: "water-sports", name: "水泳・水辺", icon: CATEGORY_ICONS["water-sports"], desc: "プール・SUP・カヤック", href: "/sports/water-sports" },
-  { slug: "winter-sports", name: "ウィンター", icon: CATEGORY_ICONS["winter-sports"], desc: "スキー・スノーボード", href: "/sports/winter-sports" },
-  { slug: "leisure", name: "レジャー", icon: CATEGORY_ICONS.leisure, desc: "ボウリング・ダーツ・カラオケ", href: "/sports/leisure" },
-  { slug: "all", name: "すべて", icon: CATEGORY_ICONS.all, desc: "全カテゴリの施設を探す", href: "/facilities" },
+// アイコンは slug から SportIcon（自前 SVG）で描画（種目詳細ヘッダと共有・絵文字非依存）。
+const CATEGORIES: { slug: string; name: string; desc: string; href: string }[] = [
+  { slug: "running", name: "ランニング", desc: "ランニング仲間・マラソン大会・競技場", href: "/sports/running" },
+  { slug: "golf", name: "ゴルフ", desc: "ラウンド仲間・ゴルフ場・練習場", href: "/sports/golf" },
+  { slug: "outdoor", name: "アウトドア", desc: "キャンプ・登山・BBQ・釣り", href: "/sports/outdoor" },
+  { slug: "ball-sports", name: "球技", desc: "サッカー・野球・テニス・バスケ", href: "/sports/ball-sports" },
+  { slug: "fitness", name: "フィットネス", desc: "ジム・ヨガ・ダンス", href: "/sports/fitness" },
+  { slug: "water-sports", name: "水泳・水辺", desc: "プール・SUP・カヤック", href: "/sports/water-sports" },
+  { slug: "winter-sports", name: "ウィンター", desc: "スキー・スノーボード", href: "/sports/winter-sports" },
+  { slug: "leisure", name: "レジャー", desc: "ボウリング・ダーツ・カラオケ", href: "/sports/leisure" },
+  { slug: "all", name: "すべて", desc: "全カテゴリの施設を探す", href: "/facilities" },
 ];
 
 // サービスの特徴（§15）。
@@ -102,7 +102,9 @@ export default async function HomePage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {CATEGORIES.map((c) => (
             <a key={c.slug} href={c.href} className="card flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-2xl">{c.icon}</span>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+                <SportIcon code={c.slug} className="h-6 w-6" />
+              </span>
               <span className="flex min-w-0 flex-col">
                 <span className="font-semibold text-slate-900">{c.name}</span>
                 <span className="truncate text-xs text-slate-500">{c.desc}</span>
