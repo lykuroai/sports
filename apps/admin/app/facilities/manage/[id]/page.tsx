@@ -4,14 +4,21 @@ import { requireAdmin, createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { OWNER_STATUS_LABEL } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
 import type { SportNode } from "@spotomo/shared-ui";
-import { updateFacilityAdmin, deleteFacility, reviewFacilityOwner, revokeFacilityOwner } from "../../../actions";
+import { updateFacilityAdmin, deleteFacility, reviewFacilityOwner, revokeFacilityOwner, addFacilityImageAdmin, deleteFacilityImageAdmin } from "../../../actions";
 import { FacilityFields } from "../facility-fields";
 
 export const metadata = { title: "施設の編集" };
 
-export default async function FacilityEditAdminPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function FacilityEditAdminPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ img_error?: string }>;
+}) {
   await requireAdmin();
   const { id } = await params;
+  const asp = await searchParams;
   const supabase = await createServerClient();
 
   const { data: facility } = await supabase
@@ -28,6 +35,13 @@ export default async function FacilityEditAdminPage({ params }: { params: Promis
   const selectedIds = new Set(((fsRows ?? []) as { sport_id: string }[]).map((r) => r.sport_id));
   const childNode = nodes.find((n) => n.parent_id && selectedIds.has(n.id));
   const parentNode = childNode ? nodes.find((n) => n.id === childNode.parent_id) : nodes.find((n) => !n.parent_id && selectedIds.has(n.id));
+
+  // 施設画像（URL方式）。
+  const { data: imgRows } = await supabase
+    .schema(SCHEMA.facility).from("facility_images")
+    .select("id, url, display_order").eq("facility_id", id)
+    .order("display_order", { ascending: true });
+  const images = (imgRows ?? []) as { id: string; url: string; display_order: number }[];
 
   // この施設の運営者（全 status）。申請者ニックネームも引く。
   const { data: ownerRows } = await supabase
@@ -55,6 +69,36 @@ export default async function FacilityEditAdminPage({ params }: { params: Promis
         <FacilityFields v={f} sportNodes={nodes} defaultParentId={parentNode?.id ?? null} defaultChildId={childNode?.id ?? null} />
         <button className="btn-primary w-full" type="submit">保存する</button>
       </form>
+
+      {/* 施設画像（URL方式・アップロードなし） */}
+      <section className="space-y-2">
+        <h2 className="text-lg font-semibold">施設画像</h2>
+        <p className="text-xs text-slate-500">画像URL、または出典ページURL（og:image 等を自動抽出）を登録します。一覧の先頭がサムネイル。</p>
+        {asp.img_error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">画像を取得できませんでした。画像URL、または画像を含むページURLを入力してください。</p>}
+        {images.length === 0 ? (
+          <p className="text-sm text-slate-400">登録された画像はありません。</p>
+        ) : (
+          <ul className="space-y-2">
+            {images.map((im) => (
+              <li key={im.id} className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={im.url} alt="" className="h-14 w-20 shrink-0 rounded object-cover" />
+                <span className="min-w-0 flex-1 truncate text-xs text-slate-500">{im.url}</span>
+                <form action={deleteFacilityImageAdmin}>
+                  <input type="hidden" name="facility_id" value={f.id} />
+                  <input type="hidden" name="image_id" value={im.id} />
+                  <button className="btn-outline text-red-600" type="submit">削除</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form action={addFacilityImageAdmin} className="flex items-center gap-2">
+          <input type="hidden" name="facility_id" value={f.id} />
+          <input name="url" type="url" className="input flex-1" placeholder="https://example.com/photo.jpg または 出典ページURL" required />
+          <button className="btn-primary" type="submit">追加</button>
+        </form>
+      </section>
 
       {/* 運営者の管理 */}
       <section className="space-y-2">

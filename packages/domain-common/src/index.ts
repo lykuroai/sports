@@ -44,3 +44,4 @@ export { fetchPublicProfile, isBlockedBetween } from "./profiles";
 export type { PublicProfile } from "./profiles";
 export { fetchPublishedSports, fetchUserSports, syncUserSports } from "./sports";
 export type { SportOption, UserSportRow } from "./sports";
+export { resolveFacilityImageUrl } from "./facility-images";

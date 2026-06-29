@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
+import { resolveFacilityImageUrl } from "@spotomo/domain-common";
 import type { SubmitState } from "../../_components/types";
 import { fetchSportNodes } from "../../../../lib/category";
 
@@ -81,4 +82,50 @@ export async function updateFacility(_prev: SubmitState, formData: FormData): Pr
 
   revalidatePath(`/facilities/${v.facility_id}`);
   redirect(`/facilities/${v.facility_id}`);
+}
+
+// 施設画像の追加（URL方式・アップロードなし）。承認済み運営者のみ（RLS fac_images_write）。
+export async function addFacilityImage(formData: FormData): Promise<void> {
+  const facilityId = String(formData.get("facility_id"));
+  const input = String(formData.get("url") ?? "").trim();
+  if (!facilityId || !/^https?:\/\//i.test(input)) {
+    redirect(`/facilities/${facilityId}/edit?img_error=1`);
+  }
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // 画像URLならそのまま、ページURLなら og:image 等を抽出して採用。
+  const url = await resolveFacilityImageUrl(input);
+  if (!url) redirect(`/facilities/${facilityId}/edit?img_error=1`);
+
+  const fac = supabase.schema(SCHEMA.facility);
+  const { data: max } = await fac
+    .from("facility_images")
+    .select("display_order")
+    .eq("facility_id", facilityId)
+    .order("display_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrder = ((max?.display_order as number | null) ?? -1) + 1;
+  await fac.from("facility_images").insert({ facility_id: facilityId, url, display_order: nextOrder });
+  revalidatePath(`/facilities/${facilityId}/edit`);
+  revalidatePath(`/facilities/${facilityId}`);
+}
+
+// 施設画像の削除。
+export async function deleteFacilityImage(formData: FormData): Promise<void> {
+  const facilityId = String(formData.get("facility_id"));
+  const imageId = String(formData.get("image_id"));
+  if (!facilityId || !imageId) return;
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  await supabase.schema(SCHEMA.facility).from("facility_images").delete().eq("id", imageId);
+  revalidatePath(`/facilities/${facilityId}/edit`);
+  revalidatePath(`/facilities/${facilityId}`);
 }
