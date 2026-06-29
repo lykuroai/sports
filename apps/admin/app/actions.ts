@@ -8,7 +8,7 @@ import {
   writeAuditLog,
   SCHEMA,
 } from "@spotomo/auth-client";
-import { notifyUser } from "@spotomo/domain-common";
+import { notifyUser, resolveFacilityImageUrl } from "@spotomo/domain-common";
 
 // 管理操作は必ず getAdminUser() で検証し、サービスロールで RLS をバイパスして実行、
 // core.audit_logs に記録する（CLAUDE.md / 仕様 §11.1）。
@@ -503,4 +503,40 @@ export async function revokeFacilityOwner(formData: FormData): Promise<void> {
   await writeAuditLog(admin.id, "facility_owner_revoked", "facility_owner", `${facilityId}:${userId}`, "facility");
   revalidatePath(`/facilities/manage/${facilityId}`);
   revalidatePath("/facility-owners");
+}
+
+// 施設画像の追加（URL方式・管理者）。
+export async function addFacilityImageAdmin(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const facilityId = String(formData.get("facility_id"));
+  const input = String(formData.get("url") ?? "").trim();
+  if (!facilityId) return;
+  if (!/^https?:\/\//i.test(input)) redirect(`/facilities/manage/${facilityId}?img_error=1`);
+  // 画像URLならそのまま、ページURLなら og:image 等を抽出して採用。
+  const url = await resolveFacilityImageUrl(input);
+  if (!url) redirect(`/facilities/manage/${facilityId}?img_error=1`);
+
+  const db = createAdminClient();
+  const fac = db.schema(SCHEMA.facility);
+  const { data: max } = await fac.from("facility_images")
+    .select("display_order").eq("facility_id", facilityId)
+    .order("display_order", { ascending: false }).limit(1).maybeSingle();
+  const nextOrder = ((max?.display_order as number | null) ?? -1) + 1;
+  await fac.from("facility_images").insert({ facility_id: facilityId, url, display_order: nextOrder });
+  await writeAuditLog(admin.id, "facility_image_add", "facility", facilityId, "facility");
+  revalidatePath(`/facilities/manage/${facilityId}`);
+}
+
+// 施設画像の削除（管理者）。
+export async function deleteFacilityImageAdmin(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const facilityId = String(formData.get("facility_id"));
+  const imageId = String(formData.get("image_id"));
+  if (!facilityId || !imageId) return;
+  const db = createAdminClient();
+  await db.schema(SCHEMA.facility).from("facility_images").delete().eq("id", imageId);
+  await writeAuditLog(admin.id, "facility_image_delete", "facility", facilityId, "facility");
+  revalidatePath(`/facilities/manage/${facilityId}`);
 }
