@@ -161,7 +161,10 @@ export default async function FacilityDetail({ params }: { params: Promise<{ id:
         <section className="card space-y-2 p-4">
           <h2 className="font-semibold">この施設の運営者ですか？</h2>
           {ownerStatus === "verified" ? (
-            <p className="text-sm text-emerald-700">あなたはこの施設の承認済み運営者です。施設情報を編集できます。</p>
+            <div className="space-y-2">
+              <p className="text-sm text-emerald-700">あなたはこの施設の承認済み運営者です。施設情報を編集できます。</p>
+              <Link href={`/facilities/${f.id}/edit`} className="btn-primary inline-block">施設情報を編集する</Link>
+            </div>
           ) : ownerStatus === "pending" ? (
             <div className="space-y-2">
               <p className="text-sm text-slate-600">運営者申請は{OWNER_STATUS_LABEL.pending}です。管理者の承認をお待ちください。</p>

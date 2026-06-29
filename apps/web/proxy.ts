@@ -14,9 +14,10 @@ const GENERAL_PREFIXES = [
   "/verification",
   "/facilities/register",
 ];
-// 施設運営者の専用領域（未ログインは運営者ログイン /owner/login へ誘導）。
+// 施設運営者の専用領域。運営者の登録/ログインは廃止したため、未ログインは一般 /login へ
+// 誘導する（同一 auth.users で認証でき、承認済みオーナーは /owner へ到達できる）。
 const OWNER_PREFIXES = ["/owner", "/facilities/submit"];
-// 運営者の認証ページ自体は保護しない（自己リダイレクトのループ防止）。
+// 廃止した運営者認証ページ（404 で残置）。保護対象から外す（自己リダイレクト防止）。
 const OWNER_AUTH_PAGES = ["/owner/login", "/owner/register"];
 
 export async function proxy(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function proxy(request: NextRequest) {
     }
     return await updateSession(request, {
       protectedPrefixes: OWNER_PREFIXES,
-      loginPath: "/owner/login",
+      loginPath: "/login",
     });
   }
 

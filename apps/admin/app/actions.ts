@@ -357,3 +357,114 @@ export async function reviewFacilityOwner(formData: FormData): Promise<void> {
   await writeAuditLog(admin.id, `facility_owner_${decision}`, "facility_owner", `${facilityId}:${userId}`, "facility");
   revalidatePath("/facility-owners");
 }
+
+// =============================================================
+// 施設の管理（検索・登録・修正・削除）と運営者管理。すべて管理者のみ・サービスロール実行。
+// =============================================================
+
+// 緯度経度から EWKT を組み立てる（PostGIS geog 用）。両方数値のときのみ。
+function ewkt(lat: number | null, lng: number | null): string | null {
+  return lat != null && lng != null ? `SRID=4326;POINT(${lng} ${lat})` : null;
+}
+function numOrNull(v: FormDataEntryValue | null): number | null {
+  const s = String(v ?? "").trim();
+  if (s === "") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function strOrNull(v: FormDataEntryValue | null): string | null {
+  const s = String(v ?? "").trim();
+  return s === "" ? null : s;
+}
+
+// 施設の新規登録（管理者）。既定 status='verified'（管理者作成は公開）。
+export async function createFacility(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const name = strOrNull(formData.get("name"));
+  if (!name) return;
+  const lat = numOrNull(formData.get("latitude"));
+  const lng = numOrNull(formData.get("longitude"));
+  const status = String(formData.get("status") || "verified");
+
+  const db = createAdminClient();
+  const { data, error } = await db.schema(SCHEMA.facility).from("facilities").insert({
+    name,
+    facility_type: strOrNull(formData.get("facility_type")),
+    description: strOrNull(formData.get("description")),
+    postal_code: strOrNull(formData.get("postal_code")),
+    prefecture: strOrNull(formData.get("prefecture")),
+    city: strOrNull(formData.get("city")),
+    address: strOrNull(formData.get("address")),
+    latitude: lat,
+    longitude: lng,
+    geog: ewkt(lat, lng),
+    status,
+    source: "admin",
+  }).select("id").single();
+  if (error || !data) return;
+
+  await writeAuditLog(admin.id, "facility_create", "facility", data.id as string, "facility");
+  redirect(`/facilities/manage/${data.id}`);
+}
+
+// 施設の修正（管理者）。
+export async function updateFacilityAdmin(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const id = String(formData.get("facility_id"));
+  const name = strOrNull(formData.get("name"));
+  if (!id || !name) return;
+  const lat = numOrNull(formData.get("latitude"));
+  const lng = numOrNull(formData.get("longitude"));
+
+  const db = createAdminClient();
+  await db.schema(SCHEMA.facility).from("facilities").update({
+    name,
+    facility_type: strOrNull(formData.get("facility_type")),
+    description: strOrNull(formData.get("description")),
+    postal_code: strOrNull(formData.get("postal_code")),
+    prefecture: strOrNull(formData.get("prefecture")),
+    city: strOrNull(formData.get("city")),
+    address: strOrNull(formData.get("address")),
+    latitude: lat,
+    longitude: lng,
+    geog: ewkt(lat, lng),
+    status: String(formData.get("status") || "verified"),
+    updated_at: new Date().toISOString(),
+  }).eq("id", id);
+
+  await writeAuditLog(admin.id, "facility_update", "facility", id, "facility");
+  revalidatePath(`/facilities/manage/${id}`);
+  revalidatePath("/facilities/manage");
+}
+
+// 施設の削除（管理者）。子テーブルは ON DELETE CASCADE。
+export async function deleteFacility(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const id = String(formData.get("facility_id"));
+  if (!id) return;
+
+  const db = createAdminClient();
+  await db.schema(SCHEMA.facility).from("facilities").delete().eq("id", id);
+  await writeAuditLog(admin.id, "facility_delete", "facility", id, "facility");
+  redirect("/facilities/manage");
+}
+
+// 運営者の権限を取り消す（verified→revoked）。グローバルロールは他施設のため残す。
+export async function revokeFacilityOwner(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const facilityId = String(formData.get("facility_id"));
+  const userId = String(formData.get("user_id"));
+  if (!facilityId || !userId) return;
+
+  const db = createAdminClient();
+  await db.schema(SCHEMA.facility).from("facility_owners")
+    .update({ status: "revoked", reviewed_by: admin.id, reviewed_at: new Date().toISOString() })
+    .eq("facility_id", facilityId).eq("user_id", userId);
+  await writeAuditLog(admin.id, "facility_owner_revoked", "facility_owner", `${facilityId}:${userId}`, "facility");
+  revalidatePath(`/facilities/manage/${facilityId}`);
+  revalidatePath("/facility-owners");
+}

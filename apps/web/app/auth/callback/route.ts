@@ -41,10 +41,9 @@ export async function GET(request: Request) {
       if (verify === "email") {
         await supabase.auth.signOut();
         // 認証後の戻り先（プロフィール設定→元ページ）をログイン画面へ引き継ぐ。
-        // 施設運営者（next が /owner 配下）は運営者ログインへ、一般は通常ログインへ。
-        const loginPath = next.startsWith("/owner") ? "/owner/login" : "/login";
+        // 【方針: 一般ユーザ兼施設運営者】運営者専用ログインは廃止したため常に一般 /login。
         const q = next && next !== "/profile" ? `&redirect=${encodeURIComponent(next)}` : "";
-        return NextResponse.redirect(`${base}${loginPath}?notice=verified${q}`);
+        return NextResponse.redirect(`${base}/login?notice=verified${q}`);
       }
       const res = NextResponse.redirect(dest);
       res.cookies.set("oauth_next", "", { maxAge: 0, path: "/" });

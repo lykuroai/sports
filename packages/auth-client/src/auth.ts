@@ -165,16 +165,25 @@ export async function getOwnerAccount(): Promise<User | null> {
   return owns ? user : null;
 }
 
-/** 施設運営者アカウントでなければトップへリダイレクト。 */
+/**
+ * 施設運営者領域（/owner・/facilities/submit）のガード。
+ * 【方針: 一般ユーザ兼施設運営者（権限累積）】施設運営者は独立アカウントではなく一般会員の
+ * 拡張権限。よって専用の登録/ログインは設けず、ログイン済みの一般会員なら誰でも到達できる
+ * （運営権は施設詳細から申請→管理者承認で facility_owners.verified を付与し、RLS is_owner で
+ * 編集可になる）。未ログインは一般 /login へ戻り先付きで誘導。
+ */
 export async function requireOwnerAccount(): Promise<User> {
-  const user = await getOwnerAccount();
-  if (!user) redirect("/");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/login?redirect=${encodeURIComponent("/owner")}`);
   return user;
 }
 
 /**
- * 一般会員向けページのガード。施設運営者アカウントは一般機能（プロフィール・募集参加等）を
- * 持たないため、facility アプリへ誘導する。未ログインは引数の戻り先付きでログインへ。
+ * 一般会員向けページのガード。【方針: 権限累積】施設運営者も一般会員なので種別での出し分けは
+ * せず、ログインのみを要求する。未ログインは引数の戻り先付きでログインへ。
  */
 export async function requireGeneralAccount(redirectTo = "/"): Promise<User> {
   const supabase = await createClient();
@@ -182,17 +191,6 @@ export async function requireGeneralAccount(redirectTo = "/"): Promise<User> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?redirect=${encodeURIComponent(redirectTo)}`);
-
-  const { data } = await supabase
-    .schema(SCHEMA.account)
-    .from("users")
-    .select("account_type")
-    .eq("id", user.id)
-    .maybeSingle();
-  if ((data as { account_type?: string } | null)?.account_type === "facility_owner") {
-    const facilityUrl = process.env.NEXT_PUBLIC_FACILITY_URL;
-    redirect(facilityUrl ? `${facilityUrl}/owner` : "/");
-  }
   return user;
 }
 

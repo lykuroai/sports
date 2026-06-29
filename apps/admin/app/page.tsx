@@ -45,6 +45,7 @@ export default async function AdminDashboard() {
         <a className="text-brand hover:underline" href="/facility-owners">施設運営者申請</a>
         <a className="text-brand hover:underline" href="/verifications">本人確認 審査</a>
         <a className="text-brand hover:underline" href="/sports">カテゴリ管理</a>
+        <a className="text-brand hover:underline" href="/facilities/manage">施設の管理（検索・登録・修正・削除）</a>
         <a className="text-brand hover:underline" href="/facilities">取り込み施設の承認</a>
         <a className="text-brand hover:underline" href="/facilities/featured">おすすめ施設の指定</a>
         <a className="text-brand hover:underline" href="/facilities/import">施設CSV取り込み</a>
