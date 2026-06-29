@@ -42,9 +42,10 @@ export default async function HomePage() {
   const fac = supabase.schema(SCHEMA.facility);
   const run = supabase.schema(SCHEMA.running);
 
-  const [events, facListRes, racesRes, facCntRes, raceCntRes, recCntRes, catRes] = await Promise.all([
+  const [events, featuredRes, racesRes, facCntRes, raceCntRes, recCntRes, catRes] = await Promise.all([
     fetchEvents(supabase, {}),
-    fac.from("facilities").select("id, name, facility_type, prefecture, city").eq("status", "verified").order("created_at", { ascending: false }).limit(6),
+    // おすすめ施設は管理画面で指定（featured_rank 昇順）。未設定なら最新 verified で補完。
+    fac.from("facilities").select("id, name, facility_type, prefecture, city").eq("status", "verified").not("featured_rank", "is", null).order("featured_rank", { ascending: true }).limit(6),
     run.from("races").select("id, name, prefecture, city, event_date, website_url").eq("discontinued", false).order("event_date", { ascending: true, nullsFirst: false }).limit(6),
     fac.from("facilities").select("id", { count: "exact", head: true }).eq("status", "verified"),
     run.from("races").select("id", { count: "exact", head: true }).eq("discontinued", false),
@@ -58,7 +59,17 @@ export default async function HomePage() {
   const catCntRes = catRes;
   type Fac = { id: string; name: string; facility_type: string | null; prefecture: string | null; city: string | null };
   type Race = { id: string; name: string; prefecture: string | null; city: string | null; event_date: string | null; website_url: string | null };
-  const facilities = (facListRes.data ?? []) as Fac[];
+  let facilities = (featuredRes.data ?? []) as Fac[];
+  // 管理画面でおすすめ未設定なら、最新の verified 施設で補完して空欄を避ける。
+  if (facilities.length === 0) {
+    const { data: latest } = await fac
+      .from("facilities")
+      .select("id, name, facility_type, prefecture, city")
+      .eq("status", "verified")
+      .order("created_at", { ascending: false })
+      .limit(6);
+    facilities = (latest ?? []) as Fac[];
+  }
   const races = (racesRes.data ?? []) as Race[];
 
   const stats = [

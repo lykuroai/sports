@@ -1,4 +1,5 @@
 import { createAdminClient, SCHEMA } from "@spotomo/auth-client";
+import { loadSportTree, resolveSportIds, ensureFacilitySports } from "./facility-sports";
 
 // =============================================================
 // OpenStreetMap / Overpass API 施設取り込み（定期バッチ・統合サイト化 Phase 3）
@@ -252,14 +253,6 @@ async function log(admin: Admin, runId: string | null, level: string, message: s
     .insert({ batch_run_id: runId, level, message, detail: detail ?? null });
 }
 
-/** sport slug → core.sports.id の対応表を取得。 */
-async function loadSportIds(admin: Admin, slugs: string[]): Promise<Map<string, string>> {
-  const { data } = await admin.schema(SCHEMA.core).from("sports").select("id, slug").in("slug", slugs);
-  const m = new Map<string, string>();
-  for (const r of data ?? []) m.set(String(r.slug), String(r.id));
-  return m;
-}
-
 /**
  * 正規化済み施設を取り込む。冪等・重複判定つき。
  * area はログ用途。jobName は batch_runs 用。
@@ -279,7 +272,7 @@ export async function ingestOsmFacilities(
   await log(admin, runId, "info", `Overpass area=${area} fetched=${fetched} candidates=${facilities.length}`);
 
   const limit = Number(process.env.OSM_FETCH_LIMIT) || 300;
-  const sportIds = await loadSportIds(admin, ["running", "park-walk"]);
+  const sportTree = await loadSportTree(admin);
 
   for (const f of facilities.slice(0, limit)) {
     try {
@@ -308,11 +301,14 @@ export async function ingestOsmFacilities(
         const changed = cur && (cur.name !== f.name || cur.facility_type !== f.facilityType
           || Number(cur.latitude) !== f.lat || Number(cur.longitude) !== f.lng);
         if (changed) {
+          patch.last_checked_at = new Date().toISOString();
           await fac.from("facilities").update(patch).eq("id", existingSrc.facility_id);
           summary.updated++;
         } else {
           summary.unchanged++;
         }
+        // 種目（大分類＋小分類）を必ず補完（旧データは小分類のみ/未付与のことがある）。
+        await ensureFacilitySports(fac, existingSrc.facility_id, resolveSportIds(sportTree, f.sportSlug));
         await fac.from("facility_sources").update({
           raw_data: f.tags, fetched_at: new Date().toISOString(), source_url: `https://www.openstreetmap.org/${f.osmId}`,
         }).eq("id", existingSrc.id);
@@ -354,10 +350,8 @@ export async function ingestOsmFacilities(
       if (insErr || !inserted) throw new Error(insErr?.message ?? "insert 失敗");
 
       const facilityId = inserted.id as string;
-      const sportId = sportIds.get(f.sportSlug);
-      if (sportId) {
-        await fac.from("facility_sports").insert({ facility_id: facilityId, sport_id: sportId });
-      }
+      // 種目は必ず大分類＋小分類をセット（検索に出ない施設を作らない）。
+      await ensureFacilitySports(fac, facilityId, resolveSportIds(sportTree, f.sportSlug));
       await fac.from("facility_sources").insert({
         facility_id: facilityId, source_type: "openstreetmap", source_id: f.osmId,
         source_name: f.name, source_url: `https://www.openstreetmap.org/${f.osmId}`,
