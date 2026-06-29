@@ -55,7 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ul className="space-y-1 text-slate-500">
                 <li><Link href="/recruitments/new" className="hover:text-brand">仲間を募集する</Link></li>
                 <li><Link href="/facilities" className="hover:text-brand">施設を探す・登録</Link></li>
-                <li><Link href="/owner/login" className="hover:text-brand">施設運営者の方はこちら</Link></li>
+                <li><Link href="/owner" className="hover:text-brand">施設運営者の方はこちら</Link></li>
               </ul>
             </div>
             <div>
