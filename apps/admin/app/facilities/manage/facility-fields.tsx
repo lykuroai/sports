@@ -1,10 +1,11 @@
 import { PREFECTURES } from "@spotomo/shared-types";
+import { SportCategorySelect, type SportNode } from "@spotomo/shared-ui";
 
 // 施設の登録/修正フォームの入力欄（新規・編集で共用するサーバ部品）。
 // 値は facilities の実カラムに一致させること（actions がそのまま insert/update する）。
+// 種別は大分類/小分類（種目ツリー）で選び、facility_sports に展開する。
 type Values = {
   name?: string | null;
-  facility_type?: string | null;
   description?: string | null;
   postal_code?: string | null;
   prefecture?: string | null;
@@ -21,24 +22,29 @@ const STATUSES: { value: string; label: string }[] = [
   { value: "rejected", label: "却下（rejected）" },
 ];
 
-export function FacilityFields({ v = {} }: { v?: Values }) {
+export function FacilityFields({
+  v = {},
+  sportNodes,
+  defaultParentId = null,
+  defaultChildId = null,
+}: {
+  v?: Values;
+  sportNodes: SportNode[];
+  defaultParentId?: string | null;
+  defaultChildId?: string | null;
+}) {
   return (
     <>
       <div>
         <label className="label" htmlFor="name">施設名 *</label>
         <input id="name" name="name" className="input" required maxLength={200} defaultValue={v.name ?? ""} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label" htmlFor="facility_type">種別（例: ゴルフ場 / 体育館）</label>
-          <input id="facility_type" name="facility_type" className="input" maxLength={60} defaultValue={v.facility_type ?? ""} />
-        </div>
-        <div>
-          <label className="label" htmlFor="status">公開状態</label>
-          <select id="status" name="status" className="input" defaultValue={v.status ?? "verified"}>
-            {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
-        </div>
+      <SportCategorySelect nodes={sportNodes} defaultParentId={defaultParentId} defaultChildId={defaultChildId} />
+      <div>
+        <label className="label" htmlFor="status">公開状態</label>
+        <select id="status" name="status" className="input" defaultValue={v.status ?? "verified"}>
+          {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
