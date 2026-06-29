@@ -377,6 +377,26 @@ function strOrNull(v: FormDataEntryValue | null): string | null {
   return s === "" ? null : s;
 }
 
+type SportNodeRow = { id: string; name: string; parent_id: string | null };
+
+// フォームの sport_parent/sport_child を検証し、表示名(facility_type)と facility_sports へ
+// 入れる sport_id 群（大分類＋小分類）を返す。未選択/不正なら null。
+async function resolveSportSelection(
+  db: ReturnType<typeof createAdminClient>,
+  formData: FormData,
+): Promise<{ facilityType: string; sportIds: string[] } | null> {
+  const parentId = strOrNull(formData.get("sport_parent"));
+  const childId = strOrNull(formData.get("sport_child"));
+  if (!parentId) return null;
+  const { data } = await db.schema(SCHEMA.core).from("sports").select("id, name, parent_id").eq("status", "published");
+  const nodes = (data ?? []) as SportNodeRow[];
+  const parent = nodes.find((n) => n.id === parentId && !n.parent_id);
+  if (!parent) return null;
+  const child = childId ? nodes.find((n) => n.id === childId && n.parent_id === parent.id) : undefined;
+  if (childId && !child) return null;
+  return { facilityType: (child ?? parent).name, sportIds: child ? [parent.id, child.id] : [parent.id] };
+}
+
 // 施設の新規登録（管理者）。既定 status='verified'（管理者作成は公開）。
 export async function createFacility(formData: FormData): Promise<void> {
   const admin = await getAdminUser();
@@ -388,9 +408,11 @@ export async function createFacility(formData: FormData): Promise<void> {
   const status = String(formData.get("status") || "verified");
 
   const db = createAdminClient();
+  const sport = await resolveSportSelection(db, formData);
+  if (!sport) return; // 種別（大分類）は必須
   const { data, error } = await db.schema(SCHEMA.facility).from("facilities").insert({
     name,
-    facility_type: strOrNull(formData.get("facility_type")),
+    facility_type: sport.facilityType,
     description: strOrNull(formData.get("description")),
     postal_code: strOrNull(formData.get("postal_code")),
     prefecture: strOrNull(formData.get("prefecture")),
@@ -403,9 +425,12 @@ export async function createFacility(formData: FormData): Promise<void> {
     source: "admin",
   }).select("id").single();
   if (error || !data) return;
+  const facilityId = data.id as string;
+  await db.schema(SCHEMA.facility).from("facility_sports")
+    .insert(sport.sportIds.map((sport_id) => ({ facility_id: facilityId, sport_id })));
 
-  await writeAuditLog(admin.id, "facility_create", "facility", data.id as string, "facility");
-  redirect(`/facilities/manage/${data.id}`);
+  await writeAuditLog(admin.id, "facility_create", "facility", facilityId, "facility");
+  redirect(`/facilities/manage/${facilityId}`);
 }
 
 // 施設の修正（管理者）。
@@ -419,9 +444,11 @@ export async function updateFacilityAdmin(formData: FormData): Promise<void> {
   const lng = numOrNull(formData.get("longitude"));
 
   const db = createAdminClient();
+  const sport = await resolveSportSelection(db, formData);
+  if (!sport) return; // 種別（大分類）は必須
   await db.schema(SCHEMA.facility).from("facilities").update({
     name,
-    facility_type: strOrNull(formData.get("facility_type")),
+    facility_type: sport.facilityType,
     description: strOrNull(formData.get("description")),
     postal_code: strOrNull(formData.get("postal_code")),
     prefecture: strOrNull(formData.get("prefecture")),
@@ -433,6 +460,10 @@ export async function updateFacilityAdmin(formData: FormData): Promise<void> {
     status: String(formData.get("status") || "verified"),
     updated_at: new Date().toISOString(),
   }).eq("id", id);
+  // 種目（大分類＋小分類）を入れ替え。
+  await db.schema(SCHEMA.facility).from("facility_sports").delete().eq("facility_id", id);
+  await db.schema(SCHEMA.facility).from("facility_sports")
+    .insert(sport.sportIds.map((sport_id) => ({ facility_id: id, sport_id })));
 
   await writeAuditLog(admin.id, "facility_update", "facility", id, "facility");
   revalidatePath(`/facilities/manage/${id}`);

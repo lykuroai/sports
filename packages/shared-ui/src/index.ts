@@ -7,3 +7,5 @@ export type { ChatPanelProps, ChatMessageView } from "./chat-panel";
 export { Turnstile } from "./turnstile";
 export { StatCard, UserCard } from "./mypage-cards";
 export { LegalLinks } from "./legal-links";
+export { SportCategorySelect } from "./sport-category-select";
+export type { SportCategorySelectProps, SportNode } from "./sport-category-select";

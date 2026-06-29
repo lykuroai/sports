@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin, createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { OWNER_STATUS_LABEL } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
+import type { SportNode } from "@spotomo/shared-ui";
 import { updateFacilityAdmin, deleteFacility, reviewFacilityOwner, revokeFacilityOwner } from "../../../actions";
 import { FacilityFields } from "../facility-fields";
 
@@ -17,6 +18,16 @@ export default async function FacilityEditAdminPage({ params }: { params: Promis
     .schema(SCHEMA.facility).from("facilities").select("*").eq("id", id).maybeSingle();
   if (!facility) notFound();
   const f = facility as Facility;
+
+  // 種別（大分類/小分類）の現在値を facility_sports から復元してプリフィル。
+  const { data: nodeRows } = await supabase
+    .schema(SCHEMA.core).from("sports").select("id, name, parent_id").eq("status", "published").order("display_order", { ascending: true });
+  const nodes = (nodeRows ?? []) as SportNode[];
+  const { data: fsRows } = await supabase
+    .schema(SCHEMA.facility).from("facility_sports").select("sport_id").eq("facility_id", id);
+  const selectedIds = new Set(((fsRows ?? []) as { sport_id: string }[]).map((r) => r.sport_id));
+  const childNode = nodes.find((n) => n.parent_id && selectedIds.has(n.id));
+  const parentNode = childNode ? nodes.find((n) => n.id === childNode.parent_id) : nodes.find((n) => !n.parent_id && selectedIds.has(n.id));
 
   // この施設の運営者（全 status）。申請者ニックネームも引く。
   const { data: ownerRows } = await supabase
@@ -41,7 +52,7 @@ export default async function FacilityEditAdminPage({ params }: { params: Promis
 
       <form action={updateFacilityAdmin} className="card space-y-4 p-6">
         <input type="hidden" name="facility_id" value={f.id} />
-        <FacilityFields v={f} />
+        <FacilityFields v={f} sportNodes={nodes} defaultParentId={parentNode?.id ?? null} defaultChildId={childNode?.id ?? null} />
         <button className="btn-primary w-full" type="submit">保存する</button>
       </form>
 

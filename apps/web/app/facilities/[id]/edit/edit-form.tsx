@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { PREFECTURES } from "@spotomo/shared-types";
+import { SportCategorySelect, type SportNode } from "@spotomo/shared-ui";
 import type { SubmitState } from "../../_components/types";
 
 const initial: SubmitState = { error: null };
@@ -10,7 +11,6 @@ const initial: SubmitState = { error: null };
 type FacilityValues = {
   id: string;
   name: string | null;
-  facility_type: string | null;
   description: string | null;
   postal_code: string | null;
   prefecture: string | null;
@@ -23,9 +23,15 @@ type FacilityValues = {
 export function FacilityEditForm({
   action,
   facility,
+  sportNodes,
+  defaultParentId,
+  defaultChildId,
 }: {
   action: (prev: SubmitState, formData: FormData) => Promise<SubmitState>;
   facility: FacilityValues;
+  sportNodes: SportNode[];
+  defaultParentId: string | null;
+  defaultChildId: string | null;
 }) {
   const [state, formAction, pending] = useActionState(action, initial);
 
@@ -39,10 +45,7 @@ export function FacilityEditForm({
         <input id="name" name="name" className="input" required maxLength={200} defaultValue={facility.name ?? ""} />
       </div>
 
-      <div>
-        <label className="label" htmlFor="facility_type">種別（例: ゴルフ場 / 体育館）</label>
-        <input id="facility_type" name="facility_type" className="input" maxLength={60} defaultValue={facility.facility_type ?? ""} />
-      </div>
+      <SportCategorySelect nodes={sportNodes} defaultParentId={defaultParentId} defaultChildId={defaultChildId} />
 
       <div className="grid grid-cols-2 gap-3">
         <div>
