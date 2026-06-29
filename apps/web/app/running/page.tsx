@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
-import { fetchEvents } from "../../lib/events";
+import { fetchEvents, countRecruitmentsByPrefecture } from "../../lib/events";
 import { fetchSportNodes, resolveCategorySportIds } from "../../lib/category";
 import heroImage from "../../public/running-hero.svg";
 import timeboxImage from "../../public/timebox-race.png";
@@ -48,6 +48,9 @@ export default async function RunningTop({
       : Promise.resolve({ data: [] }),
   ]);
   const facilities = (facRes.data ?? []) as unknown as Fac[];
+
+  // 都道府県ごとの募集件数（「地域から探す」の件数表示）。
+  const prefCounts = await countRecruitmentsByPrefecture(supabase, runningIds);
 
   return (
     <div className="space-y-8">
@@ -161,6 +164,7 @@ export default async function RunningTop({
           {["東京都", "神奈川県", "千葉県", "埼玉県", "愛知県", "大阪府", "兵庫県", "福岡県", "北海道"].map((pref) => (
             <Link key={pref} href={`/recruitments?category=running&area=${encodeURIComponent(pref)}`} className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:border-brand hover:text-brand">
               {pref}のランニング
+              <span className="ml-1 text-xs text-slate-400">({prefCounts.get(pref) ?? 0})</span>
             </Link>
           ))}
         </div>

@@ -4,7 +4,7 @@ import { createServerClient, SCHEMA } from "@spotomo/auth-client";
 import { EventCard } from "@spotomo/shared-ui";
 import { PREFECTURES } from "@spotomo/shared-types";
 import type { Facility } from "@spotomo/shared-types";
-import { fetchEvents } from "../../../lib/events";
+import { fetchEvents, countRecruitmentsByPrefecture } from "../../../lib/events";
 import { fetchSportNodes, resolveCategoryParent, resolveCategorySportIds } from "../../../lib/category";
 
 // 種目別トップ（sport_category_page_design）。共通の施設DB・募集DBを種目で絞り込んで表示する。
@@ -62,6 +62,9 @@ export default async function SportPage({
   const facilities = (facRes.data ?? []) as unknown as Facility[];
   const facCount = (facRes as { count?: number }).count ?? 0;
   const sportName = new Map(nodes.map((n) => [n.id, n.name]));
+
+  // 都道府県ごとの募集件数（「地域から探す」の件数表示）。
+  const prefCounts = await countRecruitmentsByPrefecture(supabase, sportIds);
 
   const facHref = `/facilities?category=${slug}`;
 
@@ -150,6 +153,7 @@ export default async function SportPage({
           {["東京都", "神奈川県", "千葉県", "埼玉県", "愛知県", "大阪府", "兵庫県", "福岡県", "北海道"].map((pref) => (
             <Link key={pref} href={`/recruitments?category=${slug}&area=${encodeURIComponent(pref)}`} className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:border-brand hover:text-brand">
               {pref}の{parent.name}
+              <span className="ml-1 text-xs text-slate-400">({prefCounts.get(pref) ?? 0})</span>
             </Link>
           ))}
         </div>
