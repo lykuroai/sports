@@ -46,6 +46,7 @@ export default async function AdminDashboard() {
         <a className="text-brand hover:underline" href="/verifications">本人確認 審査</a>
         <a className="text-brand hover:underline" href="/sports">カテゴリ管理</a>
         <a className="text-brand hover:underline" href="/facilities">取り込み施設の承認</a>
+        <a className="text-brand hover:underline" href="/facilities/featured">おすすめ施設の指定</a>
         <a className="text-brand hover:underline" href="/facilities/import">施設CSV取り込み</a>
         <a className="text-brand hover:underline" href="/batch-runs">取り込みバッチ履歴</a>
       </nav>

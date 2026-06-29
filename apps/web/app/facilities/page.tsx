@@ -33,26 +33,33 @@ export default async function FacilitySearch({
         ?? "")
     : "";
 
-  // 施設検索は種目（分類）必須。種目未選択では検索しない。
-  const hasCategory = !!sp.category;
-  // category → sport_id 群を解決。大分類なら配下の小分類も含める。空配列=該当種目なし。
-  const sportIds = hasCategory ? (resolveCategorySportIds(nodes, sp.category) ?? []) : [];
+  // 種目（分類）は任意。選択時は facility_sports で絞り、未選択なら全 verified を対象。
+  // category → sport_id 群を解決（大分類なら配下の小分類も含める）。null=未指定、[]=不正 slug。
+  const sportIds = sp.category ? (resolveCategorySportIds(nodes, sp.category) ?? []) : null;
+  // 種目を指定したのに該当 sport が無い場合のみ 0 件（不正な category）。
+  const noMatch = sportIds !== null && sportIds.length === 0;
+  const filterBySport = sportIds !== null && sportIds.length > 0;
 
   let facilities: Facility[] = [];
   let total = 0;
-  if (hasCategory && sportIds.length > 0) {
+  if (!noMatch) {
     // 種目絞り込みは facility_sports の inner join 埋め込みで行う（sport_id 配列で絞るため
     // URL が短く済む。施設IDを数千件 .in する旧方式は URL 長すぎで失敗していた）。
     let query = supabase
       .schema(SCHEMA.facility)
       .from("facilities")
-      .select("id, name, facility_type, description, prefecture, city, address, facility_sports!inner(sport_id)", { count: "exact" })
+      .select(
+        filterBySport
+          ? "id, name, facility_type, description, prefecture, city, address, facility_sports!inner(sport_id)"
+          : "id, name, facility_type, description, prefecture, city, address",
+        { count: "exact" },
+      )
       // 自動取得（OSM等）の未承認施設は公開前承認まで一覧に出さない（仕様 §21.2）。
       .eq("status", "verified")
-      .in("facility_sports.sport_id", sportIds)
       .order("prefecture", { ascending: true })
       .order("name", { ascending: true })
       .range(from, from + PER_PAGE - 1);
+    if (filterBySport) query = query.in("facility_sports.sport_id", sportIds);
     if (sp.q) query = query.ilike("name", `%${sp.q}%`);
     if (prefecture) query = query.eq("prefecture", prefecture);
     if (sp.type) query = query.eq("facility_type", sp.type);
@@ -102,9 +109,9 @@ export default async function FacilitySearch({
       )}
 
       <form className="card flex flex-wrap items-center gap-2 p-4" action="/facilities">
-        {/* 種目は必須。未選択では検索できない。 */}
-        <select name="category" defaultValue={selectedCat} required className="input max-w-[12rem]">
-          <option value="">種目を選択（必須）</option>
+        {/* 種目は任意。未選択なら全施設から検索する。 */}
+        <select name="category" defaultValue={selectedCat} className="input max-w-[12rem]">
+          <option value="">種目（すべて）</option>
           {parents.map((p) => <option key={p.id} value={p.slug}>{p.name}</option>)}
         </select>
         <select name="pref" defaultValue={prefecture ?? ""} className="input max-w-[10rem]">
@@ -116,12 +123,6 @@ export default async function FacilitySearch({
         <button className="btn-outline" type="submit">検索</button>
       </form>
 
-      {!hasCategory ? (
-        <div className="card p-6 text-center text-slate-600">
-          まず<strong>種目</strong>を選択して検索してください。必要に応じて都道府県やキーワードでさらに絞り込めます。
-        </div>
-      ) : (
-      <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-slate-500">{total}件中 {total === 0 ? 0 : from + 1}〜{Math.min(from + PER_PAGE, total)}件を表示</p>
         <Link href="/facilities/register" className="text-sm text-brand hover:underline">施設が見つからない場合は登録する →</Link>
@@ -170,8 +171,6 @@ export default async function FacilitySearch({
             <span className="btn-outline pointer-events-none opacity-40">次へ →</span>
           )}
         </div>
-      )}
-      </>
       )}
     </div>
   );

@@ -254,6 +254,55 @@ export async function mergeImportedFacility(formData: FormData): Promise<void> {
   revalidatePath("/facilities");
 }
 
+// HOME のおすすめ施設に追加（featured_rank を最後尾に採番）。verified のみ対象。
+export async function addFeaturedFacility(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const facilityId = String(formData.get("facility_id"));
+  if (!facilityId) return;
+
+  const db = createAdminClient();
+  const fac = db.schema(SCHEMA.facility);
+  const { data: max } = await fac
+    .from("facilities")
+    .select("featured_rank")
+    .not("featured_rank", "is", null)
+    .order("featured_rank", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextRank = ((max?.featured_rank as number | null) ?? 0) + 1;
+  await fac.from("facilities").update({ featured_rank: nextRank }).eq("id", facilityId);
+  await writeAuditLog(admin.id, "facility_featured_add", "facility", facilityId, "facility");
+  revalidatePath("/facilities/featured");
+}
+
+// おすすめから外す（featured_rank を null に）。
+export async function removeFeaturedFacility(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const facilityId = String(formData.get("facility_id"));
+  if (!facilityId) return;
+
+  const db = createAdminClient();
+  await db.schema(SCHEMA.facility).from("facilities").update({ featured_rank: null }).eq("id", facilityId);
+  await writeAuditLog(admin.id, "facility_featured_remove", "facility", facilityId, "facility");
+  revalidatePath("/facilities/featured");
+}
+
+// 表示順を更新（featured_rank を直接指定。小さいほど上位）。
+export async function updateFeaturedOrder(formData: FormData): Promise<void> {
+  const admin = await getAdminUser();
+  if (!admin) redirect("/");
+  const facilityId = String(formData.get("facility_id"));
+  const rank = Number(formData.get("rank"));
+  if (!facilityId || !Number.isFinite(rank)) return;
+
+  const db = createAdminClient();
+  await db.schema(SCHEMA.facility).from("facilities").update({ featured_rank: rank }).eq("id", facilityId);
+  await writeAuditLog(admin.id, "facility_featured_reorder", "facility", `${facilityId}:${rank}`, "facility");
+  revalidatePath("/facilities/featured");
+}
+
 export async function reviewFacilityOwner(formData: FormData): Promise<void> {
   const admin = await getAdminUser();
   if (!admin) redirect("/");

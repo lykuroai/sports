@@ -1,4 +1,5 @@
 import { createAdminClient, SCHEMA } from "@spotomo/auth-client";
+import { loadSportTree, resolveSportIds, ensureFacilitySports } from "./facility-sports";
 
 // =============================================================
 // 自治体オープンデータ（CKAN/CSV）施設取り込み（統合サイト化 Phase 3）
@@ -185,14 +186,6 @@ export function normalizeMunicipalCsv(text: string, prefDefault: string | null):
   return { rows, skipped };
 }
 
-type Admin = ReturnType<typeof createAdminClient>;
-
-async function loadSportIds(admin: Admin, slugs: string[]): Promise<Map<string, string>> {
-  const uniq = [...new Set(slugs)];
-  const { data } = await admin.schema(SCHEMA.core).from("sports").select("id, slug").in("slug", uniq);
-  return new Map((data ?? []).map((r: { id: string; slug: string }) => [String(r.slug), String(r.id)]));
-}
-
 /** CKAN/CSV リソースを取得して取り込む。 */
 export async function syncMunicipalFacilities(opts: {
   url: string; sourceName: string; license?: string; prefecture?: string | null;
@@ -221,7 +214,7 @@ export async function syncMunicipalFacilities(opts: {
     await log("info", `${opts.sourceName} rows=${rows.length} skipped=${skipped}`);
 
     const limit = Number(process.env.MUNICIPAL_FETCH_LIMIT) || 500;
-    const sportIds = await loadSportIds(admin, rows.map((r) => r.sportSlug).filter((s): s is string => !!s));
+    const sportTree = await loadSportTree(admin);
     const license = opts.license || MUNICIPAL_LICENSE_DEFAULT;
 
     for (const f of rows.slice(0, limit)) {
@@ -233,8 +226,30 @@ export async function syncMunicipalFacilities(opts: {
           .eq("source_id", f.sourceId)
           .maybeSingle();
         if (existingSrc?.facility_id) {
+          // 再取得＝最新情報で本体を差分更新（従来は raw のみ更新で本体が古いままだった）。
+          const { data: cur } = await fac
+            .from("facilities")
+            .select("name, facility_type, prefecture, city, address, latitude, longitude")
+            .eq("id", existingSrc.facility_id)
+            .maybeSingle();
+          const changed = cur && (
+            cur.name !== f.name || cur.facility_type !== f.facilityType ||
+            cur.prefecture !== f.prefecture || cur.city !== f.city || cur.address !== f.address ||
+            Number(cur.latitude) !== f.lat || Number(cur.longitude) !== f.lng
+          );
+          if (changed) {
+            await fac.from("facilities").update({
+              name: f.name, facility_type: f.facilityType, prefecture: f.prefecture, city: f.city, address: f.address,
+              latitude: f.lat, longitude: f.lng, geog: `SRID=4326;POINT(${f.lng} ${f.lat})`,
+              last_checked_at: new Date().toISOString(),
+            }).eq("id", existingSrc.facility_id);
+            summary.updated++;
+          } else {
+            summary.unchanged++;
+          }
+          // 種目（大分類＋小分類）を必ず補完。
+          await ensureFacilitySports(fac, existingSrc.facility_id, resolveSportIds(sportTree, f.sportSlug));
           await fac.from("facility_sources").update({ raw_data: f.raw, fetched_at: new Date().toISOString() }).eq("id", existingSrc.id);
-          summary.unchanged++;
           continue;
         }
 
@@ -259,8 +274,8 @@ export async function syncMunicipalFacilities(opts: {
         }).select("id").single();
         if (insErr || !inserted) throw new Error(insErr?.message ?? "insert 失敗");
         const facilityId = inserted.id as string;
-        const sportId = f.sportSlug ? sportIds.get(f.sportSlug) : undefined;
-        if (sportId) await fac.from("facility_sports").insert({ facility_id: facilityId, sport_id: sportId });
+        // 種目は必ず大分類＋小分類をセット（推定不能なら「その他」へ）。検索に出ない施設を作らない。
+        await ensureFacilitySports(fac, facilityId, resolveSportIds(sportTree, f.sportSlug));
         await fac.from("facility_sources").insert({
           facility_id: facilityId, source_type: "municipal_open_data", source_id: f.sourceId,
           source_name: opts.sourceName, source_url: opts.url, license, raw_data: f.raw,
