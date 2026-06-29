@@ -444,11 +444,10 @@ export async function updateFacilityAdmin(formData: FormData): Promise<void> {
   const lng = numOrNull(formData.get("longitude"));
 
   const db = createAdminClient();
+  // 種別は選択されていれば適用（facility_type と facility_sports を更新）、未選択でも他項目は保存する。
   const sport = await resolveSportSelection(db, formData);
-  if (!sport) return; // 種別（大分類）は必須
-  await db.schema(SCHEMA.facility).from("facilities").update({
+  const patch: Record<string, unknown> = {
     name,
-    facility_type: sport.facilityType,
     description: strOrNull(formData.get("description")),
     postal_code: strOrNull(formData.get("postal_code")),
     prefecture: strOrNull(formData.get("prefecture")),
@@ -459,15 +458,21 @@ export async function updateFacilityAdmin(formData: FormData): Promise<void> {
     geog: ewkt(lat, lng),
     status: String(formData.get("status") || "verified"),
     updated_at: new Date().toISOString(),
-  }).eq("id", id);
-  // 種目（大分類＋小分類）を入れ替え。
-  await db.schema(SCHEMA.facility).from("facility_sports").delete().eq("facility_id", id);
-  await db.schema(SCHEMA.facility).from("facility_sports")
-    .insert(sport.sportIds.map((sport_id) => ({ facility_id: id, sport_id })));
+  };
+  if (sport) patch.facility_type = sport.facilityType;
+  await db.schema(SCHEMA.facility).from("facilities").update(patch).eq("id", id);
+  // 種目（大分類＋小分類）を入れ替え（選択されたときのみ）。
+  if (sport) {
+    await db.schema(SCHEMA.facility).from("facility_sports").delete().eq("facility_id", id);
+    await db.schema(SCHEMA.facility).from("facility_sports")
+      .insert(sport.sportIds.map((sport_id) => ({ facility_id: id, sport_id })));
+  }
 
   await writeAuditLog(admin.id, "facility_update", "facility", id, "facility");
   revalidatePath(`/facilities/manage/${id}`);
   revalidatePath("/facilities/manage");
+  // 保存後は一覧へ戻して結果（成功）を明示する（同ページ再描画だと変化が無く反応が無いように見えるため）。
+  redirect(`/facilities/manage?saved=${id}`);
 }
 
 // 施設の削除（管理者）。子テーブルは ON DELETE CASCADE。

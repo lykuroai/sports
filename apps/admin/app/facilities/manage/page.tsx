@@ -11,7 +11,7 @@ const STATUS_LABEL: Record<string, string> = { verified: "公開", unverified: "
 export default async function FacilityManagePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; pref?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; pref?: string; status?: string; page?: string; saved?: string }>;
 }) {
   await requireAdmin();
   const sp = await searchParams;
@@ -54,6 +54,10 @@ export default async function FacilityManagePage({
           <Link href="/" className="text-brand hover:underline">← ダッシュボード</Link>
         </div>
       </div>
+
+      {sp.saved && (
+        <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">施設情報を保存しました。</p>
+      )}
 
       <form className="card flex flex-wrap items-center gap-2 p-4" action="/facilities/manage">
         <input name="q" defaultValue={sp.q ?? ""} placeholder="施設名キーワード" className="input max-w-xs" />
